@@ -58,8 +58,7 @@ def blast_list(file, Cutoff_identity,Cutoff_hitlength):
     for line in open(file, 'r'):
         if float(str(line).split('\t')[2]) >= Cutoff_identity:
             try:
-                if float(str(line).split('\t')[3]) >= Cutoff_hitlength * float(
-                        DB_length.get(str(line).split('\t')[1])) / 100:
+                if float(str(line).split('\t')[3]) >= Cutoff_hitlength * 100.0/3.0/100.0:
                     f1.write(line)
             except TypeError:
                 print (str(line).split('\t')[1])
@@ -68,7 +67,9 @@ def blast_list(file, Cutoff_identity,Cutoff_hitlength):
 
 ################################################### Programme #######################################################
 if args.s == 1:
-    DB_length=Calculate_length(args.db)
+    DB_length = dict()
+    if args.ht > 0.0:
+        DB_length = Calculate_length(args.db)
     blast_list(os.path.join(args.i, args.f), float(args.id), float(args.ht))
 else:
     pass

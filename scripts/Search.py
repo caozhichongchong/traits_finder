@@ -87,7 +87,7 @@ def addname(filedir, file_name):
 def search(roottemp,filename):
     # search the database for each file
     cmds = ''
-    cmds += "#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n"
+    cmds += "#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \nsource activate py37\n"
     # using blastp
     if args.s == 1:
         if args.u != 'None':
@@ -104,13 +104,13 @@ def search(roottemp,filename):
                 if 'usearch' in args.u:
                     # Start search target genes by usearch
                     cmds += args.u + " -ublast " + os.path.join(roottemp, filename) + \
-                            " -db " + args.db + " -evalue 1e-2 -accel 0.5 -blast6out " \
+                            " -db " + args.db + ".udb -evalue 1e-2 -accel 0.5 -blast6out " \
                             + os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt') + \
                             " -threads " + str(int(i_max)) + " \n"
                 elif "diamond" in args.u:
                     # Start search target genes by diamond!
                     cmds += args.u + " blastp --query " + os.path.join(roottemp, filename) + \
-                            " --db " + args.db + " --out " + os.path.join(args.r + '/usearch/' + str(int(i/10000)),
+                            " --db " + args.db + ".dmnd --out " + os.path.join(args.r + '/usearch/' + str(int(i/10000)),
                                                                           filename + '.usearch.txt') + \
                             " --outfmt 6 --max-target-seqs 1 --evalue " + str(args.e) + " --threads " + str(
                         int(i_max)) + " \n"
@@ -161,20 +161,21 @@ def search(roottemp,filename):
         except IOError:
             pass
     if Search16s == 0:
+        pass
         # Start search 16S by usearch
-        cmds += 'python scripts/undone.py -i '+ os.path.join(roottemp.replace('_faa','_fasta'), filename.replace(orfs_format+'.add', fasta_format)+' \n')
+        #cmds += 'python scripts/undone.py -i '+ os.path.join(roottemp.replace('_faa','_fasta'), filename.replace(orfs_format+'.add', fasta_format)+' \n')
         # with usearch
-        #cmds += args.u + " -ublast " + os.path.join(roottemp, filename.replace(orfs_format+'.add', fasta_format)) + \
-        #        " -db database/gg85.udb -evalue 1e-5 -id 0.9 -accel 0.5 -strand both -blast6out " \
-        #        + os.path.join(args.r16+'/' + str(int(i/10000)), filename.replace(orfs_format+'.add', fasta_format) + '.16S.txt') + \
+        #cmds += args.u + " -usearch_global " + os.path.join(roottemp.replace('_faa','_fasta'), filename.replace(orfs_format+'.add', fasta_format))+ \
+        #        " -db database/85_otus.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
+        #        + os.path.join(args.r16+'/' + str(int(i/10000)), filename.replace(orfs_format+'.add', fasta_format) + '.16S.txt')  + \
         #        " -threads " + str(int(i_max)) + " \n"
-        cmds += str(args.bp).replace('blastp','blastn') +" -query " + os.path.join(roottemp.replace('_faa','_fasta'), filename.replace(orfs_format+'.add', fasta_format))\
-                + " -db database/85_otus.fasta -out " + os.path.join(args.r16+'/' + str(int(i/10000)), filename.replace(orfs_format+'.add', fasta_format) + '.16S.txt') +\
-        "  -outfmt 6  -max_target_seqs 1 -evalue 1e-5 -num_threads " + \
-                    str(int(i_max)) + " \n"
-        cmds += 'python scripts/Extract.16S.py -i ' + roottemp.replace('_faa','_fasta') + ' -f ' + \
-                filename.replace(orfs_format+'.add',fasta_format) + ' -n .16S.txt -r ' + args.r16 + '/' + str(
-            int(i / 10000)) + ' \n'
+        #cmds += str(args.bp).replace('blastp','blastn') +" -query " + os.path.join(roottemp.replace('_faa','_fasta'), filename.replace(orfs_format+'.add', fasta_format))\
+        #        + " -db database/85_otus.fasta -out " + os.path.join(args.r16+'/' + str(int(i/10000)), filename.replace(orfs_format+'.add', fasta_format) + '.16S.txt') +\
+        #"  -outfmt 6  -max_target_seqs 1 -evalue 1e-5 -num_threads " + \
+        #            str(int(i_max)) + " \n"
+        #cmds += 'python scripts/Extract.16S.py -i ' + roottemp.replace('_faa','_fasta') + ' -f ' + \
+        #        filename.replace(orfs_format+'.add',fasta_format) + ' -n .16S.txt -r ' + args.r16 + '/' + str(
+        #    int(i / 10000)) + ' \n'
     return cmds
 
 
@@ -187,15 +188,15 @@ for root,dirs,files in os.walk(in_dir):
     list_fasta1 = glob.glob(os.path.join(root, '*'+orfs_format))
     if list_fasta1!=[]:
         for files in list_fasta1:
-            if '.no.faa' not in files:
-                Targetroot.setdefault(files, orfs_format)
+            Targetroot.setdefault(files, orfs_format)
 
 
 # search the database in all genomes
 i=0
-os.system("rm -rf *.sh \n")
-os.system("rm -rf nohup.sh \n")
-i_max=max(int(args.t)/len(Targetroot),1)
+#os.system("rm -rf *.sh \n")
+#os.system("rm -rf nohup.sh \n")
+#i_max=max(int(args.t)/len(Targetroot),1)
+i_max = 40
 for files in Targetroot:
     if Targetroot[files]!='None':
         f1 = open(str(i%int(args.t)) + '.sh', 'a')
@@ -230,8 +231,9 @@ for files in Targetroot:
         try:
             ftry = open(os.path.join(roottemp, str(filename) + ".add"), 'r')
         except IOError:
-            addname(roottemp, str(filename))
-        filename = filename + ".add"
+            pass
+            #addname(roottemp, str(filename))
+        #filename = filename + ".add"
         # search the database in WGD
         cmds = search(roottemp, filename)
         f1.write(cmds.replace('IMG Data','IMG\ Data'))

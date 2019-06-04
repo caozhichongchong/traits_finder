@@ -20,7 +20,7 @@ args = parser.parse_args()
 
 ################################################### Function #######################################################
 def reverse_complement(dna):
-    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
+    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A','N': 'N'}
     return ''.join([complement[base] for base in dna[::-1]])
 
 
@@ -37,7 +37,10 @@ def Extractaa(root, searchfile, orffile, resultdir):
                     loci1=int(str(line).split('\t')[6])
                     loci2=int(str(line).split('\t')[7])
                     AA_seq.setdefault(AA,[loci1,loci2])
-            for record in SeqIO.parse(open(os.path.join(root, orffile), 'r'), 'fasta'):
+            tag = 'fasta'
+            if 'fastq' in orffile:
+                tag = 'fastq'
+            for record in SeqIO.parse(open(os.path.join(root, orffile), 'r'), tag):
                 AA = str(record.id)
                 if AA in AA_seq:
                     loci1=int(AA_seq[AA][0])

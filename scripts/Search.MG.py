@@ -11,7 +11,7 @@ parser.add_argument("-db",
 parser.add_argument("-i",
                     help="input dir of MG", type=str, default='.',metavar='current dir (.)')
 parser.add_argument("-l",
-                    help="input list of MG", type=str, default='rep_metagenomes.txt',metavar='rep_metagenomes.txt')
+                    help="input list of MG", type=str, default='None',metavar='rep_metagenomes.txt')
 parser.add_argument('-m',
                     help="set the model to predict the results \
                     (1: simple; 2: phylogenetic; 3: advanced), \
@@ -95,7 +95,7 @@ def addname(filedir, file_name):
 def search(roottemp,filename):
     # search the database for each file
     cmds = ''
-    cmds += "#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n"
+    cmds += "#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \nsource activate py37\n"
     # using blastp
     if args.s == 1:
         if args.u != 'None':
@@ -112,7 +112,7 @@ def search(roottemp,filename):
                 if 'usearch' in args.u:
                     # Start search target genes by usearch
                     cmds += args.u + " -ublast " + os.path.join(roottemp, filename) + \
-                            " -db " + args.db + " -evalue 1e-2 -accel 0.5 -blast6out " \
+                            " -db " + args.db + ".udb -evalue 1e-2 -accel 0.5 -blast6out " \
                             + os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt') + \
                             " -threads " + str(int(i_max)) + " \n"
                 elif "diamond" in args.u:
@@ -137,7 +137,8 @@ def search(roottemp,filename):
             except IOError:
                 pass
         if Blastsearch == 0:
-            cmds += str(args.bp) +" -query " + str(searchfile) + " -db " + args.db + " -out " + args.r + '/search_output/'+str(int(i/10000))+ \
+            # for short metagenomic reads
+            cmds += str(args.bp).replace('blastp','blastx') +" -query " + str(searchfile) + " -db " + args.db + " -out " + args.r + '/search_output/'+str(int(i/10000))+ \
                      "/"+filename+".blast.txt  -outfmt 6 -max_target_seqs 1 -evalue "+str(args.e)+" -num_threads " + \
                     str(int(i_max)) + " \n"
             # fiter blast result
@@ -172,14 +173,15 @@ def search(roottemp,filename):
         # Start search 16S by usearch
         cmds += 'python scripts/undone.MG.py -i '+ os.path.join(roottemp.replace('_faa','_fasta'), filename+' \n')
         # with usearch
-        #cmds += args.u + " -ublast " + os.path.join(roottemp, filename.replace(orfs_format+'.add', fasta_format)) + \
-        #        " -db database/gg85.udb -evalue 1e-5 -id 0.9 -accel 0.5 -strand both -blast6out " \
-        #        + os.path.join(args.r16+'/' + str(int(i/10000)), filename.replace(orfs_format+'.add', fasta_format) + '.16S.txt') + \
-        #        " -threads " + str(int(i_max)) + " \n"
-        cmds += str(args.bp).replace('blastx','blastn') +" -query " + os.path.join(roottemp.replace('_faa','_fasta'), filename)\
-                + " -db database/85_otus.fasta -out " + os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt') +\
-        "  -outfmt 6  -max_target_seqs 1 -evalue 1e-5 -num_threads " + \
-                    str(int(i_max)) + " \n"
+        #cmds += args.u + " -usearch_global " + os.path.join(roottemp.replace('_faa','_fasta'), filename) + \
+        cmds += "/scratch/users/anniz44/bin/miniconda3/bin/usearch11.0.667_i86linux32 -usearch_global " + os.path.join(roottemp.replace('_faa', '_fasta'), filename) + \
+                        " -db database/85_otus.fasta.all.V4_V5.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
+                + os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt') + \
+                " -threads " + str(int(i_max)) + " \n"
+        #cmds += str(args.bp).replace('blastx','blastn') +" -query " + os.path.join(roottemp.replace('_faa','_fasta'), filename)\
+         #       + " -db database/85_otus.fasta.all.V4_V5.fasta -out " + os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt') +\
+        #"  -outfmt 6  -max_target_seqs 1 -evalue 1e-5 -num_threads " + \
+         #           str(int(i_max)) + " -task blastn-short \n"
         cmds += 'python scripts/Extract.16S.MG.py -i ' + roottemp.replace('_faa','_fasta') + ' -f ' + \
                 filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
             int(i / 10000)) + ' \n'
@@ -194,22 +196,24 @@ in_dir=args.i
 Targetroot=dict()
 
 Targetlist=[]
-for lines in open(args.l,'r'):
-    Targetlist.append(lines.split('\r')[0].split('\n')[0])
+if args.l != 'None':
+    for lines in open(args.l,'r'):
+        Targetlist.append(lines.split('\r')[0].split('\n')[0])
 
 for root,dirs,files in os.walk(in_dir):
     list_fasta1 = glob.glob(os.path.join(root, '*'+fasta_format))
     if list_fasta1!=[]:
         for files in list_fasta1:
-            if any(targets in files for targets in Targetlist):
+            if args.l == 'None' or any(targets in files for targets in Targetlist):
                 Targetroot.setdefault(files, fasta_format)
 
 
 # search the database in all genomes
 i=0
-os.system("rm -rf *.sh \n")
-os.system("rm -rf nohup.sh \n")
-i_max=max(int(args.t)/len(Targetroot),1)
+#os.system("rm -rf *.sh \n")
+#os.system("rm -rf nohup.sh \n")
+#i_max=max(int(args.t)/len(Targetroot),1)
+i_max=40
 for files in Targetroot:
     if Targetroot[files]!='None':
         f1 = open(str(i%int(args.t)) + '.sh', 'a')

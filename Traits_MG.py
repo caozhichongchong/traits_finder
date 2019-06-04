@@ -11,7 +11,7 @@ parser.add_argument("-db",
 parser.add_argument("-i",
                     help="input dir of MG", type=str, default='.',metavar='current dir (.)')
 parser.add_argument("-l",
-                    help="input list of MG", type=str, default='rep_metagenomes.txt',metavar='rep_metagenomes.txt')
+                    help="input list of MG", type=str, default='None',metavar='rep_metagenomes.txt')
 parser.add_argument('-m',
                     help="set the model to predict the results \
                     (1: simple; 2: phylogenetic; 3: advanced), \
@@ -51,7 +51,7 @@ parser.add_argument('--ht',
                     help='Optional: set the amno acid based hit-length cutoff for blast (default is 80.0)\n'
                          'Leave it alone if hmm is used')
 parser.add_argument('--e',
-                    default=1e-5, action='store', type=float, metavar='1e-5',
+                    default=1e-1, action='store', type=float, metavar='1e-5',
                     help='Optional: set the evalue cutoff for blast or hmm (default is 1e-5)')
 # requirement for software calling
 parser.add_argument('--u',
@@ -95,7 +95,8 @@ f1.write("#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n")
 #         'export PATH=/scratch/users/anniz44/bin/miniconda3/bin/bin:$PATH\n'+\
 #         'cd /scratch/users/anniz44/bin/miniconda3/bin/traits_search/\n')
 for file_name in list_of_files:
-    f1.write("sbatch -p sched_mem1TB -c 30 -t 5-00:00:00 --mem=500000 -J "+str(file_name)+"traits -o " + str(file_name) + ".out -e " + str(file_name) + ".err /scratch/users/anniz44/scripts/traits_search_MG/" + str(file_name) +" \n")
+    if not any(files in file_name for files in ['all.sh','SearchMG.sh']):
+        f1.write("sbatch -p sched_mem1TB -c 40 -t 5-00:00:00 --mem=500000 -J "+str(file_name)+"traits -o " + str(file_name) + ".out -e " + str(file_name) + ".err /scratch/users/anniz44/scripts/traits_search_MG_2/" + str(file_name) +" \n")
     #f1.write("nohup sh " + str(file_name) + '  & \n')
 
 f1.close()

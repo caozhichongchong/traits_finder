@@ -41,7 +41,7 @@ def Calculate_length(file_name):
     DB_length=dict()
     try:
         for lines in open(file_name + '.length', 'r'):
-            DB_length.setdefault(str(lines.split('\t')[0]), len(str(lines.split('\t')[-1]).replace('\n','')))
+            DB_length.setdefault(str(lines.split('\t')[0]), float(str(lines.split('\t')[-1]).replace('\n','')))
     except (IOError):
         Fasta_name = open(file_name, 'r')
         f = open(file_name + '.length', 'w')
@@ -59,16 +59,18 @@ def blast_list(file, Cutoff_identity,Cutoff_hitlength):
         if float(str(line).split('\t')[2]) >= Cutoff_identity:
             try:
                 if float(str(line).split('\t')[3]) >= Cutoff_hitlength * float(
-                        DB_length.get(str(line).split('\t')[1])) / 100:
+                        DB_length.get(str(line).split('\t')[1],0.0)) / 100:
                     f1.write(line)
             except TypeError:
-                print (str(line).split('\t')[1])
+                print (str(line).split('\t')[1],' has no length')
     f1.close()
 
 
 ################################################### Programme #######################################################
 if args.s == 1:
-    DB_length=Calculate_length(args.db)
+    DB_length = dict()
+    if args.ht > 0.0:
+        DB_length=Calculate_length(args.db)
     blast_list(os.path.join(args.i, args.f), float(args.id), float(args.ht))
 else:
     pass

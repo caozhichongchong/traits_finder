@@ -49,7 +49,7 @@ parser.add_argument('--ht',
                     help='Optional: set the amno acid based hit-length cutoff for blast (default is 80.0)\n'
                          'Leave it alone if hmm is used')
 parser.add_argument('--e',
-                    default=1e-5, action='store', type=float, metavar='1e-5',
+                    default=1e-2, action='store', type=float, metavar='1e-5',
                     help='Optional: set the evalue cutoff for blast or hmm (default is 1e-5)')
 # requirement for software calling
 parser.add_argument('--u',
@@ -87,13 +87,14 @@ os.system(cmds)
 
 # run all bash
 list_of_files = glob.glob('*.sh')
-f1 = open("all.sh", 'a')
+f1 = open("all.sh", 'w')
 f1.write("#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n")
 #f1.write('#!/bin/bash\nexport PATH=/scratch/users/anniz44/bin/miniconda3/bin:$PATH\n'+\
 #         'export PATH=/scratch/users/anniz44/bin/miniconda3/bin/bin:$PATH\n'+\
 #         'cd /scratch/users/anniz44/bin/miniconda3/bin/traits_search/\n')
 for file_name in list_of_files:
-    f1.write("sbatch -p defq -c 30 -t 1-00:00:00 --mem=100000 -J traits -o " + str(file_name) + ".out -e " + str(file_name) + ".err /scratch/users/anniz44/scripts/traits_search/" + str(file_name) +" \n")
+    if all(keys not in file_name for keys in ['SearchWG.sh','all.sh']):
+        f1.write("sbatch -p defq -c 40 -t 5-00:00:00 --mem=100000 -J " + str(file_name) + "_traits -o " + str(file_name) + ".out -e " + str(file_name) + ".err /scratch/users/anniz44/scripts/traits_search/" + str(file_name) +" \n")
     #f1.write("nohup sh " + str(file_name) + '  & \n')
 f1.close()
 #os.system("nohup sh all.sh & \n")
