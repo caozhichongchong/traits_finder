@@ -50,8 +50,11 @@ def Extractaa(root, searchfile, orffile, resultdir):
                 AA = str(record.id)
                 total_length = len(str(record.seq))
                 if AA in AA_seq:
-                    loci1=int(AA_seq[AA][0])
-                    loci2=int(AA_seq[AA][1])
+                    # extract whole sequences
+                    #loci1=int(AA_seq[AA][0])
+                    #loci2=int(AA_seq[AA][1])
+                    loci1 = 1
+                    loci2 = len(str(record.seq))
                     if loci1 < loci2:
                         # avoid duplicate ORF
                         f1.write('>' + AA + '\n' +

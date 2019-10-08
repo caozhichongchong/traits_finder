@@ -172,13 +172,13 @@ def search(roottemp,filename):
                     str(int(i_max)) + " \n"
             # fiter blast result
             if args.dbf == 1:
-                cmds += 'python scripts/Filter.WG.genome.py -i ' + args.r + '/search_output/'+str(int(i/10000))+' -f ' + filename + '.blast.txt ' +\
+                cmds += 'python scripts/Filter.WG.py -i ' + args.r + '/search_output/'+str(int(i/10000))+' -f ' + filename + '.blast.txt ' +\
                         '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                         ' --e ' + str(args.e) + ' \n'
                 cmds += 'python scripts/Extract.MG.py -d 2000 -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + args.r + '/search_output/'+str(int(i/10000))+' \n'
             else:
                 # AA file
-                cmds += 'python scripts/Filter.WG.AA.py -i ' + args.r + '/search_output/'+str(int(i/10000))+' -f ' + filename + '.blast.txt ' +\
+                cmds += 'python scripts/Filter.WG.py -i ' + args.r + '/search_output/'+str(int(i/10000))+' -f ' + filename + '.blast.txt ' +\
                         '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                         ' --e ' + str(args.e) + ' \n'
                 cmds += 'python scripts/Extract.WG.py -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + args.r + '/search_output/'+str(int(i/10000))+' \n'
@@ -188,7 +188,7 @@ def search(roottemp,filename):
                          "/"+filename.replace(orfs_format, fasta_format)\
                          +".blast.txt  -outfmt 6 -evalue "+str(args.e)+" -num_threads " + \
                         str(int(i_max)) + " \n"
-                cmds += 'python scripts/Filter.WG.genome.py -i ' + args.r + '/search_output/'+str(int(i/10000))+' -f ' + filename.replace(orfs_format, fasta_format) + '.blast.txt ' +\
+                cmds += 'python scripts/Filter.WG.py -i ' + args.r + '/search_output/'+str(int(i/10000))+' -f ' + filename.replace(orfs_format, fasta_format) + '.blast.txt ' +\
                         '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                         ' --e ' + str(args.e) + ' \n'
                 cmds += 'python scripts/Extract.MG.py -d 2000 -i ' + roottemp + ' -f ' + filename.replace(orfs_format, fasta_format) + ' -n .blast.txt.filter -r ' + args.r + '/search_output/'+str(int(i/10000))+' \n'
