@@ -15,7 +15,13 @@ parser.add_argument("-r",
 parser.add_argument("-d",
                     help="extra distance outside the target gene (default: 0 for 0bp)",
                     type=int, default=0,metavar='2000 for 2kbp')
-
+parser.add_argument("-p",
+                    help="extract whole sequences or only the hit part \
+                    (1: whole; 2: hit), \
+                    (default \'1\' for blast search)",
+                    metavar="1 or 2",
+                    choices=[1, 2],
+                    action='store', default=2, type=int)
 
 ################################################## Definition ########################################################
 args = parser.parse_args()
