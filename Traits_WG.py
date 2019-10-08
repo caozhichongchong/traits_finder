@@ -100,7 +100,7 @@ else:
     blast_set=args.bp.replace('blastn','blastp')
     diamond_set=args.u.replace('diamond','diamond-blastp')
 # search the database in all genomes
-cmds = 'python scripts/Search.py -i ' + args.i  +\
+cmds = 'python scripts/Search.WG.py -i ' + args.i  +\
                 ' -db ' + args.db + ' -dbf ' + str(args.dbf) + ' -s ' + str(args.s) + ' --r ' + str(args.r) + ' --t ' + str(args.t) + \
                 ' --u ' + str(diamond_set) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(blast_set) + \
                 ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + ' --fa ' + str(args.fa) + \
