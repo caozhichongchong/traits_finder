@@ -7,7 +7,15 @@ import glob
 ############################################ Arguments and declarations ##############################################
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("-db",
-                    help="file name of your input database", type=str, default='Butyrate.pro.aa',metavar='database.aa')
+                    help="file name of your input database",
+                    type=str, default='Butyrate.pro.aa',metavar='database.aa')
+parser.add_argument("-dbf",
+                    help="sequence format of your input database\
+                    (1: nucleotide; 2: protein), \
+                    (default \'1\' for nucleotide)",
+                    metavar="1 or 2",
+                    choices=[1, 2],
+                    action='store', default=1, type=int)
 parser.add_argument("-i",
                     help="input dir of WGD", type=str, default='.',metavar='current dir (.)')
 parser.add_argument('-m',
@@ -64,9 +72,13 @@ parser.add_argument('--hmm',
                     metavar="/usr/local/bin/hmmscan",
                     action='store', default='hmmscan', type=str)
 parser.add_argument('--bp',
-                    help="Optional: complete path to blastp if not in PATH,",
+                    help="Optional: complete path to blastp or blastn if not in PATH,",
                     metavar="/usr/local/bin/blastp",
                     action='store', default='blastp', type=str)
+parser.add_argument('--bwa',
+                    help="Optional: complete path to bwa if not in PATH,",
+                    metavar="/usr/local/bin/bwa",
+                    action='store', default='None', type=str)
 
 ################################################## Definition ########################################################
 args = parser.parse_args()
@@ -77,24 +89,38 @@ except OSError:
 
 
 ################################################### Programme #######################################################
+# set the search for database type
+diamond_set = args.u
+if args.dbf == 1:
+    blast_set=args.bp.replace('blastp','blastn')
+    if 'diamond' in args.u:
+        print('Diamond cannot use dna database\nDirect use blast!')
+        diamond_set = 'None'
+else:
+    blast_set=args.bp.replace('blastn','blastp')
+    diamond_set=args.u.replace('diamond','diamond-blastp')
 # search the database in all genomes
 cmds = 'python scripts/Search.py -i ' + args.i  +\
-                ' -db ' + args.db + ' -s ' + str(args.s) + ' --r ' + str(args.r) + ' --t ' + str(args.t) + \
-                ' --u ' + str(args.u) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(args.bp) + \
+                ' -db ' + args.db + ' -dbf ' + str(args.dbf) + ' -s ' + str(args.s) + ' --r ' + str(args.r) + ' --t ' + str(args.t) + \
+                ' --u ' + str(diamond_set) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(blast_set) + \
                 ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + ' --fa ' + str(args.fa) + \
-                ' --e ' + str(args.e) + ' --orf ' + str(args.orf) + ' --r16 ' + str(args.r16)+ ' \n'
+                ' --e ' + str(args.e) + ' --orf ' + str(args.orf) + ' --r16 ' + str(args.r16)+\
+        ' --bwa ' + str(args.bwa) + ' \n'
+#print(cmds)
 os.system(cmds)
 
 # run all bash
 list_of_files = glob.glob('*.sh')
 f1 = open("all.sh", 'w')
 f1.write("#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n")
+if args.bwa != 'None':
+    f1.write('bwa index %s \n' % (args.db))
 #f1.write('#!/bin/bash\nexport PATH=/scratch/users/anniz44/bin/miniconda3/bin:$PATH\n'+\
 #         'export PATH=/scratch/users/anniz44/bin/miniconda3/bin/bin:$PATH\n'+\
 #         'cd /scratch/users/anniz44/bin/miniconda3/bin/traits_search/\n')
 for file_name in list_of_files:
     if all(keys not in file_name for keys in ['SearchWG.sh','all.sh']):
-        f1.write("sbatch -p defq -c 40 -t 5-00:00:00 --mem=100000 -J " + str(file_name) + "_traits -o " + str(file_name) + ".out -e " + str(file_name) + ".err /scratch/users/anniz44/scripts/traits_search/" + str(file_name) +" \n")
+        f1.write("sbatch -p defq -c 40 -t 5-00:00:00 --mem=100000 -J " + str(file_name) + "_traits -o " + str(file_name) + ".out -e " + str(file_name) + ".err " + str(file_name) +" \n")
     #f1.write("nohup sh " + str(file_name) + '  & \n')
 f1.close()
 #os.system("nohup sh all.sh & \n")

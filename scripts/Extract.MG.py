@@ -12,6 +12,9 @@ parser.add_argument("-n",
                     help="prefix name for usearch result", type=str, default='.usearch.txt',metavar='.usearch.txt')
 parser.add_argument("-r",
                     help="output dir", type=str, default='.',metavar='current dir (.)')
+parser.add_argument("-d",
+                    help="extra distance outside the target gene (default: 0 for 0bp)",
+                    type=int, default=0,metavar='2000 for 2kbp')
 
 
 ################################################## Definition ########################################################
@@ -31,6 +34,9 @@ def Extractaa(root, searchfile, orffile, resultdir):
     AA_seq = dict()
     try:
         f1 = open(os.path.join(resultdir, searchfile + '.aa'), 'w')
+        if args.d > 0:
+            f2 = open(os.path.join(resultdir, searchfile +
+            '.extra' + str(args.d) + '.aa'), 'w')
         try:
             for line in open(os.path.join(resultdir, searchfile), 'r'):
                     AA = str(line).split('\t')[0].split(' ')[0]
@@ -42,6 +48,7 @@ def Extractaa(root, searchfile, orffile, resultdir):
                 tag = 'fastq'
             for record in SeqIO.parse(open(os.path.join(root, orffile), 'r'), tag):
                 AA = str(record.id)
+                total_length = len(str(record.seq))
                 if AA in AA_seq:
                     loci1=int(AA_seq[AA][0])
                     loci2=int(AA_seq[AA][1])
@@ -49,9 +56,17 @@ def Extractaa(root, searchfile, orffile, resultdir):
                         # avoid duplicate ORF
                         f1.write('>' + AA + '\n' +
                                  str(record.seq)[(loci1-1):loci2] + '\n')
+                        if args.d > 0:
+                            f2.write('>' + AA + '\n' +
+                                     str(record.seq)[max(loci1-1-args.d,0):
+                                     min(loci2+args.d,total_length)] + '\n')
                     else:
                         f1.write('>' + AA + '\n' +
                                  str(reverse_complement(str(record.seq)[(loci2-1):loci1])) + '\n')
+                        if args.d > 0:
+                            f2.write('>' + AA + '\n' +
+                                     str(reverse_complement(str(record.seq)[max(loci2-1-args.d,0):
+                                     min(loci1+args.d,total_length)])) + '\n')
                     AA_seq[AA]=''
         except IOError:
             pass

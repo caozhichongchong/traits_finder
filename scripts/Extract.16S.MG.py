@@ -41,7 +41,10 @@ def Extract16S(root, searchfile, seqfile, resultdir):
                         # another 16S on a contig
                         Seq_16S[Seq].append([int(str(line).split('\t')[6]) - 1, int(str(line).split('\t')[7]) - 1])
         # screening out the longest 16S
-        for record in SeqIO.parse(open(os.path.join(root, seqfile), 'r'), 'fasta'):
+        tag = 'fasta'
+        if 'fastq' in seqfile:
+            tag = 'fastq'
+        for record in SeqIO.parse(open(os.path.join(root, seqfile), 'r'), tag):
             if str(record.id) in Seq_16S:
                     for locus in Seq_16S[str(record.id)]:
                         f1.write('>' + seqfile.split('.')[0] + '\t' + str(record.id) + '\n' +

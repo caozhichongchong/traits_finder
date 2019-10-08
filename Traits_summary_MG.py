@@ -82,7 +82,7 @@ for lines in open(args.c,'r'):
     for numbers in lines.split('\t')[1:]:
         cellnum.append(float(numbers))
     averagecell = statistics.mean(cellnum)
-    Cellnum.setdefault(lines.split('\t')[0],averagecell)
+    Cellnum.setdefault(lines.split('\t')[0].replace('.fasta','').replace('.blast.txt.filter',''),averagecell)
 
 # input 16S number
 Cell16S=dict()
@@ -94,7 +94,7 @@ for lines in open(args.c,'r'):
             cellnum.append(float(numbers))
     averagecell = statistics.mean(cellnum)
     if averagecell > 0:
-        Cell16S.setdefault(lines.split('\t')[0],averagecell)
+        Cell16S.setdefault(lines.split('\t')[0].replace('.fasta','').replace('.blast.txt.filter',''),averagecell)
 
 # gene ID: length
 Mapping = dict()
@@ -112,8 +112,9 @@ for searchfile in searchfiles:
     #    Cell16S.setdefault(filename.split('_1')[0].split('_2')[0],[])
     #Cell16S[filename.split('_1')[0].split('_2')[0]].append(check_16S(filename))
     # calculate trait
-    if filename.split('_1')[0].split('_2')[0] not in Trait:
-        Trait.setdefault(filename.split('_1')[0].split('_2')[0],[])
+    filename_short = filename.split('_1')[0].split('_2')[0].replace('.fasta','').replace('.blast.txt.filter','')
+    if filename_short not in Trait and '_1_2' not in filename:
+        Trait.setdefault(filename_short,[])
     Tempset=[]
     Tempoutput = check_traits(filename)
     for traits in Mapping:
@@ -121,7 +122,7 @@ for searchfile in searchfiles:
             Tempset.append(Tempoutput[traits])
         except KeyError:
             Tempset.append(0)
-    Trait[filename.split('_1')[0].split('_2')[0]].append(Tempset)
+    Trait[filename_short].append(Tempset)
 
 
 # output results
