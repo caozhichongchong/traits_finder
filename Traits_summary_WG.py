@@ -52,18 +52,20 @@ except OSError:
 
 ################################################### Function ########################################################
 def check_16S(inputfile):
-    file16S=os.path.join(args.r16 + '/0',
-                    inputfile.replace(orfs_format, fasta_format) + '.16S.txt.fasta')
-    Has16S = 0
-    for lines in open(file16S,'r'):
-        if str(lines)!='':
-            # 16S file not empty
-            Has16S = 1
-    if Has16S == 1:
-        # merge 16S fasta
-        for record in SeqIO.parse(file16S, 'fasta'):
-            f16s.write('>'+str(record.id).split('_final')[0]+'\n'+str(record.seq)+'\n')
-    return Has16S
+    try:
+        file16S=os.path.join(args.r16 + '/0',
+                        inputfile.replace(orfs_format, fasta_format) + '.16S.txt.fasta')
+        Has16S = 0
+        for lines in open(file16S,'r'):
+            if str(lines)!='':
+                # 16S file not empty
+                Has16S = 1
+        if Has16S == 1:
+            # merge 16S fasta
+            for record in SeqIO.parse(file16S, 'fasta'):
+                f16s.write('>'+str(record.id).split('_final')[0]+'\n'+str(record.seq)+'\n')
+    except FileNotFoundError:
+        pass
 
 
 def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,outputfile_summary,file_subfix,i):
@@ -162,10 +164,10 @@ fsum_dna.write('\n')
 for filenames in Targetroot:
     filedir, filename = os.path.split(filenames.split('\r')[0].split('\n')[0])
     # check 16S
-    if check_16S(filename) == 1:
-        # check and summarize traits
-        check_traits(filename,faa,'None',ftraits,fsum_aa,orfs_format,genenum)
-        check_traits(filename.replace(orfs_format,fasta_format),fdna,fdna_2000,ftraits_dna,fsum_dna,fasta_format,genenum)
+    check_16S(filename)
+    # check and summarize traits
+    check_traits(filename,faa,'None',ftraits,fsum_aa,orfs_format,genenum)
+    check_traits(filename.replace(orfs_format,fasta_format),fdna,fdna_2000,ftraits_dna,fsum_dna,fasta_format,genenum)
 
 
 # end of processing all traits
