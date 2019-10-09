@@ -109,9 +109,9 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
                 outputfile_blast.write(str(lines))
             # calculate copy number of each gene
             if float(lines.split('\t')[2]) >= args.c:
-                totaltraits[Functionlist[Function[traits_gene]]] += 1
-            for copy_number in totaltraits:
-                temp.append(str(copy_number))
+                totaltraits[Functionlist[traits_gene]] += 1
+        for copy_number in totaltraits:
+            temp.append(str(copy_number))
         outputfile_summary.write(inputfile.split(file_subfix)[0]+'\t'+'\t'.join(temp)+'\n')
     return Hastraits
 
@@ -132,10 +132,12 @@ Function = dict()
 Functionlist=dict()
 genenum=0
 for lines in open(args.m,'r'):
-    Function.setdefault(str(lines).split('\t')[0],
-    str(lines).split('\t')[1].split('\r')[0].split('\n')[0])
-    if (lines.split('\t')[-1].split('\r')[0].split('\n')[0]) not in Functionlist:
-        Functionlist.setdefault((lines.split('\t')[-1].split('\r')[0].split('\n')[0]),genenum)
+    gene = str(lines).split('\t')[0]
+    gene_fun = str(lines).split('\t')[1].split('\r')[0].split('\n')[0]
+    Function.setdefault(gene,
+    gene_fun)
+    if gene not in Functionlist:
+        Functionlist.setdefault(gene,genenum)
         genenum+=1
 
 # set output files
@@ -148,12 +150,12 @@ ftraits_dna=open(os.path.join(args.s,args.t+'.all.traits.dna.txt'),'w')
 fsum_aa = open(os.path.join(args.s,args.t+'.all.traits.aa.summarize.'+str(args.c)+'.txt'),'w')
 fsum_aa.write('SampleID\t')
 for functions in Functionlist:
-    fsum_aa.write('\t'+str(functions)+'_copy')
+    fsum_aa.write('\t'+str(functions))
 fsum_aa.write('\n')
 fsum_dna = open(os.path.join(args.s,args.t+'.all.traits.dna.summarize.'+str(args.c)+'.txt'),'w')
 fsum_dna.write('SampleID')
 for functions in Functionlist:
-    fsum_dna.write('\t'+str(functions)+'_copy')
+    fsum_dna.write('\t'+str(functions))
 fsum_dna.write('\n')
 
 # process all traits

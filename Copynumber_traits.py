@@ -242,14 +242,16 @@ for lines in open(args.l,'r'):
                       float(lines.split('\t')[-1].split('\r')[0].split('\n')[0]))
 
 # load traits function
-Function=dict()
+Function = dict()
 Functionlist=dict()
 genenum=0
-for lines in open(args.tf,'r'):
-    Function.setdefault(lines.split('\t')[0],
-                      (lines.split('\t')[-1].split('\r')[0].split('\n')[0]))
-    if (lines.split('\t')[-1].split('\r')[0].split('\n')[0]) not in Functionlist:
-        Functionlist.setdefault((lines.split('\t')[-1].split('\r')[0].split('\n')[0]),genenum)
+for lines in open(args.m,'r'):
+    gene = str(lines).split('\t')[0]
+    gene_fun = str(lines).split('\t')[1].split('\r')[0].split('\n')[0]
+    Function.setdefault(gene,
+    gene_fun)
+    if gene_fun not in Functionlist:
+        Functionlist.setdefault(gene_fun,genenum)
         genenum+=1
 
 # load metadata
