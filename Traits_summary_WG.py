@@ -81,15 +81,16 @@ def check_16S(inputfile):
 
 def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,outputfile_summary,file_subfix,i):
     blastout = check_file(glob.glob(args.r + '/search_output/*/'+ inputfile + '.blast.txt.filter'))
-    aaout = blastout + '.aa'
-    aaout2000 = blastout + '.extra2000.aa'
     Hastraits = 0
-    for lines in open(blastout,'r'):
-        if str(lines)!='':
-            # blastout file not empty
-            Hastraits = 1
-        break
+    if blastout != None:
+        for lines in open(blastout,'r'):
+            if str(lines)!='':
+                # blastout file not empty
+                Hastraits = 1
+            break
     if Hastraits == 1:
+        aaout = blastout + '.aa'
+        aaout2000 = blastout + '.extra2000.aa'
         # merge traits fasta
         for record in SeqIO.parse(aaout, 'fasta'):
             if filename.split(file_subfix)[0] in str(record.id):
