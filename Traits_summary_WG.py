@@ -75,7 +75,7 @@ def check_16S(inputfile):
             # merge 16S fasta
             for record in SeqIO.parse(file16S, 'fasta'):
                 f16s.write('>'+str(record.id).split('_final')[0]+'\n'+str(record.seq)+'\n')
-    except FileNotFoundError or TypeError:
+    except FileNotFoundError:
         pass
 
 
