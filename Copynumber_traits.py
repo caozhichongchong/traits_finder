@@ -9,11 +9,11 @@ from Bio.SeqRecord import SeqRecord
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("-i",
                     help="input dir of traits", type=str,
-                    default='/scratch/users/anniz44/scripts/traits_search_MG/Result_traits/search_output/0',
+                    default='/scratch/users/anniz44/scripts/traits_search_MG/Result_traits/search_output/*',
                     metavar='current dir (.)')
 parser.add_argument("-i16",
                     help="input dir of traits", type=str,
-                    default='/scratch/users/anniz44/scripts/traits_search_MG/Result_16S/0',
+                    default='/scratch/users/anniz44/scripts/traits_search_MG/Result_16S/*',
                     metavar='current dir (.)')
 parser.add_argument("-o",
                     help="output directory",
@@ -58,6 +58,15 @@ except OSError:
     pass
 
 ################################################## Function ########################################################
+def check_file(listoffiles):
+    for files in listoffiles:
+        try:
+            f1 = open(files,'r')
+            return files
+        except FileNotFoundError:
+            pass
+
+
 def copycal(traitsfile,file16S,i):
     copy1 = copytraits(traitsfile,i)
     copy2 = copy16S(file16S)
@@ -270,7 +279,7 @@ fout.write('Habitat_subtype\tHabitat_type\n')
 for files in alltraitsfile:
     filedir, filename = os.path.split(files)
     if '.fasta.16S.txt' not in filename:
-        files16S = os.path.join(args.i16,filename.replace(args.f,args.f16))
+        files16S = check_file(glob.glob(os.path.join(args.i16,filename.replace(args.f,args.f16))))
         MG = filename.split('.')[0]
         try:
             temp = MG+'\t'+'\t'.join(copycal(files, files16S,genenum))

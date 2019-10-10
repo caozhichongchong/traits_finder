@@ -51,25 +51,36 @@ except OSError:
 
 
 ################################################### Function ########################################################
+def check_file(listoffiles):
+    for files in listoffiles:
+        try:
+            f1 = open(files,'r')
+            return files
+        except FileNotFoundError:
+            pass
+
+
 def check_16S(inputfile):
     try:
-        file16S=os.path.join(args.r16 + '/0',
-                        inputfile.replace(orfs_format, fasta_format) + '.16S.txt.fasta')
+        file16S= check_file(glob.glob(os.path.join(args.r16 + '/*',
+                        inputfile.replace(orfs_format, fasta_format) + '.16S.txt.fasta')))
         Has16S = 0
-        for lines in open(file16S,'r'):
-            if str(lines)!='':
-                # 16S file not empty
-                Has16S = 1
+        if file16S != None:
+            for lines in open(file16S,'r'):
+                if str(lines)!='':
+                    # 16S file not empty
+                    Has16S = 1
+                break
         if Has16S == 1:
             # merge 16S fasta
             for record in SeqIO.parse(file16S, 'fasta'):
                 f16s.write('>'+str(record.id).split('_final')[0]+'\n'+str(record.seq)+'\n')
-    except FileNotFoundError:
+    except FileNotFoundError or TypeError:
         pass
 
 
 def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,outputfile_summary,file_subfix,i):
-    blastout = args.r + '/search_output/0/' + inputfile + '.blast.txt.filter'
+    blastout = check_file(glob.glob(args.r + '/search_output/*/'+ inputfile + '.blast.txt.filter'))
     aaout = blastout + '.aa'
     aaout2000 = blastout + '.extra2000.aa'
     Hastraits = 0
@@ -77,6 +88,7 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
         if str(lines)!='':
             # blastout file not empty
             Hastraits = 1
+        break
     if Hastraits == 1:
         # merge traits fasta
         for record in SeqIO.parse(aaout, 'fasta'):
