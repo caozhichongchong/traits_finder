@@ -128,7 +128,8 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
         for copy_number in totaltraits:
             temp.append(str(copy_number))
         outputfile_summary.write(inputfile.split(file_subfix)[0]+'\t'+'\t'.join(temp)+'\n')
-    return Hastraits
+    else:
+        outputfile_summary.write(inputfile.split(file_subfix)[0] + '\tNo_hit\n')
 
 
 ################################################### Programme #######################################################
@@ -163,7 +164,7 @@ fdna=open(os.path.join(args.s,args.t+'.all.traits.dna.fasta'),'w')
 fdna_2000=open(os.path.join(args.s,args.t+'.all.traits.dna.extra2000.fasta'),'w')
 ftraits_dna=open(os.path.join(args.s,args.t+'.all.traits.dna.txt'),'w')
 fsum_aa = open(os.path.join(args.s,args.t+'.all.traits.aa.summarize.'+str(args.c)+'.txt'),'w')
-fsum_aa.write('SampleID\t')
+fsum_aa.write('SampleID')
 for functions in Functionlist:
     fsum_aa.write('\t'+str(functions))
 fsum_aa.write('\n')
