@@ -60,17 +60,22 @@ def Calculate_length(file_name):
         f.close()
     return DB_length
 
-def compare_blast(line1,line2):
-    ID1=float(str(line1).split('\t')[2])
-    ID2=float(str(line2).split('\t')[2])
-    Loci1=(float(str(line1).split('\t')[6])+float(str(line1).split('\t')[7]))/2.0
-    Loci2=(float(str(line2).split('\t')[6])+float(str(line2).split('\t')[7]))/2.0
-    if abs(Loci1 - Loci2) > 500 or ID1 == ID2:
-        return [line1,line2]
-    elif ID1 > ID2:
-        return [line1]
-    elif ID2 > ID1:
-        return [line2]
+def compare_blast(All_hit_set,newline):
+    ID2 = float(str(newline).split('\t')[2])
+    Loci2 = (float(str(newline).split('\t')[6]) + float(str(newline).split('\t')[7])) / 2.0
+    for oldlines in All_hit_set:
+        ID1=float(str(oldlines).split('\t')[2])
+        Loci1=(float(str(oldlines).split('\t')[6])+float(str(oldlines).split('\t')[7]))/2.0
+        if abs(Loci1 - Loci2) > 500 or ID1 == ID2:
+            All_hit_set.append(newline)
+            break
+        elif ID1 > ID2:
+            break
+        elif ID2 > ID1:
+            All_hit_set.append(newline)
+            All_hit_set.remove(oldlines)
+            break
+    return All_hit_set
 
 
 def blast_list(file, Cutoff_identity,Cutoff_hitlength):
@@ -85,8 +90,7 @@ def blast_list(file, Cutoff_identity,Cutoff_hitlength):
                         All_hit.setdefault(str(line).split('\t')[0],
                         [line])
                     else:
-                        All_hit[str(line).split('\t')[0]] = compare_blast(All_hit[str(line).split('\t')[0]][0],
-                        line)
+                        All_hit[str(line).split('\t')[0]] = compare_blast(All_hit[str(line).split('\t')[0]],line)
             except TypeError:
                 print (str(line).split('\t')[1],' has no length')
     for genes in All_hit:
