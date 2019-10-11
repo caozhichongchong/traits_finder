@@ -48,7 +48,13 @@ def Extractaa(root, searchfile, orffile, resultdir):
                     AA = str(line).split('\t')[0].split(' ')[0]
                     loci1=int(str(line).split('\t')[6])
                     loci2=int(str(line).split('\t')[7])
-                    AA_seq.setdefault(AA,[loci1,loci2])
+                    if args.p == 2:
+                        if AA not in AA_seq:
+                            AA_seq.setdefault(AA,[[loci1,loci2]])
+                        elif [loci1,loci2] not in AA_seq[AA]:
+                            AA_seq[AA].append([loci1,loci2])
+                    else:
+                        AA_seq.setdefault(AA, ['whole'])
             tag = 'fasta'
             if 'fastq' in orffile:
                 tag = 'fastq'
@@ -56,29 +62,33 @@ def Extractaa(root, searchfile, orffile, resultdir):
                 AA = str(record.id)
                 total_length = len(str(record.seq))
                 if AA in AA_seq:
-                    if args.p == 2:
-                        # extract hit sequences
-                        loci1=int(AA_seq[AA][0])
-                        loci2=int(AA_seq[AA][1])
-                    else:
-                        # extract whole sequences
-                        loci1 = 1
-                        loci2 = len(str(record.seq))
-                    if loci1 < loci2:
-                        # avoid duplicate ORF
-                        f1.write('>' + AA + '\n' +
-                                 str(record.seq)[(loci1-1):loci2] + '\n')
-                        if args.d > 0:
-                            f2.write('>' + AA + '\n' +
-                                     str(record.seq)[max(loci1-1-args.d,0):
-                                     min(loci2+args.d,total_length)] + '\n')
-                    else:
-                        f1.write('>' + AA + '\n' +
-                                 str(reverse_complement(str(record.seq)[(loci2-1):loci1])) + '\n')
-                        if args.d > 0:
-                            f2.write('>' + AA + '\n' +
-                                     str(reverse_complement(str(record.seq)[max(loci2-1-args.d,0):
-                                     min(loci1+args.d,total_length)])) + '\n')
+                    for locus in AA_seq[AA]:
+                        if args.p == 2:
+                            # extract hit sequences
+                            loci1=int(locus[0])
+                            loci2=int(locus[1])
+                        else:
+                            # extract whole sequences
+                            loci1 = 1
+                            loci2 = len(str(record.seq))
+                        if loci1 < loci2:
+                            # avoid duplicate ORF
+                            f1.write('>%s_%s_%s\n' %(AA,str(loci1-1),str(loci2)) +
+                                     str(record.seq)[(loci1-1):loci2] + '\n')
+                            if args.d > 0:
+                                f2.write('>%s_%s_%s\n' %(AA,str(max(loci1-1-args.d,0)),
+                                                         str(min(loci2+args.d,total_length)))+
+                                         str(record.seq)[max(loci1-1-args.d,0):
+                                         min(loci2+args.d,total_length)] + '\n')
+                        else:
+                            f1.write('>%s_%s_%s\n' %(AA,str(loci2-1),str(loci1)) +
+                                     str(reverse_complement(str(record.seq)[(loci2-1):loci1])) + '\n')
+                            if args.d > 0:
+                                f2.write('>%s_%s_%s\n' %(AA,str(max(loci2-1-args.d,0)),
+                                                         str(min(loci1+args.d,total_length))) +
+                                         str(reverse_complement(str(record.seq)[max(loci2-1-args.d,0):
+                                         min(loci1+args.d,total_length)])) + '\n')
+                    # finish extracting AA
                     AA_seq[AA]=''
         except IOError:
             pass
