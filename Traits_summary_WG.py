@@ -124,7 +124,10 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
                 outputfile_blast.write(str(lines))
             # calculate copy number of each gene
             if float(lines.split('\t')[2]) >= args.c:
-                totaltraits[Functionlist[traits_gene]] += 1
+                try:
+                    totaltraits[Functionlist[traits_gene]] += 1
+                except KeyError: #reference genes not in database
+                    pass
         for copy_number in totaltraits:
             temp.append(str(copy_number))
         outputfile_summary.write(inputfile.split(file_subfix)[0]+'\t'+'\t'.join(temp)+'\n')
