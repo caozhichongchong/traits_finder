@@ -260,10 +260,6 @@ def search(roottemp,filename):
                     " -db database/85_otus.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
                     + os.path.join(args.r16+'/' + str(int(i/10000)), filename.replace(orfs_format, fasta_format) + '.16S.txt')  + \
                     " -threads " + str(int(i_max)) + " \n"
-            cmds += str(args.bp).replace('blastp','blastn') +" -query " + os.path.join(roottemp, filename.replace(orfs_format, fasta_format))\
-                    + " -db database/85_otus.fasta -out " + os.path.join(args.r16+'/' + str(int(i/10000)), filename.replace(orfs_format, fasta_format) + '.16S.txt') +\
-            "  -outfmt 6  -evalue 1e-5 -num_threads " + \
-                        str(int(i_max)) + " \n"
             cmds += 'python scripts/Extract.16S.WG.py -i ' + roottemp + ' -f ' + \
                     filename.replace(orfs_format,fasta_format) + ' -n .16S.txt -r ' + args.r16 + '/' + str(
                 int(i / 10000)) + ' \n'
