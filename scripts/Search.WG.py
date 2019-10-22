@@ -284,24 +284,33 @@ i=0
 #os.system("rm -rf nohup.sh \n")
 #i_max=max(int(args.t)/len(Targetroot),1)
 i_max = 40
+try:
+    os.mkdir('subscripts')
+except OSError:
+    pass
+try:
+    os.mkdir(args.r + '/search_output')
+except OSError:
+    pass
+try:
+    os.mkdir(args.r + '/usearch')
+except OSError:
+    pass
+try:
+    os.mkdir(args.r16)
+except OSError:
+    pass
+if args.bwa != 'None':
+    try:
+        os.mkdir(args.r + '/bwa/')
+    except OSError:
+        pass
 for files in Targetroot:
     if Targetroot[files]!='None':
-        f1 = open(str(i%int(args.t)) + '.sh', 'a')
+        f1 = open(os.path.join('subscripts',str(i%int(args.t)) + '.sh'), 'a')
         i +=1
         roottemp, filename = os.path.split(files)
         flist.write(str(files) + '\n')
-        try:
-            os.mkdir(args.r + '/search_output')
-        except OSError:
-            pass
-        try:
-            os.mkdir(args.r + '/usearch')
-        except OSError:
-            pass
-        try:
-            os.mkdir(args.r16)
-        except OSError:
-            pass
         try:
             os.mkdir(args.r + '/search_output/'+str(int(i/10000)))
         except OSError:
@@ -324,10 +333,6 @@ for files in Targetroot:
                 addname(roottemp, str(filename).replace(fasta_format,orfs_format))
                 filename = filename + ".add"
         if args.bwa != 'None':
-            try:
-                os.mkdir(args.r + '/bwa/')
-            except OSError:
-                pass
             try:
                 os.mkdir(args.r + '/bwa/' + str(int(i / 10000)))
             except OSError:

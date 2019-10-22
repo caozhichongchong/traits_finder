@@ -86,7 +86,10 @@ try:
     os.mkdir(args.r)
 except OSError:
     pass
-
+try:
+    os.mkdir('subscripts')
+except OSError:
+    pass
 
 ################################################### Programme #######################################################
 # set the search for database type
@@ -110,7 +113,7 @@ cmds = 'python scripts/Search.WG.py -i ' + args.i  +\
 os.system(cmds)
 
 # run all bash
-list_of_files = glob.glob('*.sh')
+list_of_files = glob.glob('subscripts/*.sh')
 f1 = open("all.sh", 'w')
 f1.write("#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n")
 if args.bwa != 'None':
