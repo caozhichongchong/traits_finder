@@ -72,7 +72,7 @@ parser.add_argument('--hmm',
                     metavar="/usr/local/bin/hmmscan",
                     action='store', default='hmmscan', type=str)
 parser.add_argument('--bp',
-                    help="Optional: complete path to blastp or blastn if not in PATH,",
+                    help="Optional: complete path to blastp or blastn if not in PATH, \'None\' for no blast search",
                     metavar="/usr/local/bin/blastp",
                     action='store', default='blastp', type=str)
 parser.add_argument('--bwa',
