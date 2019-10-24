@@ -2,6 +2,7 @@ import os
 from Bio import SeqIO
 import argparse
 import glob
+import statistics
 import traits_finder
 import sys
 
@@ -36,6 +37,10 @@ def main():
                         metavar="1 or 2",
                         choices=[1, 2],
                         action='store', default=1, type=int)
+    parser.add_argument("-m",
+                        help="mapping file of traits to function", type=str,
+                        default='Butyrate.pro.mapping.txt',
+                        metavar='Butyrate.pro.mapping.txt')
     parser.add_argument("-i",
                         help="input folder of metagenomes or genomes", type=str,
                         default='.',metavar='current dir (.)')
@@ -60,6 +65,10 @@ def main():
     parser.add_argument("--l",
                         help="input list of metagenomes", type=str,
                         default='None',metavar='rep_metagenomes.txt')
+    parser.add_argument("--meta",
+                        help="metadata  of metagenomes", type=str,
+                        default='None',
+                        metavar='metadata.metagenomes.txt')
     parser.add_argument("--orf",
                         help="input format of genomes orfs", type=str, default='.genes.faa',metavar='.faa')
     # optional output setup
@@ -110,15 +119,26 @@ def main():
     ################################################### Programme #######################################################
     f1 = open ('traits_finder.log','w')
     if args.inf == 1:
-        cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s'
+        cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s\n'
         % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r),str(args.r16),str(args.t),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
-        f1.write(cmd + '\n')
-        #os.system(cmd)
+        #cmd += ('python '+workingdir+'/scripts/Traits_summary_WG.py -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s\n'
+        #%(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r),str(args.r16),str(os.path.join(args.r,'summary')),str(args.id)))
+        f1.write(cmd)
+        os.system(cmd)
     else:
-        cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s'
+        cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s\n'
         % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r),str(args.r16),str(args.t),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
-        f1.write(cmd + '\n')
-        #os.system(cmd)
+        #if args.s == 1:
+        #   cmd += ('python '+workingdir+'/Copynumber_traits.py -i %s -i16 %s -o %s -f %s.blast.txt -f16 %s.16S.txt -l %s.length -tf %s -m %s -c %s'
+        #    % (str(os.path.join(args.r,'search_output/0'))),str(args.r16),str(os.path.join(args.r,'summary'))),str(args.fa),str(args.fa),str(args.db),str(args.m),str(args.meta),str(args.id))
+        #else:
+            #cmd += ('python '+workingdir+'/Copynumber_traits_hmm.py -i %s -i16 %s -o %s -f %s.hmm2.txt -f16 %s.16S.txt -l %s.length -tf %s -m %s -c %s'
+            #% (str(os.path.join(args.r,'search_output/0'))),str(args.r16),str(os.path.join(args.r,'summary'))),str(args.fa),str(args.fa),str(args.db),str(args.m),str(args.meta),str(args.e))
+        #cmd += ('python '+workingdir+'/scripts/Traits_summary_MG.py -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s\n'
+        #%(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r),str(args.r16),str(os.path.join(args.r,'summary')),str(args.id)))
+        f1.write(cmd)
+        os.system(cmd)
+
 ################################################## Function ########################################################
 
 if __name__ == '__main__':

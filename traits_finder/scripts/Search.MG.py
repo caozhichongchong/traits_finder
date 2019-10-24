@@ -148,7 +148,7 @@ def search(roottemp,filename):
                         %(args.u,args.db,args.db, os.path.join(roottemp, filename) ,
                           os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt'),
                           str(args.e),str(int(i_max)))
-                cmds += 'python '+ workingdir +'/scripts/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
+                cmds += 'python '+ workingdir +'/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                     int(i / 10000)) + ' \n'
                 searchfile = os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt.aa')
         else:
@@ -177,10 +177,10 @@ def search(roottemp,filename):
                 except IOError:
                     pass
             if Blastsearchfilter == 0:
-                cmds += 'python '+ workingdir +'/scripts/Filter.MG.py -i ' + args.r + '/search_output/'+str(int(i/10000))+' -f ' + filename + '.blast.txt ' +\
+                cmds += 'python '+ workingdir +'/Filter.MG.py -i ' + args.r + '/search_output/'+str(int(i/10000))+' -f ' + filename + '.blast.txt ' +\
                         '-db ' + args.db + ' -dbf ' + str(args.dbf) + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                         ' --e ' + str(args.e) + ' \n'
-                cmds += 'python '+ workingdir +'/scripts/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + args.r + '/search_output/'+str(int(i/10000))+' \n'
+                cmds += 'python '+ workingdir +'/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + args.r + '/search_output/'+str(int(i/10000))+' \n'
     else:
         # hmmsearch
         Blastsearch = 0
@@ -194,7 +194,7 @@ def search(roottemp,filename):
             cmds = args.hmm + ' --tblout ' + os.path.join(args.r + '/search_output/'+str(int(i/10000)), str(
                 filename) + '.hmm') +  ' --cpu ' + str(int(i_max)) + ' -E ' \
                   + str(args.e) + ' ' +args.db + ' '+ os.path.join(roottemp, filename) + ' \n'
-            cmds += 'python '+ workingdir +'/scripts/Format.MG.py -i ' + args.r + '/search_output/'+str(int(i/10000)) + ' -f ' + str(
+            cmds += 'python '+ workingdir +'/Format.MG.py -i ' + args.r + '/search_output/'+str(int(i/10000)) + ' -f ' + str(
                     filename) + '.hmm \n'
     #bowtie alignment
     if args.bwa != 'None':
@@ -227,18 +227,18 @@ def search(roottemp,filename):
             pass
     if Search16s == 0:
         # Start search 16S by usearch
-        cmds += 'python '+ workingdir +'/scripts/undone.MG.py -i '+ os.path.join(roottemp.replace('_faa','_fasta'), filename+' \n')
+        cmds += 'python '+ workingdir +'/undone.MG.py -i '+ os.path.join(roottemp.replace('_faa','_fasta'), filename+' \n')
         # with usearch
         #cmds += args.u + " -usearch_global " + os.path.join(roottemp.replace('_faa','_fasta'), filename) + \
         cmds += "/scratch/users/anniz44/bin/miniconda3/bin/usearch11.0.667_i86linux32 -usearch_global " + os.path.join(roottemp.replace('_faa', '_fasta'), filename) + \
-                        " -db "+ workingdir +"/database/85_otus.fasta.all.V4_V5.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
+                        " -db "+ workingdir +"/../database/85_otus.fasta.all.V4_V5.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
                 + os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt') + \
                 " -threads " + str(int(i_max)) + " \n"
         #cmds += str(args.bp).replace('blastx','blastn') +" -query " + os.path.join(roottemp.replace('_faa','_fasta'), filename)\
-         #       + " -db "+ workingdir +"/database/85_otus.fasta.all.V4_V5.fasta -out " + os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt') +\
+         #       + " -db "+ workingdir +"/../database/85_otus.fasta.all.V4_V5.fasta -out " + os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt') +\
         #"  -outfmt 6   -evalue 1e-5 -num_threads " + \
          #           str(int(i_max)) + " -task blastn-short \n"
-        cmds += 'python '+ workingdir +'/scripts/Extract.16S.MG.py -i ' + roottemp.replace('_faa','_fasta') + ' -f ' + \
+        cmds += 'python '+ workingdir +'/Extract.16S.MG.py -i ' + roottemp.replace('_faa','_fasta') + ' -f ' + \
                 filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
             int(i / 10000)) + ' \n'
         #cmds += 'bayerstraits_16s --m mafft --ft fasttree --th 30 -t /scratch/users/anniz44/GHM/data/genome/summary/GHM.otutable -s /scratch/users/anniz44/GHM/data/genome/summary/all.16S.fasta -top 4018  -r /scratch/users/anniz44/GHM/data/genome/summary/butyrate_predict_hit60_id60'

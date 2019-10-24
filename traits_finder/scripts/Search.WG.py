@@ -154,16 +154,16 @@ def search(roottemp,filename):
                             filename.replace(orfs_format, fasta_format) + '.usearch.txt'),
                           str(args.e),str(int(i_max)))
                 if args.dbf == 1:
-                    cmds += 'python '+ workingdir +'/scripts/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
+                    cmds += 'python '+ workingdir +'/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                         int(i / 10000)) + ' \n'
                     searchfile = os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt.aa')
                 else:
                     # AA file
-                    cmds += 'python '+ workingdir +'/scripts/Extract.WG.py -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
+                    cmds += 'python '+ workingdir +'/Extract.WG.py -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                         int(i / 10000)) + ' \n'
                     searchfile = os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt.aa')
                     # genome file
-                    cmds += 'python '+ workingdir +'/scripts/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' +\
+                    cmds += 'python '+ workingdir +'/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' +\
                     filename.replace(orfs_format, fasta_format) + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                         int(i / 10000)) + ' \n'
         else:
@@ -201,26 +201,26 @@ def search(roottemp,filename):
                     pass
             if Blastsearchfilter == 0:
                 if args.dbf == 1:
-                    cmds += 'python '+ workingdir +'/scripts/Filter.WG.py -i ' + args.r + '/search_output/' + str(
+                    cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + args.r + '/search_output/' + str(
                         int(i / 10000)) + ' -f ' + filename + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
-                    cmds += 'python '+ workingdir +'/scripts/Extract.MG.py -p 2 -d 2000 -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + args.r + '/search_output/' + str(
+                    cmds += 'python '+ workingdir +'/Extract.MG.py -p 2 -d 2000 -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + args.r + '/search_output/' + str(
                         int(i / 10000)) + ' \n'
                 else:
                     # AA file
-                    cmds += 'python '+ workingdir +'/scripts/Filter.WG.py -i ' + args.r + '/search_output/' + str(
+                    cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + args.r + '/search_output/' + str(
                         int(i / 10000)) + ' -f ' + filename + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
-                    cmds += 'python '+ workingdir +'/scripts/Extract.WG.py -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + args.r + '/search_output/' + str(
+                    cmds += 'python '+ workingdir +'/Extract.WG.py -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + args.r + '/search_output/' + str(
                         int(i / 10000)) + ' \n'
                     # genome file
-                    cmds += 'python '+ workingdir +'/scripts/Filter.WG.py -i ' + args.r + '/search_output/' + str(
+                    cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + args.r + '/search_output/' + str(
                         int(i / 10000)) + ' -f ' + filename.replace(orfs_format, fasta_format) + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
-                    cmds += 'python '+ workingdir +'/scripts/Extract.MG.py  -p 2 -d 2000 -i ' + roottemp + ' -f ' + filename.replace(orfs_format,
+                    cmds += 'python '+ workingdir +'/Extract.MG.py  -p 2 -d 2000 -i ' + roottemp + ' -f ' + filename.replace(orfs_format,
                                                                                                                     fasta_format) + ' -n .blast.txt.filter -r ' + args.r + '/search_output/' + str(
                         int(i / 10000)) + ' \n'
 
@@ -237,7 +237,7 @@ def search(roottemp,filename):
             cmds = args.hmm + ' --tblout ' + os.path.join(args.r + '/search_output/'+str(int(i/10000)), str(
                 filename) + '.hmm') +  ' --cpu ' + str(int(i_max)) + ' -E ' \
                   + str(args.e) + ' ' + args.db + ' '+ os.path.join(roottemp, filename) + ' \n'
-            cmds += 'python '+ workingdir +'/scripts/Format.WG.py -i ' + args.r + '/search_output/'+str(int(i/10000)) + ' -f ' + str(
+            cmds += 'python '+ workingdir +'/Format.WG.py -i ' + args.r + '/search_output/'+str(int(i/10000)) + ' -f ' + str(
                     filename) + '.hmm \n'
     # bowtie alignment
     if args.bwa != 'None':
@@ -265,26 +265,26 @@ def search(roottemp,filename):
     if Search16s == 0:
         pass
         # Start search 16S by usearch
-        cmds += 'python '+ workingdir +'/scripts/undone.WG.py -i '+ os.path.join(roottemp, filename.replace(orfs_format, fasta_format)+' \n')
+        cmds += 'python '+ workingdir +'/undone.WG.py -i '+ os.path.join(roottemp, filename.replace(orfs_format, fasta_format)+' \n')
         # with usearch
         if "usearch" in args.u:
             cmds += args.u + " -usearch_global " + os.path.join(roottemp, filename.replace(orfs_format, fasta_format))+ \
-                    " -db "+ workingdir +"/database/85_otus.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
+                    " -db "+ workingdir +"/../database/85_otus.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
                     + os.path.join(args.r16+'/' + str(int(i/10000)), filename.replace(orfs_format, fasta_format) + '.16S.txt')  + \
                     " -threads " + str(int(i_max)) + " \n"
-            cmds += 'python '+ workingdir +'/scripts/Extract.16S.WG.py -i ' + roottemp + ' -f ' + \
+            cmds += 'python '+ workingdir +'/Extract.16S.WG.py -i ' + roottemp + ' -f ' + \
                     filename.replace(orfs_format,fasta_format) + ' -n .16S.txt -r ' + args.r16 + '/' + str(
                 int(i / 10000)) + ' \n'
         elif 'hs-blastn' in args.u:
             # with hs-blastn
             # genome file
             cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n" \
-                    % (args.u, workingdir +"/database/85_otus.fasta.udb", args.db, os.path.join(
+                    % (args.u, workingdir +"/../database/85_otus.fasta.udb", args.db, os.path.join(
                 roottemp, filename.replace(orfs_format, fasta_format)), os.path.join(
                 args.r16+'/' + str(int(i/10000)),
                 filename.replace(orfs_format, fasta_format) + '.16S.txt'),
                        str(args.e), str(int(i_max)))
-            cmds += 'python '+ workingdir +'/scripts/Extract.16S.WG.py -i ' + roottemp + ' -f ' + \
+            cmds += 'python '+ workingdir +'/Extract.16S.WG.py -i ' + roottemp + ' -f ' + \
                     filename.replace(orfs_format, fasta_format) + ' -n .16S.txt -r ' + args.r16 + '/' + str(
                 int(i / 10000)) + ' \n'
     return cmds

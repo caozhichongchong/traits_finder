@@ -1,0 +1,3 @@
+include traits_finder/scripts/*
+include traits_finder/database/*
+include traits_finder/*.py
