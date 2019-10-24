@@ -142,6 +142,16 @@ def search(roottemp,filename):
                                                                           filename.replace(orfs_format, fasta_format) + '.usearch.txt') + \
                             " --outfmt 6 --max-target-seqs 1 --evalue " + str(args.e) + " --threads " + str(
                         int(i_max)) + " \n"
+                elif 'hs-blastn' in args.u:
+                    # Start search target genes by hs-blastn
+                    if args.dbf == 1:
+                        # genome file
+                        cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n"\
+                        %(args.u,args.db,args.db,os.path.join(
+                            roottemp, filename.replace(orfs_format, fasta_format)),os.path.join(
+                            args.r + '/usearch/' + str(int(i / 10000)),
+                            filename.replace(orfs_format, fasta_format) + '.usearch.txt'),
+                          str(args.e),str(int(i_max)))
                 if args.dbf == 1:
                     cmds += 'python scripts/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                         int(i / 10000)) + ' \n'
@@ -236,7 +246,7 @@ def search(roottemp,filename):
         #    filename.replace(orfs_format, fasta_format)))
         tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
             filename.replace(orfs_format, fasta_format))+ '.blast.txt.filter.aa')
-        cmds += 'bwa mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam | samtools index %s.sorted.bam\n' % (
+        cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam | samtools index %s.sorted.bam\n' % (
             args.db, tempinput,
             tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
         cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
@@ -263,6 +273,18 @@ def search(roottemp,filename):
                     " -threads " + str(int(i_max)) + " \n"
             cmds += 'python scripts/Extract.16S.WG.py -i ' + roottemp + ' -f ' + \
                     filename.replace(orfs_format,fasta_format) + ' -n .16S.txt -r ' + args.r16 + '/' + str(
+                int(i / 10000)) + ' \n'
+        elif 'hs-blastn' in args.u:
+            # with hs-blastn
+            # genome file
+            cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n" \
+                    % (args.u, "database/85_otus.fasta.udb", args.db, os.path.join(
+                roottemp, filename.replace(orfs_format, fasta_format)), os.path.join(
+                args.r16+'/' + str(int(i/10000)),
+                filename.replace(orfs_format, fasta_format) + '.16S.txt'),
+                       str(args.e), str(int(i_max)))
+            cmds += 'python scripts/Extract.16S.WG.py -i ' + roottemp + ' -f ' + \
+                    filename.replace(orfs_format, fasta_format) + ' -n .16S.txt -r ' + args.r16 + '/' + str(
                 int(i / 10000)) + ' \n'
     return cmds
 

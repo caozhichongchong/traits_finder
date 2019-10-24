@@ -140,6 +140,13 @@ def search(roottemp,filename):
                                                                           filename + '.usearch.txt') + \
                             " --outfmt 6 --max-target-seqs 1 --evalue " + str(args.e) + " --threads " + str(
                         int(i_max)) + " \n"
+                elif 'hs-blastn' in args.u:
+                    # Start search target genes by hs-blastn
+                    if args.dbf == 1:
+                        cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n"\
+                        %(args.u,args.db,args.db, os.path.join(roottemp, filename) ,
+                          os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt'),
+                          str(args.e),str(int(i_max)))
                 cmds += 'python scripts/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                     int(i / 10000)) + ' \n'
                 searchfile = os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt.aa')
@@ -194,7 +201,7 @@ def search(roottemp,filename):
                                   filename + '.blast.txt.filter.aa')
         tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
                 filename) + '.blast.txt.filter.aa')
-        cmds += 'bwa mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam | samtools index %s.sorted.bam\n' % (
+        cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam | samtools index %s.sorted.bam\n' % (
             args.db, tempinput,
             tempbamoutput, tempbamoutput, tempbamoutput,tempbamoutput)
         cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf' %(args.db, tempbamoutput,tempbamoutput)
@@ -202,7 +209,7 @@ def search(roottemp,filename):
         tempinput = tempinput.replace('_1' + fasta_format, '_2' + fasta_format)
         tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
             filename.replace('_1' + fasta_format, '_2' + fasta_format)) + '.blast.txt.filter.aa')
-        cmds += 'bwa mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\nsamtools index %s.sorted.bam\n' % (
+        cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\nsamtools index %s.sorted.bam\n' % (
             args.db, tempinput,
             tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
         cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf' % (
