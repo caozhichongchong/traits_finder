@@ -114,11 +114,41 @@ os.system(cmds)
 list_of_files = glob.glob('subscripts/*.sh')
 f1 = open("all.sh", 'w')
 f1.write("#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n")
+# make all database
 if args.bwa != 'None':
-    f1.write('bwa index %s \n' % (args.db))
-#f1.write('#!/bin/bash\nexport PATH=/scratch/users/anniz44/bin/miniconda3/bin:$PATH\n'+\
-#         'export PATH=/scratch/users/anniz44/bin/miniconda3/bin/bin:$PATH\n'+\
-#         'cd /scratch/users/anniz44/bin/miniconda3/bin/traits_search/\n')
+    try:
+        ftest=open(args.db+'.bwt','r')
+    except IOError:
+        f1.write('bwa index %s \n' % (args.db))
+if dbf == 1:
+    try:
+        ftest = open(args.db + '.nin', 'r')
+    except IOError:
+        f1.write(os.path.join(os.path.split(args.bp)[0],'makeblastdb -in %s -dbtype nucl\n' % (args.db)))
+        if args.u != 'None':
+            if 'usearch' in args.u:
+                f1.write(os.path.join(os.path.split(args.u)[0], 'usearch -makeudb_usearch %s -output %s.udb\n' % (args.db,args.db)))
+            elif 'hs-blastn' in args.u:
+                f1.write(os.path.join(os.path.split(args.u)[0],
+                                      'windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts\n' % (args.db, args.db)))
+                f1.write(os.path.join(os.path.split(args.u)[0],
+                                      'windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert\n' % (
+                                      args.db, args.db)))
+                f1.write(os.path.join(os.path.split(args.u)[0],
+                                      'hs-blastn index %s\n' % (
+                                      args.db)))
+else:
+    try:
+        ftest = open(args.db + '.pin', 'r')
+    except IOError:
+        f1.write(os.path.join(os.path.split(args.bp)[0],'makeblastdb -in %s -dbtype prot\n' % (args.db)))
+        if args.u != 'None':
+            if 'usearch' in args.u:
+                f1.write(os.path.join(os.path.split(args.u)[0], 'usearch -makeudb_usearch %s -output %s.udb\n' % (args.db,args.db)))
+            elif 'diamond' in args.u:
+                f1.write(os.path.join(os.path.split(args.u)[0],
+                                      'diamond makedb --in %s -d %s.dmnd\n' % (args.db, args.db)))
+# bash for all subscripts
 for file_name in list_of_files:
     if not any(files in file_name for files in ['all.sh','SearchMG.sh']):
         f1.write("sbatch -p sched_mem1TB -c 40 -t 5-00:00:00 --mem=500000 -J "+str(file_name)+"traits -o " + str(file_name) + ".out -e " + str(file_name) + ".err " + str(file_name) +" \n")
