@@ -150,6 +150,24 @@ else:
             elif 'diamond' in args.u:
                 f1.write(os.path.join(os.path.split(args.u)[0],
                                       'diamond makedb --in %s -d %s.dmnd\n' % (args.db, args.db)))
+# makedb for 16S
+try:
+    ftest = open('database/85_otus.fasta.counts', 'r')
+except IOError:
+    if args.u != 'None':
+        if 'usearch' in args.u:
+            f1.write(os.path.join(os.path.split(args.u)[0],
+                                  'usearch -makeudb_usearch %s -output %s.udb\n' % ('database/85_otus.fasta', 'database/85_otus.fasta')))
+        elif 'hs-blastn' in args.u:
+            f1.write(os.path.join(os.path.split(args.u)[0],
+                                  'windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts\n' % (
+                                      'database/85_otus.fasta', 'database/85_otus.fasta')))
+            f1.write(os.path.join(os.path.split(args.u)[0],
+                                  'windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert\n' % (
+                                      'database/85_otus.fasta', 'database/85_otus.fasta')))
+            f1.write(os.path.join(os.path.split(args.u)[0],
+                                  'hs-blastn index %s\n' % (
+                                      'database/85_otus.fasta')))
 # bash for all subscripts
 for file_name in list_of_files:
     if all(keys not in file_name for keys in ['SearchWG.sh','all.sh']):
