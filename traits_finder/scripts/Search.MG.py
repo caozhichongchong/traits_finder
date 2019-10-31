@@ -202,7 +202,7 @@ def search(roottemp,filename):
                                   filename + '.blast.txt.filter.aa')
         tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
                 filename) + '.blast.txt.filter.aa')
-        cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam | samtools index %s.sorted.bam\n' % (
+        cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
             args.db, tempinput,
             tempbamoutput, tempbamoutput, tempbamoutput,tempbamoutput)
         cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf' %(args.db, tempbamoutput,tempbamoutput)

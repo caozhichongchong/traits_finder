@@ -168,6 +168,11 @@ try:
 except IOError:
     if args.u != 'None':
             if 'hs-blastn' in args.u:
+                try:
+                    ftest = open(workingdir +'/database/85_otus.fasta.all.V4_V5.fasta.nin', 'r')
+                except IOError:
+                    f1.write(os.path.join(os.path.split(args.bp)[0], 'makeblastdb -in %s -dbtype nucl\n' %
+                                          workingdir +'/database/85_otus.fasta.all.V4_V5.fasta'))
                 f1.write(os.path.join(os.path.split(args.u)[0],
                                       'windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts\n' % (
                                           workingdir +'/database/85_otus.fasta.all.V4_V5.fasta', workingdir +'/database/85_otus.fasta.all.V4_V5.fasta')))
