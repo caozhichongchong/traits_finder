@@ -263,11 +263,10 @@ def search(roottemp,filename):
         except IOError:
             pass
     if Search16s == 0:
-        pass
-        # Start search 16S by usearch
-        cmds += 'python '+ workingdir +'/undone.WG.py -i '+ os.path.join(roottemp, filename.replace(orfs_format, fasta_format)+' \n')
         # with usearch
         if "usearch" in args.u:
+            # Start search 16S
+            cmds += 'python '+ workingdir +'/undone.WG.py -i '+ os.path.join(roottemp, filename.replace(orfs_format, fasta_format)+' \n')
             cmds += args.u + " -usearch_global " + os.path.join(roottemp, filename.replace(orfs_format, fasta_format))+ \
                     " -db "+ workingdir +"/../database/85_otus.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
                     + os.path.join(args.r16+'/' + str(int(i/10000)), filename.replace(orfs_format, fasta_format) + '.16S.txt')  + \
@@ -278,8 +277,11 @@ def search(roottemp,filename):
         elif 'hs-blastn' in args.u:
             # with hs-blastn
             # genome file
+            # Start search 16S
+            cmds += 'python '+ workingdir +'/undone.WG.py -i '+ os.path.join(roottemp, filename.replace(orfs_format, fasta_format)+' \n')
             cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n" \
-                    % (args.u, workingdir +"/../database/85_otus.fasta", args.db, os.path.join(
+                    % (args.u, workingdir +"/../database/85_otus.fasta",
+                    workingdir +"/../database/85_otus.fasta", os.path.join(
                 roottemp, filename.replace(orfs_format, fasta_format)), os.path.join(
                 args.r16+'/' + str(int(i/10000)),
                 filename.replace(orfs_format, fasta_format) + '.16S.txt'),
