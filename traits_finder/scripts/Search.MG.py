@@ -229,19 +229,25 @@ def search(roottemp,filename):
         # Start search 16S by usearch
         cmds += 'python '+ workingdir +'/undone.MG.py -i '+ os.path.join(roottemp.replace('_faa','_fasta'), filename+' \n')
         # with usearch
-        #cmds += args.u + " -usearch_global " + os.path.join(roottemp.replace('_faa','_fasta'), filename) + \
-        cmds += "/scratch/users/anniz44/bin/miniconda3/bin/usearch11.0.667_i86linux32 -usearch_global " + os.path.join(roottemp.replace('_faa', '_fasta'), filename) + \
-                        " -db "+ workingdir +"/../database/85_otus.fasta.all.V4_V5.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
-                + os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt') + \
-                " -threads " + str(int(i_max)) + " \n"
-        #cmds += str(args.bp).replace('blastx','blastn') +" -query " + os.path.join(roottemp.replace('_faa','_fasta'), filename)\
-         #       + " -db "+ workingdir +"/../database/85_otus.fasta.all.V4_V5.fasta -out " + os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt') +\
-        #"  -outfmt 6   -evalue 1e-5 -num_threads " + \
-         #           str(int(i_max)) + " -task blastn-short \n"
-        cmds += 'python '+ workingdir +'/Extract.16S.MG.py -i ' + roottemp.replace('_faa','_fasta') + ' -f ' + \
-                filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
-            int(i / 10000)) + ' \n'
-        #cmds += 'bayerstraits_16s --m mafft --ft fasttree --th 30 -t /scratch/users/anniz44/GHM/data/genome/summary/GHM.otutable -s /scratch/users/anniz44/GHM/data/genome/summary/all.16S.fasta -top 4018  -r /scratch/users/anniz44/GHM/data/genome/summary/butyrate_predict_hit60_id60'
+        if "usearch" in args.u:
+            cmds += args.u + " -usearch_global " + os.path.join(roottemp.replace('_faa', '_fasta'), filename) + \
+                    " -db " + workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
+                    + os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt') + \
+                    " -threads " + str(int(i_max)) + " \n"
+            cmds += 'python ' + workingdir + '/Extract.16S.MG.py -i ' + roottemp.replace('_faa', '_fasta') + ' -f ' + \
+                    filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
+                int(i / 10000)) + ' \n'
+        elif 'hs-blastn' in args.u:
+            # with hs-blastn
+            # genome file
+            cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n" \
+                    % (args.u, workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta", args.db,
+                       os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt'),
+                       os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt'),
+                       str(args.e), str(int(i_max)))
+            cmds += 'python '+ workingdir +'/Extract.16S.MG.py -i ' + roottemp.replace('_faa','_fasta') + ' -f ' + \
+                    filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
+                int(i / 10000)) + ' \n'
     return cmds
 
 

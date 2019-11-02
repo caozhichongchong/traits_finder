@@ -279,7 +279,7 @@ def search(roottemp,filename):
             # with hs-blastn
             # genome file
             cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n" \
-                    % (args.u, workingdir +"/../database/85_otus.fasta.udb", args.db, os.path.join(
+                    % (args.u, workingdir +"/../database/85_otus.fasta", args.db, os.path.join(
                 roottemp, filename.replace(orfs_format, fasta_format)), os.path.join(
                 args.r16+'/' + str(int(i/10000)),
                 filename.replace(orfs_format, fasta_format) + '.16S.txt'),
