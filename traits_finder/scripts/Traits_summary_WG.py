@@ -89,23 +89,7 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
                 Hastraits = 1
             break
     if Hastraits == 1:
-        aaout = blastout + '.aa'
-        aaout2000 = blastout + '.extra2000.aa'
-        # merge traits fasta
-        for record in SeqIO.parse(aaout, 'fasta'):
-            if filename.split(file_subfix)[0] in str(record.id):
-                outputfile_aa.write('>'+str(record.id)+'\n'+str(record.seq)+'\n')
-            else:
-                outputfile_aa.write('>'+filename.split(file_subfix)[0] + '_'+ str(record.id)+
-                '\n'+str(record.seq)+'\n')
-        # merge traits extend 2000 fasta
-        if outputfile_aa_2000 != 'None':
-            for record in SeqIO.parse(aaout2000, 'fasta'):
-                if filename.split(file_subfix)[0] in str(record.id):
-                    outputfile_aa_2000.write('>'+str(record.id)+'\n'+str(record.seq)+'\n')
-                else:
-                    outputfile_aa_2000.write('>'+filename.split(file_subfix)[0] + '_'+ str(record.id)+
-                    '\n'+str(record.seq)+'\n')
+        Functionset = dict()
         # format traits output
         totaltraits=[]
         temp = []
@@ -119,6 +103,15 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
             # output blast results
             if Function != dict():
                 outputfile_blast.write(Function.get(traits_gene,'None')+'\t'+str(lines))
+                if outputfile_aa_2000 == 'None':
+                    # amino acid search results
+                    Functionset.setdefault(str(lines).split('\t')[0],Function.get(traits_gene,'None'))
+                else:
+                    # dna search results
+                    loci1=min(int(str(lines).split('\t')[6]),int(str(lines).split('\t')[7].split('\r')[0].split('\n')[0]))
+                    loci2=max(int(str(lines).split('\t')[6]),int(str(lines).split('\t')[7].split('\r')[0].split('\n')[0]))
+                    Functionset.setdefault('%s_%s_%s' %(str(lines).split('\t')[0],
+                    str(loci1-1),str(loci2)),Function.get(traits_gene,'None'))
             else:
                 # direct traits output
                 outputfile_blast.write(str(lines))
@@ -131,6 +124,34 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
         for copy_number in totaltraits:
             temp.append(str(copy_number))
         outputfile_summary.write(inputfile.split(file_subfix)[0]+'\t'+'\t'.join(temp)+'\n')
+        # extract sequences
+        aaout = blastout + '.aa'
+        aaout2000 = blastout + '.extra2000.aa'
+        # merge traits fasta into functions
+        for record in SeqIO.parse(aaout, 'fasta'):
+                if filename.split(file_subfix)[0] in str(record.id):
+                    if str(record.id) in Functionset:
+                        outputfile_aa_file = open(outputfile_aa.replace('fasta',Functionset[str(record.id)]+'.fasta'),'a')
+                        outputfile_aa_file.write('>'+str(record.id)+'\n'+str(record.seq)+'\n')
+                        outputfile_aa_file.close()
+                    else:
+                        print('%s not found in blast output'%(str(record.id)))
+                else:
+                    if filename.split(file_subfix)[0] + '_'+ str(record.id) in Functionset:
+                        outputfile_aa_file = open(outputfile_aa.replace('fasta',Functionset[filename.split(file_subfix)[0] + '_'+ str(record.id)]+'.fasta'),'a')
+                        outputfile_aa_file.write('>'+filename.split(file_subfix)[0] + '_'+ str(record.id)+
+                        '\n'+str(record.seq)+'\n')
+                        outputfile_aa_file.close()
+                    else:
+                        print('%s not found in blast output'%(filename.split(file_subfix)[0] + '_'+ str(record.id)))
+        # merge traits extend 2000 fasta
+        if outputfile_aa_2000 != 'None':
+            for record in SeqIO.parse(aaout2000, 'fasta'):
+                if filename.split(file_subfix)[0] in str(record.id):
+                    outputfile_aa_2000.write('>'+str(record.id)+'\n'+str(record.seq)+'\n')
+                else:
+                    outputfile_aa_2000.write('>'+filename.split(file_subfix)[0] + '_'+ str(record.id)+
+                    '\n'+str(record.seq)+'\n')
     else:
         outputfile_summary.write(inputfile.split(file_subfix)[0] + '\tNo_hit\n')
 
@@ -160,13 +181,18 @@ for lines in open(args.m,'r'):
         genenum+=1
 
 # set output files
+# 16S sequences
 f16s=open(os.path.join(args.s,args.t+'.all.16S.fasta'),'w')
-faa=open(os.path.join(args.s,args.t+'.all.traits.aa.fasta'),'w')
+# blast summary
 ftraits=open(os.path.join(args.s,args.t+'.all.traits.aa.txt'),'w')
-fdna=open(os.path.join(args.s,args.t+'.all.traits.dna.fasta'),'w')
-fdna_2000=open(os.path.join(args.s,args.t+'.all.traits.dna.extra2000.fasta'),'w')
 ftraits_dna=open(os.path.join(args.s,args.t+'.all.traits.dna.txt'),'w')
+# traits summary
 fsum_aa = open(os.path.join(args.s,args.t+'.all.traits.aa.summarize.'+str(args.c)+'.txt'),'w')
+# sequences
+faa=os.path.join(args.s,args.t+'.all.traits.aa.fasta')
+fdna=os.path.join(args.s,args.t+'.all.traits.dna.fasta')
+fdna_2000=open(os.path.join(args.s,args.t+'.all.traits.dna.extra2000.fasta'),'w')
+
 fsum_aa.write('SampleID')
 for functions in Functionlist:
     fsum_aa.write('\t'+str(functions))
@@ -183,15 +209,15 @@ for filenames in Targetroot:
     # check 16S
     check_16S(filename)
     # check and summarize traits
-    check_traits(filename,faa,'None',ftraits,fsum_aa,orfs_format,genenum)
-    check_traits(filename.replace(orfs_format,fasta_format),fdna,fdna_2000,ftraits_dna,fsum_dna,fasta_format,genenum)
+    check_traits(filename,faa,'None',
+    ftraits,fsum_aa,orfs_format,genenum)
+    check_traits(filename.replace(orfs_format,fasta_format),fdna,fdna_2000,
+    ftraits_dna,fsum_dna,fasta_format,genenum)
 
 
 # end of processing all traits
 f16s.close()
-faa.close()
 ftraits.close()
-fdna.close()
 fdna_2000.close()
 ftraits_dna.close()
 fsum_aa.close()
