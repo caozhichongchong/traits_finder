@@ -79,7 +79,8 @@ def check_16S(inputfile):
         pass
 
 
-def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,outputfile_summary,file_subfix,i):
+def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,outputfile_summary,
+outputfile_summary_fun,file_subfix,i):
     blastout = check_file(glob.glob(args.r + '/search_output/*/'+ inputfile + '.blast.txt.filter'))
     Hastraits = 0
     if blastout != None:
@@ -90,12 +91,15 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
             break
     if Hastraits == 1:
         Functionset = dict()
-        # format traits output
+        # format traits output for genes
         totaltraits=[]
         temp = []
         while i > 0:
             totaltraits.append(0)
             i = i-1
+        # format traits output for functions
+        for functions in allfunction:
+            allfunction[functions]=0
         for lines in open(blastout, 'r'):
             if filename.split(file_subfix)[0] not in lines:
                 lines = filename.split(file_subfix)[0] + '_' + lines
@@ -115,15 +119,20 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
             else:
                 # direct traits output
                 outputfile_blast.write(str(lines))
-            # calculate copy number of each gene
+            # calculate copy number of each gene and each function
             if float(lines.split('\t')[2]) >= args.c:
                 try:
                     totaltraits[Functionlist[traits_gene]] += 1
+                    allfunction[Function.get(traits_gene,'None')] += 1
                 except KeyError: #reference genes not in database
                     pass
         for copy_number in totaltraits:
             temp.append(str(copy_number))
         outputfile_summary.write(inputfile.split(file_subfix)[0]+'\t'+'\t'.join(temp)+'\n')
+        outputfile_summary_fun.write(inputfile.split(file_subfix)[0])
+        for functions in allfunction:
+            outputfile_summary_fun.write('\t'+str(allfunction[functions]))
+        outputfile_summary_fun.write('\n')
         # extract sequences
         aaout = blastout + '.aa'
         aaout2000 = blastout + '.extra2000.aa'
@@ -157,7 +166,7 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
                     '\n'+str(record.seq)+'\n')
     else:
         outputfile_summary.write(inputfile.split(file_subfix)[0] + '\tNo_hit\n')
-
+        outputfile_summary_fun.write(inputfile.split(file_subfix)[0] + '\tNo_hit\n')
 
 ################################################### Programme #######################################################
 # load all files
@@ -177,7 +186,10 @@ f16s=open(os.path.join(args.s,args.t+'.all.16S.fasta'),'w')
 ftraits=open(os.path.join(args.s,args.t+'.all.traits.aa.txt'),'w')
 ftraits_dna=open(os.path.join(args.s,args.t+'.all.traits.dna.txt'),'w')
 # traits summary
-fsum_aa = open(os.path.join(args.s,args.t+'.all.traits.aa.summarize.'+str(args.c)+'.txt'),'w')
+fsum_aa = open(os.path.join(args.s,args.t+'.all.traits.aa.summarize.gene.'+str(args.c)+'.txt'),'w')
+fsum_aa_fun = open(os.path.join(args.s,args.t+'.all.traits.aa.summarize.function.'+str(args.c)+'.txt'),'w')
+fsum_dna = open(os.path.join(args.s,args.t+'.all.traits.dna.summarize.gene.'+str(args.c)+'.txt'),'w')
+fsum_dna_fun = open(os.path.join(args.s,args.t+'.all.traits.dna.summarize.function.'+str(args.c)+'.txt'),'w')
 # sequences
 faa=os.path.join(args.s,args.t+'.all.traits.aa.fasta')
 fdna=os.path.join(args.s,args.t+'.all.traits.dna.fasta')
@@ -193,11 +205,14 @@ outputfile_aa_file.close()
 Function = dict()
 Functionlist=dict()
 genenum=0
+allfunction=dict()
 for lines in open(args.m,'r'):
     gene = str(lines).split('\t')[0]
     gene_fun = str(lines).split('\t')[1].split('\r')[0].split('\n')[0]
     Function.setdefault(gene,
     gene_fun)
+    if gene_fun not in allfunction:
+        allfunction.setdefault(gene_fun,0)
     # reset output sequence files
     outputfile_aa_file = open(faa.replace('fasta',gene_fun+'.fasta'),'w')
     outputfile_aa_file.close()
@@ -221,12 +236,17 @@ fsum_aa.write('SampleID')
 for functions in Functionlist:
     fsum_aa.write('\t'+str(functions))
 fsum_aa.write('\n')
-fsum_dna = open(os.path.join(args.s,args.t+'.all.traits.dna.summarize.'+str(args.c)+'.txt'),'w')
+fsum_aa_fun.write('SampleID')
+for functions in allfunction:
+    fsum_aa_fun.write('\t'+str(functions))
+fsum_aa_fun.write('\n')
 fsum_dna.write('SampleID')
 for functions in Functionlist:
     fsum_dna.write('\t'+str(functions))
-fsum_dna.write('\n')
-
+fsum_dna_fun.write('\n')
+for functions in allfunction:
+    fsum_dna_fun.write('\t'+str(functions))
+fsum_dna_fun.write('\n')
 
 # process all traits
 for filenames in Targetroot:
@@ -235,9 +255,9 @@ for filenames in Targetroot:
     check_16S(filename)
     # check and summarize traits
     check_traits(filename,faa,'None',
-    ftraits,fsum_aa,orfs_format,genenum)
+    ftraits,fsum_aa,fsum_aa_fun,orfs_format,genenum)
     check_traits(filename.replace(orfs_format,fasta_format),fdna,fdna_2000,
-    ftraits_dna,fsum_dna,fasta_format,genenum)
+    ftraits_dna,fsum_dna,fsum_dna_fun,fasta_format,genenum)
 
 
 # merge all sequences into one file
@@ -252,3 +272,5 @@ fdna_2000.close()
 ftraits_dna.close()
 fsum_aa.close()
 fsum_dna.close()
+fsum_aa_fun.close()
+fsum_dna_fun.close()
