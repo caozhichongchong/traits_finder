@@ -166,20 +166,6 @@ for root,dirs,files in os.walk(in_dir):
         for files in list_fasta1:
             Targetroot.setdefault(files, orfs_format)
 
-
-# load traits mapping file
-Function = dict()
-Functionlist=dict()
-genenum=0
-for lines in open(args.m,'r'):
-    gene = str(lines).split('\t')[0]
-    gene_fun = str(lines).split('\t')[1].split('\r')[0].split('\n')[0]
-    Function.setdefault(gene,
-    gene_fun)
-    if gene not in Functionlist:
-        Functionlist.setdefault(gene,genenum)
-        genenum+=1
-
 # set output files
 # 16S sequences
 f16s=open(os.path.join(args.s,args.t+'.all.16S.fasta'),'w')
@@ -193,6 +179,31 @@ faa=os.path.join(args.s,args.t+'.all.traits.aa.fasta')
 fdna=os.path.join(args.s,args.t+'.all.traits.dna.fasta')
 fdna_2000=open(os.path.join(args.s,args.t+'.all.traits.dna.extra2000.fasta'),'w')
 
+# load traits mapping file
+Function = dict()
+Functionlist=dict()
+genenum=0
+for lines in open(args.m,'r'):
+    gene = str(lines).split('\t')[0]
+    gene_fun = str(lines).split('\t')[1].split('\r')[0].split('\n')[0]
+    Function.setdefault(gene,
+    gene_fun)
+    # reset output sequence files
+    outputfile_aa_file = open(faa.replace('fasta',gene_fun+'.fasta'),'w')
+    outputfile_aa_file.close()
+    outputfile_aa_file = open(fdna.replace('fasta',gene_fun+'.fasta'),'w')
+    outputfile_aa_file.close()
+    if gene not in Functionlist:
+        Functionlist.setdefault(gene,genenum)
+        genenum+=1
+# merge reference sequences and output sequences (amino acid only)
+for record in SeqIO.parse(args.db, 'fasta'):
+        if str(record.id) in Function:
+            outputfile_aa_file = open(faa.replace('fasta',Function[str(record.id)]+'.fasta'),'a')
+            outputfile_aa_file.write('>reference_'+str(record.id)+'\n'+str(record.seq)+'\n')
+            outputfile_aa_file.close()
+
+# output
 fsum_aa.write('SampleID')
 for functions in Functionlist:
     fsum_aa.write('\t'+str(functions))
