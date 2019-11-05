@@ -14,6 +14,15 @@ in preparation: `anaconda download caozhichongchong/traits_finder`
 
 https://pypi.org/project/traits_finder
 
+## What do you need to prepare
+1. your reference database (-db your.db), protein sequences (-dbf 1) or dna sequences (-dbf 2)
+2. a mapping file of functions to each reference sequence (sequence	function)
+3. all genomes/metagenomes in a folder (-i your.input.folder)
+4. suffix or file extension of your genomes/metagenomes, such as .fasta or .fastq (-fa your.input.genome/metagenome.format)
+5. programs to run: blast for similarity search (-s 1 )or hmm for domain search (-s 2)
+6. optional programs to speedup! diamond, hs-blastn, usearch
+7. optional programs to look at sequence variants! bwa
+
 ## How to use it
 ### Search traits: boring and slow...
 1. search protein reference sequences in genomes by similarity search\
@@ -42,7 +51,7 @@ https://pypi.org/project/traits_finder
 `traits_finder sum_genome -db your.db -m function.mapping.your.db -i your.input.folder -fa your.input.genome.format --orf your.input.orf.format --r your.output.folder --r16 your.output.folder.for.16s`\
 
 2. summarize traits in metagenomes\
-`traits_finder sum_meta -db your.db -m function.mapping.your.db -i your.input.folder -fa your.input.metagenomes.format --r your.output.folder --r16 your.output.folder.for.16s -s 1`\
+`traits_finder sum_meta -db your.db -m function.mapping.your.db -i your.input.folder -fa your.input.metagenomes.format --r your.output.folder --r16 your.output.folder.for.16s`\
 
 ## Results
 
