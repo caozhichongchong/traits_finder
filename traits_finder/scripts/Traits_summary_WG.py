@@ -169,6 +169,7 @@ for root,dirs,files in os.walk(in_dir):
         for files in list_fasta1:
             Targetroot.setdefault(files, orfs_format)
 
+
 # set output files
 # 16S sequences
 f16s=open(os.path.join(args.s,args.t+'.all.16S.fasta'),'w')
@@ -186,6 +187,8 @@ outputfile_aa_file = open(faa,'w')
 outputfile_aa_file.close()
 outputfile_aa_file = open(fdna,'w')
 outputfile_aa_file.close()
+
+
 # load traits mapping file
 Function = dict()
 Functionlist=dict()
@@ -203,12 +206,15 @@ for lines in open(args.m,'r'):
     if gene not in Functionlist:
         Functionlist.setdefault(gene,genenum)
         genenum+=1
+
+
 # merge reference sequences and output sequences (amino acid only)
 for record in SeqIO.parse(args.db, 'fasta'):
         if str(record.id) in Function:
             outputfile_aa_file = open(faa.replace('fasta',Function[str(record.id)]+'.fasta'),'a')
             outputfile_aa_file.write('>reference_'+str(record.id)+'\n'+str(record.seq)+'\n')
             outputfile_aa_file.close()
+
 
 # output
 fsum_aa.write('SampleID')
@@ -221,6 +227,7 @@ for functions in Functionlist:
     fsum_dna.write('\t'+str(functions))
 fsum_dna.write('\n')
 
+
 # process all traits
 for filenames in Targetroot:
     filedir, filename = os.path.split(filenames.split('\r')[0].split('\n')[0])
@@ -232,9 +239,11 @@ for filenames in Targetroot:
     check_traits(filename.replace(orfs_format,fasta_format),fdna,fdna_2000,
     ftraits_dna,fsum_dna,fasta_format,genenum)
 
+
 # merge all sequences into one file
 os.system('cat %s > %s' %(faa.replace('fasta','*.fasta'),faa))
 os.system('cat %s > %s' %(fdna.replace('fasta','*.fasta'),fdna))
+
 
 # end of processing all traits
 f16s.close()
