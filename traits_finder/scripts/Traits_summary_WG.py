@@ -131,6 +131,7 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
         for record in SeqIO.parse(aaout, 'fasta'):
                 if filename.split(file_subfix)[0] in str(record.id):
                     if str(record.id) in Functionset:
+                        # output according to its function
                         outputfile_aa_file = open(outputfile_aa.replace('fasta',Functionset[str(record.id)]+'.fasta'),'a')
                         outputfile_aa_file.write('>'+str(record.id)+'\n'+str(record.seq)+'\n')
                         outputfile_aa_file.close()
@@ -138,10 +139,12 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,out
                         print('%s not found in blast output'%(str(record.id)))
                 else:
                     if filename.split(file_subfix)[0] + '_'+ str(record.id) in Functionset:
+                        # output according to its function
                         outputfile_aa_file = open(outputfile_aa.replace('fasta',Functionset[filename.split(file_subfix)[0] + '_'+ str(record.id)]+'.fasta'),'a')
                         outputfile_aa_file.write('>'+filename.split(file_subfix)[0] + '_'+ str(record.id)+
                         '\n'+str(record.seq)+'\n')
                         outputfile_aa_file.close()
+                        outputfile_aa_file = open(outputfile_aa,'a')
                     else:
                         print('%s not found in blast output'%(filename.split(file_subfix)[0] + '_'+ str(record.id)))
         # merge traits extend 2000 fasta
@@ -178,7 +181,11 @@ fsum_aa = open(os.path.join(args.s,args.t+'.all.traits.aa.summarize.'+str(args.c
 faa=os.path.join(args.s,args.t+'.all.traits.aa.fasta')
 fdna=os.path.join(args.s,args.t+'.all.traits.dna.fasta')
 fdna_2000=open(os.path.join(args.s,args.t+'.all.traits.dna.extra2000.fasta'),'w')
-
+# reset output sequence files for all sequences
+outputfile_aa_file = open(faa,'w')
+outputfile_aa_file.close()
+outputfile_aa_file = open(fdna,'w')
+outputfile_aa_file.close()
 # load traits mapping file
 Function = dict()
 Functionlist=dict()
@@ -225,6 +232,9 @@ for filenames in Targetroot:
     check_traits(filename.replace(orfs_format,fasta_format),fdna,fdna_2000,
     ftraits_dna,fsum_dna,fasta_format,genenum)
 
+# merge all sequences into one file
+os.system('cat %s > %s' %(faa.replace('fasta','*.fasta'),faa))
+os.system('cat %s > %s' %(fdna.replace('fasta','*.fasta'),fdna))
 
 # end of processing all traits
 f16s.close()

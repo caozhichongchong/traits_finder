@@ -184,7 +184,7 @@ except IOError:
 # bash for all subscripts
 for file_name in list_of_files:
     if all(keys not in file_name for keys in ['SearchWG.sh','all.sh']):
-        f1.write("sbatch -p defq -c 40 -t 5-00:00:00 --mem=100000 -J " + str(file_name) + "_traits -o " + str(file_name) + ".out -e " + str(file_name) + ".err " + str(file_name) +" \n")
+        f1.write("sbatch -p defq -c 40 -t 5-00:00:00 --mem=100000 -J " + os.path.split(str(file_name))[-1] + "_traits -o " + str(file_name) + ".out -e " + str(file_name) + ".err " + str(file_name) +" \n")
     #f1.write("nohup sh " + str(file_name) + '  & \n')
 f1.close()
 #os.system("nohup sh all.sh & \n")

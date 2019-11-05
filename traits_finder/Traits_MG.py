@@ -185,7 +185,7 @@ except IOError:
 # bash for all subscripts
 for file_name in list_of_files:
     if not any(files in file_name for files in ['all.sh','SearchMG.sh']):
-        f1.write("sbatch -p sched_mem1TB -c 40 -t 5-00:00:00 --mem=500000 -J "+str(file_name)+"traits -o " + str(file_name) + ".out -e " + str(file_name) + ".err " + str(file_name) +" \n")
+        f1.write("sbatch -p sched_mem1TB -c 40 -t 5-00:00:00 --mem=500000 -J " + os.path.split(str(file_name))[-1] + "traits -o " + str(file_name) + ".out -e " + str(file_name) + ".err " + str(file_name) +" \n")
     #f1.write("nohup sh " + str(file_name) + '  & \n')
 
 f1.close()
