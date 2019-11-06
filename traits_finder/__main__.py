@@ -29,7 +29,7 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
-    required.add_argument('program',
+    required.add_argument('command',
                         help="traits_finder genome for analyzing genomes, \
                         traits_finder meta for analyzing metagenomes, \
                         traits_finder sum_genome for summarizing genome results,\
@@ -38,7 +38,7 @@ def main():
                         default='genome',
                         choices=['genome', 'meta','sum_genome','sum_meta'],
                         action='store',
-                        metavar='traits_finder program')
+                        metavar='traits_finder command')
     required.add_argument("-db",
                         help="file name of your input database",
                         type=str, default='Butyrate.pro.aa',
@@ -124,22 +124,22 @@ def main():
     workingdir=os.path.abspath(os.path.dirname(__file__))
     ################################################### Programme #######################################################
     f1 = open ('traits_finder.log','w')
-    if args.program == 'genome':
+    if args.command == 'genome':
         cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s\n'
         % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r),str(args.r16),str(args.t),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
         f1.write(cmd)
         os.system(cmd)
-    elif args.program == 'meta':
+    elif args.command == 'meta':
         cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s\n'
         % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r),str(args.r16),str(args.t),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
         f1.write(cmd)
         os.system(cmd)
-    elif args.program == 'sum_genome':
+    elif args.command == 'sum_genome':
         cmd = ('python '+workingdir+'/scripts/Traits_summary_WG.py -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s\n'
         %(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r),str(args.r16),str(os.path.join(args.r,'summary')),str(args.id)))
         f1.write(cmd)
         os.system(cmd)
-    elif args.program == 'sum_meta':
+    elif args.command == 'sum_meta':
         #if args.s == 1:
         #   cmd = ('python '+workingdir+'/Copynumber_traits.py -i %s -i16 %s -o %s -f %s.blast.txt -f16 %s.16S.txt -l %s.length -tf %s -m %s -c %s'
         #    % (str(os.path.join(args.r,'search_output/0'))),str(args.r16),str(os.path.join(args.r,'summary'))),str(args.fa),str(args.fa),str(args.db),str(args.m),str(args.meta),str(args.id))
