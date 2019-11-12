@@ -2,6 +2,7 @@ import os
 from Bio import SeqIO
 import argparse
 import glob
+#from cyvcf2 import VCF
 
 
 ############################################ Arguments and declarations ##############################################
@@ -174,7 +175,7 @@ def search(roottemp,filename):
             Blastsearch = 0
             for root, dirs, files in os.walk(args.r + '/search_output'):
                 try:
-                    ftry = open(os.path.join(root, filename + '.blast.txt'), 'r')
+                    ftry_blast = open(os.path.join(root, filename + '.blast.txt'), 'r')
                     Blastsearch = 1
                 except IOError:
                     pass
@@ -200,29 +201,30 @@ def search(roottemp,filename):
                 except IOError:
                     pass
             if Blastsearchfilter == 0:
+                if Blastsearch == 0:
+                    # no blast result
+                    tempbamoutput_filter = args.r + '/search_output/' + str(
+                        int(i / 10000))
+                else:
+                    # blast completed
+                    tempbamoutput_filter = os.path.split(ftry_blast)[0]
                 if args.dbf == 1:
-                    cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + args.r + '/search_output/' + str(
-                        int(i / 10000)) + ' -f ' + filename + '.blast.txt ' + \
+                    cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + filename + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
-                    cmds += 'python '+ workingdir +'/Extract.MG.py -p 2 -d 2000 -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + args.r + '/search_output/' + str(
-                        int(i / 10000)) + ' \n'
+                    cmds += 'python '+ workingdir +'/Extract.MG.py -p 2 -d 2000 -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
                 else:
                     # AA file
-                    cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + args.r + '/search_output/' + str(
-                        int(i / 10000)) + ' -f ' + filename + '.blast.txt ' + \
+                    cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + filename + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
-                    cmds += 'python '+ workingdir +'/Extract.WG.py -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + args.r + '/search_output/' + str(
-                        int(i / 10000)) + ' \n'
+                    cmds += 'python '+ workingdir +'/Extract.WG.py -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
                     # genome file
-                    cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + args.r + '/search_output/' + str(
-                        int(i / 10000)) + ' -f ' + filename.split(orfs_format)[0]+ fasta_format + '.blast.txt ' + \
+                    cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + filename.split(orfs_format)[0]+ fasta_format + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
                     cmds += 'python '+ workingdir +'/Extract.MG.py  -p 2 -d 2000 -i ' + roottemp + ' -f ' + filename.split(orfs_format)[0]+ fasta_format\
-                     + ' -n .blast.txt.filter -r ' + args.r + '/search_output/' + str(
-                        int(i / 10000)) + ' \n'
+                     + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
 
     else:
         # hmmsearch
@@ -252,8 +254,8 @@ def search(roottemp,filename):
             tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
         cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
         args.db, tempbamoutput, tempbamoutput)
-        #cmds += 'bcftools filter -s LowQual -e \'%s || DP>100\' %s.vcf > %s.flt.vcf \n' % (
-        #'QUAL<20', tempbamoutput, tempbamoutput)
+        cmds += 'python '+ workingdir +'/Format.WG.py -i %s.vcf -o %s.vcf.out\n' %(
+            tempbamoutput,tempbamoutput)
     # 16S extraction
     Search16s = 0
     for root, dirs, files in os.walk(args.r16):

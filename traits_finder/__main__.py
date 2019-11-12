@@ -5,6 +5,8 @@ import glob
 import statistics
 import traits_finder
 import sys
+#from cyvcf2 import VCF
+
 
 ################################################### Decalration #######################################################
 print ("\
