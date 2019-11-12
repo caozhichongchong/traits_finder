@@ -8,6 +8,9 @@ parser.add_argument("-i",
                     help="input dir", type=str, default='.',metavar='current dir (.)')
 parser.add_argument("-f",
                     help="input filename", type=str, default='input.faa',metavar='input.faa')
+parser.add_argument("-ni",
+                    help="prefix name for input file", type=str, default='',metavar='.usearch.txt.aa')
+
 parser.add_argument("-n",
                     help="prefix name for usearch result", type=str, default='.usearch.txt',metavar='.usearch.txt')
 parser.add_argument("-r",
@@ -48,4 +51,9 @@ def Extractaa(root, searchfile, orffile, resultdir):
 
 
 ################################################### Programme #######################################################
-Extractaa( args.i, args.f+args.n, args.f, args.r)
+if args.ni != '':
+    input_file = args.f.split(args.ni)[0]+args.n
+else:
+    input_file = args.f+ args.n
+Extractaa(args.i, input_file,
+          args.f, args.r)

@@ -176,6 +176,7 @@ def search(roottemp,filename):
             for root, dirs, files in os.walk(args.r + '/search_output'):
                 try:
                     ftry_blast = open(os.path.join(root, filename + '.blast.txt'), 'r')
+                    ftry_blast_file = os.path.join(root, filename + '.blast.txt')
                     Blastsearch = 1
                 except IOError:
                     pass
@@ -207,24 +208,28 @@ def search(roottemp,filename):
                         int(i / 10000))
                 else:
                     # blast completed
-                    tempbamoutput_filter = os.path.split(ftry_blast)[0]
+                    tempbamoutput_filter = os.path.split(ftry_blast_file)[0]
                 if args.dbf == 1:
                     cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + filename + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
-                    cmds += 'python '+ workingdir +'/Extract.MG.py -p 2 -d 2000 -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
+                    cmds += 'python '+ workingdir +'/Extract.MG.py -p 2 -d 2000 -ni .usearch.txt.aa -i ' + os.path.split(searchfile)[0] + ' -f ' + \
+                            os.path.split(searchfile)[1] + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
                 else:
                     # AA file
                     cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + filename + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
-                    cmds += 'python '+ workingdir +'/Extract.WG.py -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
+                    cmds += 'python '+ workingdir +'/Extract.WG.py -ni .usearch.txt.aa -i ' + os.path.split(searchfile)[0]  \
+                            + ' -f ' + os.path.split(searchfile)[1] + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
                     # genome file
                     cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + filename.split(orfs_format)[0]+ fasta_format + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
-                    cmds += 'python '+ workingdir +'/Extract.MG.py  -p 2 -d 2000 -i ' + roottemp + ' -f ' + filename.split(orfs_format)[0]+ fasta_format\
-                     + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
+                    cmds += 'python '+ workingdir +'/Extract.MG.py  -p 2 -d 2000 -ni .usearch.txt.aa  -i ' + os.path.split(searchfile)[0] + ' -f ' + \
+                            os.path.split(searchfile)[1].split(orfs_format)[0]+ fasta_format\
+                     + '.usearch.txt.aa -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
+
 
     else:
         # hmmsearch

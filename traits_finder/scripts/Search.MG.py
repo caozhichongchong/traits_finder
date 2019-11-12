@@ -161,6 +161,7 @@ def search(roottemp,filename):
             for root, dirs, files in os.walk(args.r + '/search_output'):
                 try:
                     ftry_blast = open(os.path.join(root, filename + '.blast.txt'), 'r')
+                    ftry_blast_file = os.path.join(root, filename + '.blast.txt')
                     Blastsearch = 1
                 except IOError:
                     pass
@@ -184,12 +185,13 @@ def search(roottemp,filename):
                         int(i / 10000))
                 else:
                     # blast completed
-                    tempbamoutput_filter = os.path.split(ftry_blast)[0]
+                    tempbamoutput_filter = os.path.split(ftry_blast_file)[0]
             if Blastsearchfilter == 0:
                 cmds += 'python '+ workingdir +'/Filter.MG.py -i ' + tempbamoutput_filter +' -f ' + filename + '.blast.txt ' +\
                         '-db ' + args.db + ' -dbf ' + str(args.dbf) + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                         ' --e ' + str(args.e) + ' \n'
-                cmds += 'python '+ workingdir +'/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .blast.txt.filter -r ' + tempbamoutput_filter +' \n'
+                cmds += 'python '+ workingdir +'/Extract.MG.py -p 1  -ni .usearch.txt.aa -i ' +\
+                        os.path.split(searchfile)[0] + ' -f ' + os.path.split(searchfile)[1] + ' -n .blast.txt.filter -r ' + tempbamoutput_filter +' \n'
     else:
         # hmmsearch
         Blastsearch = 0
