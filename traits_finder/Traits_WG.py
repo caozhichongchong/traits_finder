@@ -122,10 +122,11 @@ f1.write("#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n")
 # make all database
 if args.s == 1:
     if args.bwa != 'None':
-        try:
-            ftest=open(args.db+'.bwt','r')
-        except IOError:
-            f1.write('bwa index %s \n' % (args.db))
+        if 'bwa' in args.bwa:
+            try:
+                ftest=open(args.db+'.bwt','r')
+            except IOError:
+                f1.write('bwa index %s \n' % (args.db))
     if args.dbf == 1:
         try:
             ftest = open(args.db + '.nin', 'r')

@@ -2,7 +2,6 @@ import os
 from Bio import SeqIO
 import argparse
 import glob
-#from cyvcf2 import VCF
 
 
 ############################################ Arguments and declarations ##############################################
@@ -248,19 +247,31 @@ def search(roottemp,filename):
                     filename) + '.hmm \n'
     # bowtie alignment
     if args.bwa != 'None':
-        tempinput = os.path.join(args.r + '/search_output/' + str(int(i/10000)), filename.split(orfs_format)[0]+ fasta_format + '.blast.txt.filter.aa')
-        #tempinput = os.path.join(roottemp, filename.split(orfs_format)[0]+ fasta_format)
-        #tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
-        #    filename.split(orfs_format)[0]+ fasta_format))
-        tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
-            filename.split(orfs_format)[0]+ fasta_format)+ '.blast.txt.filter.aa')
-        cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
-            args.db, tempinput,
-            tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
-        cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
-        args.db, tempbamoutput, tempbamoutput)
-        cmds += 'python '+ workingdir +'/Format.WG.py -i %s.vcf -o %s.vcf.out\n' %(
-            tempbamoutput,tempbamoutput)
+        if 'bwa' in args.bwa:
+            tempinput = os.path.join(args.r + '/search_output/' + str(int(i/10000)), filename.split(orfs_format)[0]+ fasta_format + '.blast.txt.filter.aa')
+            #tempinput = os.path.join(roottemp, filename.split(orfs_format)[0]+ fasta_format)
+            #tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
+            #    filename.split(orfs_format)[0]+ fasta_format))
+            tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
+                filename.split(orfs_format)[0]+ fasta_format)+ '.blast.txt.filter.aa')
+            cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
+                args.db, tempinput,
+                tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
+            cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
+            args.db, tempbamoutput, tempbamoutput)
+        elif 'mafft' in args.bwa:
+            tempinput = os.path.join(args.r + '/search_output/' + str(int(i / 10000)),
+                                     filename.split(orfs_format)[0] + fasta_format + '.blast.txt.filter.aa')
+            tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
+                filename.split(orfs_format)[0] + fasta_format) + '.blast.txt.filter.aa')
+            # mafft for multiple alignment
+            cmds += args.bwa + ' --nuc --adjustdirection --quiet --retree 2 --maxiterate 100 --thread %s %s > %s.align \n' % (
+                str(int(i_max)), tempinput, tempbamoutput)
+            # transfer multiple alignment to vcf
+            cmds += 'snp-sites -v -o %s.align %s.vcf \n' % (
+                tempbamoutput, tempbamoutput)
+        #cmds += 'python '+ workingdir +'/VCF.reader.py -i %s.vcf -o %s.vcf.out\n' %(
+        #    tempbamoutput,tempbamoutput)
     # 16S extraction
     Search16s = 0
     for root, dirs, files in os.walk(args.r16):

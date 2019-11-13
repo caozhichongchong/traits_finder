@@ -232,8 +232,10 @@ def search(roottemp,filename):
         args.db, tempbamoutput, tempbamoutput)
         cmds += '\nbcftools filter -s LowQual -e \'%s || DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
         'QUAL<20', tempbamoutput, tempbamoutput)
-        cmds += 'python ' + workingdir + '/Format.WG.py -i %s.flt.vcf  -o %s.flt.vcf.out \n' % (
+        cmds += '\nbcftools view -v snps --min-ac 1:minor %s.flt.vcf > %s.snp.flt.vcf \n' % (
             tempbamoutput, tempbamoutput)
+        #cmds += 'python ' + workingdir + '/VCF.reader.py -i %s.flt.vcf  -o %s.flt.vcf.out \n' % (
+            #tempbamoutput, tempbamoutput)
     # 16S extraction
     Search16s = 0
     for root, dirs, files in os.walk(args.r16):

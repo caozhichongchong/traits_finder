@@ -4,7 +4,7 @@
 * input: reference database and folder of genomes/metagenomes
 * requirement: blast or hmm
 * requirement: for hmm, you need to prepare the hmm database
-* optional: diamond, bwa, hs-blastn, usearch
+* optional: diamond, bwa, hs-blastn, usearch, mafft (and snp-sites)
 
 ## Install
 `pip install traits_finder`\
