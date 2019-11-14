@@ -232,6 +232,32 @@ def search(roottemp,filename):
                     cmds += 'python '+ workingdir +'/Extract.MG.py  -p 2 -d 2000 -ni .usearch.txt.aa  -i ' + os.path.split(searchfile)[0] + ' -f ' + \
                             os.path.split(searchfile)[1].split(orfs_format)[0]+ fasta_format\
                      + '.usearch.txt.aa -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
+                Blastsearchfilter = 1
+            # bowtie alignment
+            if args.bwa != 'None' and Blastsearchfilter == 1:
+                if 'bwa' in args.bwa:
+                    tempinput = os.path.join(args.r + '/search_output/' + str(int(i / 10000)),
+                                             filename.split(orfs_format)[0] + fasta_format + '.blast.txt.filter.aa')
+                    tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
+                        filename.split(orfs_format)[0] + fasta_format) + '.blast.txt.filter.aa')
+                    cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
+                        args.db, tempinput,
+                        tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
+                    cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
+                        args.db, tempbamoutput, tempbamoutput)
+                elif 'mafft' in args.bwa:
+                    tempinput = os.path.join(args.r + '/search_output/' + str(int(i / 10000)),
+                                             filename.split(orfs_format)[0] + fasta_format + '.blast.txt.filter.aa')
+                    tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
+                        filename.split(orfs_format)[0] + fasta_format) + '.blast.txt.filter.aa')
+                    # mafft for multiple alignment
+                    cmds += args.bwa + ' --nuc --adjustdirection --quiet --retree 2 --maxiterate 100 --thread %s %s > %s.align \n' % (
+                        str(int(i_max)), tempinput, tempbamoutput)
+                    # transfer multiple alignment to vcf
+                    cmds += 'snp-sites -v -o %s.align %s.vcf \n' % (
+                        tempbamoutput, tempbamoutput)
+                # cmds += 'python '+ workingdir +'/VCF.reader.py -i %s.vcf -o %s.vcf.out\n' %(
+                #    tempbamoutput,tempbamoutput)
 
 
     else:
@@ -249,33 +275,6 @@ def search(roottemp,filename):
                   + str(args.e) + ' ' + args.db + ' '+ os.path.join(roottemp, filename) + ' \n'
             cmds += 'python '+ workingdir +'/Format.WG.py -i ' + args.r + '/search_output/'+str(int(i/10000)) + ' -f ' + str(
                     filename) + '.hmm \n'
-    # bowtie alignment
-    if args.bwa != 'None':
-        if 'bwa' in args.bwa:
-            tempinput = os.path.join(args.r + '/search_output/' + str(int(i/10000)), filename.split(orfs_format)[0]+ fasta_format + '.blast.txt.filter.aa')
-            #tempinput = os.path.join(roottemp, filename.split(orfs_format)[0]+ fasta_format)
-            #tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
-            #    filename.split(orfs_format)[0]+ fasta_format))
-            tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
-                filename.split(orfs_format)[0]+ fasta_format)+ '.blast.txt.filter.aa')
-            cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
-                args.db, tempinput,
-                tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
-            cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
-            args.db, tempbamoutput, tempbamoutput)
-        elif 'mafft' in args.bwa:
-            tempinput = os.path.join(args.r + '/search_output/' + str(int(i / 10000)),
-                                     filename.split(orfs_format)[0] + fasta_format + '.blast.txt.filter.aa')
-            tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
-                filename.split(orfs_format)[0] + fasta_format) + '.blast.txt.filter.aa')
-            # mafft for multiple alignment
-            cmds += args.bwa + ' --nuc --adjustdirection --quiet --retree 2 --maxiterate 100 --thread %s %s > %s.align \n' % (
-                str(int(i_max)), tempinput, tempbamoutput)
-            # transfer multiple alignment to vcf
-            cmds += 'snp-sites -v -o %s.align %s.vcf \n' % (
-                tempbamoutput, tempbamoutput)
-        #cmds += 'python '+ workingdir +'/VCF.reader.py -i %s.vcf -o %s.vcf.out\n' %(
-        #    tempbamoutput,tempbamoutput)
     # 16S extraction
     Search16s = 0
     for root, dirs, files in os.walk(args.r16):
@@ -372,14 +371,22 @@ for files in Targetroot:
         except OSError:
             pass
         # add filename to orf
-        try:
-            ftry = open(os.path.join(roottemp, str(filename).split(fasta_format)[0]+orfs_format + ".add"), 'r')
-        except IOError:
-            if '.add' in orfs_format:
-                pass
-            else:
-                addname(roottemp, str(filename).split(fasta_format)[0]+orfs_format)
+        if ".add" not in filename:
+            try:
+                # already added filename to orf
+                ftry = open(os.path.join(roottemp, str(filename).split(fasta_format)[0]+orfs_format + ".add"), 'r')
                 filename = filename + ".add"
+                files = files + ".add"
+                orfs_format = orfs_format + ".add"
+            except IOError:
+                # add filename to orf
+                if '.add' in orfs_format:
+                    pass
+                else:
+                    addname(roottemp, str(filename).split(fasta_format)[0]+orfs_format)
+                    filename = filename + ".add"
+                    files = files + ".add"
+                    orfs_format = orfs_format + ".add"
         if args.bwa != 'None':
             try:
                 os.mkdir(args.r + '/bwa/' + str(int(i / 10000)))
