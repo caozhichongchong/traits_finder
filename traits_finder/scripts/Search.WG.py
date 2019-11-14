@@ -374,19 +374,21 @@ for files in Targetroot:
         if ".add" not in filename:
             try:
                 # already added filename to orf
-                ftry = open(os.path.join(roottemp, str(filename).split(fasta_format)[0]+orfs_format + ".add"), 'r')
+                ftry = open(os.path.join(roottemp, str(filename).split(fasta_format)[0]+orfs_format.split('.add')[0] + ".add"), 'r')
                 filename = filename + ".add"
                 files = files + ".add"
-                orfs_format = orfs_format + ".add"
+                if ".add" not in orfs_format:
+                    orfs_format = orfs_format + ".add"
             except IOError:
                 # add filename to orf
                 if '.add' in orfs_format:
                     pass
                 else:
-                    addname(roottemp, str(filename).split(fasta_format)[0]+orfs_format)
+                    addname(roottemp, str(filename).split(fasta_format)[0]+orfs_format.split('.add')[0])
                     filename = filename + ".add"
                     files = files + ".add"
-                    orfs_format = orfs_format + ".add"
+                    if ".add" not in orfs_format:
+                        orfs_format = orfs_format + ".add"
         if args.bwa != 'None':
             try:
                 os.mkdir(args.r + '/bwa/' + str(int(i / 10000)))
