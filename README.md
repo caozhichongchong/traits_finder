@@ -10,10 +10,10 @@
 `pip install traits_finder`\
 in preparation: `anaconda download caozhichongchong/traits_finder`
 ### latest version (unstable though)
-git clone https://github.com/caozhichongchong/traits_finder.git
-cd traits_finder
-python setup.py build
-python setup.py install
+`git clone https://github.com/caozhichongchong/traits_finder.git `\
+`cd traits_finder`\
+`python setup.py build`\
+`python setup.py install`
 
 ## Availability
 
