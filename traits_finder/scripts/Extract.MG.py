@@ -32,7 +32,10 @@ args = parser.parse_args()
 ################################################### Function #######################################################
 def reverse_complement(dna):
     complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A','N': 'N'}
-    return ''.join([complement[base] for base in dna[::-1]])
+    try:
+        return ''.join([complement[base] for base in dna[::-1]])
+    except KeyError:
+        return dna
 
 
 def Extractaa(root, searchfile, orffile, resultdir):

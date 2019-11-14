@@ -154,6 +154,7 @@ def search(roottemp,filename):
                             filename.split(orfs_format)[0]+ fasta_format + '.usearch.txt'),
                           str(args.e),str(int(i_max)))
                 if args.dbf == 1:
+                    # genome file
                     cmds += 'python '+ workingdir +'/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                         int(i / 10000)) + ' \n'
                     searchfile = os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt.aa')
@@ -209,12 +210,15 @@ def search(roottemp,filename):
                     # blast completed
                     tempbamoutput_filter = os.path.split(ftry_blast_file)[0]
                 if args.dbf == 1:
+                    # dna database
+                    # genome file
                     cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + filename + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
                     cmds += 'python '+ workingdir +'/Extract.MG.py -p 2 -d 2000 -ni .usearch.txt.aa -i ' + os.path.split(searchfile)[0] + ' -f ' + \
                             os.path.split(searchfile)[1] + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
                 else:
+                    # protein database
                     # AA file
                     cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + filename + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
