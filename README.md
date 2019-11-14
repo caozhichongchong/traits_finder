@@ -2,13 +2,18 @@
 ## Introduction
 * traits_finder searches and summarizes traits in genomes and metagenomes
 * input: reference database and folder of genomes/metagenomes
-* requirement: blast or hmm
+* requirement: python >= 3.0, blast or hmm
 * requirement: for hmm, you need to prepare the hmm database
 * optional: diamond, bwa, hs-blastn, usearch, mafft (and snp-sites)
 
 ## Install
 `pip install traits_finder`\
 in preparation: `anaconda download caozhichongchong/traits_finder`
+### latest version (unstable though)
+git clone https://github.com/caozhichongchong/traits_finder.git
+cd traits_finder
+python setup.py build
+python setup.py install
 
 ## Availability
 
