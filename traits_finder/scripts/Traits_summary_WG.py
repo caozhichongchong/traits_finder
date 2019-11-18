@@ -17,6 +17,13 @@ parser.add_argument("-m",
                     help="mapping file of traits to function", type=str,
                     default='Butyrate.pro.mapping.txt',
                     metavar='Butyrate.pro.mapping.txt')
+parser.add_argument("-dbf",
+                        help="sequence format of your input database\
+                        (1: nucleotide; 2: protein), \
+                        (default \'1\' for nucleotide)",
+                        metavar="1 or 2",
+                        choices=[1, 2],
+                        action='store', default=1, type=int)
 # optional parameters
 parser.add_argument("--fa",
                     help="input format of genome sequence", type=str, default='.fna.add',metavar='.fasta, .fna or .fa')
@@ -224,11 +231,18 @@ for lines in open(args.m,'r'):
 
 
 # merge reference sequences and output sequences (amino acid only)
-for record in SeqIO.parse(args.db, 'fasta'):
-        if str(record.id) in Function:
-            outputfile_aa_file = open(faa.replace('fasta',Function[str(record.id)]+'.fasta'),'a')
-            outputfile_aa_file.write('>reference_'+str(record.id)+'\n'+str(record.seq)+'\n')
-            outputfile_aa_file.close()
+if args.dbf == 2:
+    for record in SeqIO.parse(args.db, 'fasta'):
+            if str(record.id) in Function:
+                outputfile_aa_file = open(faa.replace('fasta',Function[str(record.id)]+'.fasta'),'a')
+                outputfile_aa_file.write('>reference_'+str(record.id)+'\n'+str(record.seq)+'\n')
+                outputfile_aa_file.close()
+else:
+    for record in SeqIO.parse(args.db, 'fasta'):
+            if str(record.id) in Function:
+                outputfile_aa_file = open(fdna.replace('fasta',Function[str(record.id)]+'.fasta'),'a')
+                outputfile_aa_file.write('>reference_'+str(record.id)+'\n'+str(record.seq)+'\n')
+                outputfile_aa_file.close()
 
 
 # output

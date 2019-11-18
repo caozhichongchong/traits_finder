@@ -48,10 +48,10 @@ def main():
     optional.add_argument("-dbf",
                         help="sequence format of your input database\
                         (1: nucleotide; 2: protein), \
-                        (default \'1\' for nucleotide)",
+                        (default \'2\' for protein)",
                         metavar="1 or 2",
                         choices=[1, 2],
-                        action='store', default=1, type=int)
+                        action='store', default=2, type=int)
     required.add_argument("-m",
                         help="mapping file of traits to function", type=str,
                         default='Butyrate.pro.mapping.txt',
@@ -137,8 +137,8 @@ def main():
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_genome':
-        cmd = ('python '+workingdir+'/scripts/Traits_summary_WG.py -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s\n'
-        %(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r),str(args.r16),str(os.path.join(args.r,'summary')),str(args.id)))
+        cmd = ('python '+workingdir+'/scripts/Traits_summary_WG.py -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s -dbf %s \n'
+        %(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r),str(args.r16),str(os.path.join(args.r,'summary')),str(args.id),str(args.dbf)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_meta':
