@@ -188,7 +188,7 @@ def search(roottemp,filename):
                 if args.dbf != 1:
                     # genome file
                     cmds += str(args.bp).replace('blastp', 'blastx') + " -query " + str(
-                        searchfile.split(orfs_format)[0]+ fasta_format) \
+                        searchfile.split(orfs_format)[0]+ fasta_format+'.usearch.txt.aa') \
                             + " -db " + args.db + " -out " + args.r + '/search_output/' + str(int(i / 10000)) + \
                             "/" + filename.split(orfs_format)[0]+ fasta_format \
                             + ".blast.txt  -outfmt 6 -evalue " + str(args.e) + " -num_threads " + \
