@@ -20,7 +20,7 @@ setup(
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     package_dir={'traits_finder': 'traits_finder'},
-    package_data={'traits_finder': ['scripts/*','database/*','*.py']},
+    package_data={'traits_finder': ['scripts/*','database/*','example/*','*.py']},
     entry_points={'console_scripts': ['traits_finder = traits_finder.__main__:main']},
     classifiers=[
         #'Development Status :: 1 - Alpha',
