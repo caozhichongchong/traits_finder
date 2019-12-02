@@ -70,15 +70,16 @@ def main():
                         choices=[1, 2],
                         action='store', default=1, type=int)
     # optional parameters
-    optional.add_argument("--l",
-                        help="input list of metagenomes", type=str,
-                        default='None',metavar='rep_metagenomes.txt')
     optional.add_argument("--meta",
                         help="metadata  of metagenomes", type=str,
                         default='None',
                         metavar='metadata.metagenomes.txt')
     optional.add_argument("--orf",
-                        help="input format of genomes orfs", type=str, default='.genes.faa',metavar='.faa')
+                        help="input format of genomes orfs", type=str,
+                          default='.genes.faa',metavar='.faa')
+    optional.add_argument("--l",
+                          help="input list of a subset of genomes/metagenomes", type=str,
+                          default='None', metavar='list.txt')
     # optional output setup
     optional.add_argument("--r",
                         help="output directory or folder of your results",
@@ -90,19 +91,19 @@ def main():
     optional.add_argument('--t',
                         help="Optional: set the thread number assigned for running XXX (default 1)",
                         metavar="1 or more", action='store', default=1, type=int)
-    optional.add_argument('--id',
+    optional.add_argument('--id','--identity',
                         default=75.0, action='store', type=float, metavar='60.0',
                         help='Optional: set the amno acid based identity cutoff for blast (default is 80.0)\n'
                              'Leave it alone if hmm is used')
-    optional.add_argument('--ht',
+    optional.add_argument('--ht','--hitlength',
                         default=75.0, action='store', type=float, metavar='60.0',
                         help='Optional: set the amno acid based hit-length cutoff for blast (default is 80.0)\n'
                              'Leave it alone if hmm is used')
-    optional.add_argument('--e',
+    optional.add_argument('--e','--evalue',
                         default=1e-2, action='store', type=float, metavar='1e-5',
                         help='Optional: set the evalue cutoff for blast or hmm (default is 1e-5)')
     # requirement for software calling
-    optional.add_argument('--u',
+    optional.add_argument('--u','--usearch',
                         help="Optional: use two-step method for blast search,"+
                              " \'None\' for using one step, \'usearch\' or \'diamond\' for using two-step \
                              (complete path to usearch or diamond if not in PATH, \
@@ -113,7 +114,7 @@ def main():
                         help="Optional: complete path to hmmscan if not in PATH,",
                         metavar="/usr/local/bin/hmmscan",
                         action='store', default='hmmscan', type=str)
-    optional.add_argument('--bp',
+    optional.add_argument('--bp','--blast',
                         help="Optional: complete path to blastp or blastn if not in PATH, \'None\' for no blast search",
                         metavar="/usr/local/bin/blastp",
                         action='store', default='blastp', type=str)
@@ -121,6 +122,14 @@ def main():
                         help="Optional: complete path to bwa if not in PATH,",
                         metavar="/usr/local/bin/bwa",
                         action='store', default='None', type=str)
+    optional.add_argument('--mf','--mafft',
+                          help="Optional: complete path to mafft if not in PATH,",
+                          metavar="/usr/local/bin/mafft",
+                          action='store', default='None', type=str)
+    optional.add_argument('--ft','--fasttree',
+                          help="Optional: complete path to fasttree if not in PATH,",
+                          metavar="/usr/local/bin/fasttree",
+                          action='store', default='None', type=str)
     ################################################## Definition ########################################################
     args = parser.parse_args()
     workingdir=os.path.abspath(os.path.dirname(__file__))
@@ -150,6 +159,12 @@ def main():
             #% (str(os.path.join(args.r,'search_output/0'))),str(args.r16),str(os.path.join(args.r,'summary'))),str(args.fa),str(args.fa),str(args.db),str(args.m),str(args.meta),str(args.e))
         #cmd += ('python '+workingdir+'/scripts/Traits_summary_MG.py -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s\n'
         #%(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r),str(args.r16),str(os.path.join(args.r,'summary')),str(args.id)))
+        f1.write(cmd)
+        os.system(cmd)
+    elif args.command == 'HGT':
+        cmd = ('python '+workingdir+'/scripts/HGT_finder.py -t %s --fa %s --orf %s --r %s --r16 %s --s %s --u %s --mf %s --ft %s --th %s \n'
+        %(str(os.path.split(args.db)[1]),str(args.fa),str(args.orf),str(args.r),str(args.r16),
+          str(os.path.join(args.r,'summary')),str(args.u),str(args.mf),str(args.ft),str(args.t)))
         f1.write(cmd)
         os.system(cmd)
 

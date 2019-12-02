@@ -16,7 +16,7 @@ parser.add_argument("-r",
                     help="output dir", type=str, default='.',metavar='current dir (.)')
 parser.add_argument("-d",
                     help="extra distance outside the target gene (default: 0 for 0bp)",
-                    type=int, default=0,metavar='2000 for 2kbp')
+                    type=int, default=0,metavar='500 for 0.5kbp')
 parser.add_argument("-p",
                     help="extract whole sequences or only the hit part \
                     (1: whole; 2: hit), \

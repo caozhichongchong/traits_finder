@@ -215,7 +215,7 @@ def search(roottemp,filename):
                     cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + filename + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
-                    cmds += 'python '+ workingdir +'/Extract.MG.py -p 2 -d 2000 -ni .usearch.txt.aa -i ' + os.path.split(searchfile)[0] + ' -f ' + \
+                    cmds += 'python '+ workingdir +'/Extract.MG.py -p 2 -d 500 -ni .usearch.txt.aa -i ' + os.path.split(searchfile)[0] + ' -f ' + \
                             os.path.split(searchfile)[1] + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
                 else:
                     # protein database
@@ -229,7 +229,7 @@ def search(roottemp,filename):
                     cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + filename.split(orfs_format)[0]+ fasta_format + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                             ' --e ' + str(args.e) + ' \n'
-                    cmds += 'python '+ workingdir +'/Extract.MG.py  -p 2 -d 2000 -ni .usearch.txt.aa  -i ' + os.path.split(searchfile)[0] + ' -f ' + \
+                    cmds += 'python '+ workingdir +'/Extract.MG.py  -p 2 -d 500 -ni .usearch.txt.aa  -i ' + os.path.split(searchfile)[0] + ' -f ' + \
                             os.path.split(searchfile)[1].split(orfs_format)[0]+ fasta_format\
                      + '.usearch.txt.aa -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
                 Blastsearchfilter = 1
@@ -327,9 +327,6 @@ for root,dirs,files in os.walk(in_dir):
 
 # search the database in all genomes
 i=0
-#os.system("rm -rf *.sh \n")
-#os.system("rm -rf nohup.sh \n")
-#i_max=max(int(args.t)/len(Targetroot),1)
 i_max = 40
 try:
     os.mkdir('subscripts')
@@ -396,6 +393,6 @@ for files in Targetroot:
                 pass
         # search the database in WGD
         cmds = search(roottemp, filename)
-        f1.write(cmds.replace('IMG Data','IMG\ Data'))
+        f1.write(cmds)
         f1.close()
 flist.close()

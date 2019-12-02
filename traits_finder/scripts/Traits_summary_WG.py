@@ -12,7 +12,8 @@ parser.add_argument("-db",
                     help="file name of your input database", type=str,
                     default='Butyrate.pro.aa',metavar='database.aa')
 parser.add_argument("-i",
-                    help="input dir of Filelist", type=str, default='.',metavar='Filelist.txt')
+                    help="input dir of genomes", type=str,
+                    default='.',metavar='.')
 parser.add_argument("-m",
                     help="mapping file of traits to function", type=str,
                     default='Butyrate.pro.mapping.txt',
@@ -31,10 +32,10 @@ parser.add_argument("--orf",
                     help="input format of genome orfs", type=str, default='.genes.faa',metavar='.faa')
 # optional output setup
 parser.add_argument("--r",
-                    help="output directory or folder of your results of Traits_WGD.py",
+                    help="input directory or folder of your previous results by Traits_WGD.py",
                     type=str, default='Result',metavar='Result')
 parser.add_argument("--r16",
-                    help="output directory or folder of your 16S sequences of Traits_WGD.py",
+                    help="input directory or folder of your previous 16S sequences extracted by Traits_WGD.py",
                     type=str, default='Result',metavar='Result')
 parser.add_argument("--s",
                     help="output directory or folder of your results of traits summary",
@@ -86,7 +87,7 @@ def check_16S(inputfile):
         pass
 
 
-def check_traits(inputfile,outputfile_aa,outputfile_aa_2000,outputfile_blast,outputfile_summary,
+def check_traits(inputfile,outputfile_aa,outputfile_aa_500,outputfile_blast,outputfile_summary,
 outputfile_summary_fun,file_subfix,i):
     blastout = check_file(glob.glob(args.r + '/search_output/*/'+ inputfile + '.blast.txt.filter'))
     Hastraits = 0
@@ -114,7 +115,7 @@ outputfile_summary_fun,file_subfix,i):
             # output blast results
             if Function != dict():
                 outputfile_blast.write(Function.get(traits_gene,'None')+'\t'+str(lines))
-                if outputfile_aa_2000 == 'None':
+                if outputfile_aa_500 == 'None':
                     # amino acid search results
                     Functionset.setdefault(str(lines).split('\t')[0],Function.get(traits_gene,'None'))
                 else:
@@ -142,7 +143,7 @@ outputfile_summary_fun,file_subfix,i):
         outputfile_summary_fun.write('\n')
         # extract sequences
         aaout = blastout + '.aa'
-        aaout2000 = blastout + '.extra2000.aa'
+        aaout500 = blastout + '.extra500.aa'
         # merge traits fasta into functions
         for record in SeqIO.parse(aaout, 'fasta'):
                 if filename.split(file_subfix)[0] in str(record.id):
@@ -156,20 +157,24 @@ outputfile_summary_fun,file_subfix,i):
                 else:
                     if filename.split(file_subfix)[0] + '_'+ str(record.id) in Functionset:
                         # output according to its function
-                        outputfile_aa_file = open(outputfile_aa.replace('fasta',Functionset[filename.split(file_subfix)[0] + '_'+ str(record.id)]+'.fasta'),'a')
-                        outputfile_aa_file.write('>'+filename.split(file_subfix)[0] + '_'+ str(record.id)+
-                        '\n'+str(record.seq)+'\n')
+                        function_name = Functionset[filename.split(file_subfix)[0] +
+                                                                                    '_' + str(record.id)]
+                        outputfile_aa_file = open(outputfile_aa.replace('fasta',function_name
+                                                                        +'.fasta'),'a')
+                        outputfile_aa_file.write('>%s_%s\t%s\n%s\n'%(
+                            filename.split(file_subfix)[0],
+                            str(record.id), function_name,
+                            str(record.seq)))
                         outputfile_aa_file.close()
-                        outputfile_aa_file = open(outputfile_aa,'a')
                     else:
                         print('%s not found in blast output'%(filename.split(file_subfix)[0] + '_'+ str(record.id)))
-        # merge traits extend 2000 fasta
-        if outputfile_aa_2000 != 'None':
-            for record in SeqIO.parse(aaout2000, 'fasta'):
+        # merge traits extend 500 fasta
+        if outputfile_aa_500 != 'None':
+            for record in SeqIO.parse(aaout500, 'fasta'):
                 if filename.split(file_subfix)[0] in str(record.id):
-                    outputfile_aa_2000.write('>'+str(record.id)+'\n'+str(record.seq)+'\n')
+                    outputfile_aa_500.write('>'+str(record.id)+'\n'+str(record.seq)+'\n')
                 else:
-                    outputfile_aa_2000.write('>'+filename.split(file_subfix)[0] + '_'+ str(record.id)+
+                    outputfile_aa_500.write('>'+filename.split(file_subfix)[0] + '_'+ str(record.id)+
                     '\n'+str(record.seq)+'\n')
     else:
         outputfile_summary.write(inputfile.split(file_subfix)[0] + '\tNo_hit\n')
@@ -200,7 +205,7 @@ fsum_dna_fun = open(os.path.join(args.s,args.t+'.all.traits.dna.summarize.functi
 # sequences
 faa=os.path.join(args.s,args.t+'.all.traits.aa.fasta')
 fdna=os.path.join(args.s,args.t+'.all.traits.dna.fasta')
-fdna_2000=open(os.path.join(args.s,args.t+'.all.traits.dna.extra2000.fasta'),'w')
+fdna_500=open(os.path.join(args.s,args.t+'.all.traits.dna.extra500.fasta'),'w')
 # reset output sequence files for all sequences
 outputfile_aa_file = open(faa,'w')
 outputfile_aa_file.close()
@@ -270,7 +275,7 @@ for filenames in Targetroot:
     # check and summarize traits
     check_traits(filename,faa,'None',
     ftraits,fsum_aa,fsum_aa_fun,orfs_format,genenum)
-    check_traits(filename.replace(orfs_format,fasta_format),fdna,fdna_2000,
+    check_traits(filename.replace(orfs_format,fasta_format),fdna,fdna_500,
     ftraits_dna,fsum_dna,fsum_dna_fun,fasta_format,genenum)
 
 
@@ -282,7 +287,7 @@ os.system('cat %s > %s' %(fdna.replace('fasta','*.fasta'),fdna))
 # end of processing all traits
 f16s.close()
 ftraits.close()
-fdna_2000.close()
+fdna_500.close()
 ftraits_dna.close()
 fsum_aa.close()
 fsum_dna.close()
