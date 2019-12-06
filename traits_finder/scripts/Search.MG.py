@@ -293,9 +293,6 @@ for root,dirs,files in os.walk(in_dir):
 
 # search the database in all genomes
 i=0
-#os.system("rm -rf *.sh \n")
-#os.system("rm -rf nohup.sh \n")
-#i_max=max(int(args.t)/len(Targetroot),1)
 try:
     os.mkdir('subscripts')
 except OSError:
@@ -317,7 +314,7 @@ if args.bwa != 'None':
         os.mkdir(args.r + '/bwa/')
     except OSError:
         pass
-i_max=40
+i_max=int(args.t)
 for files in Targetroot:
     if Targetroot[files]!='None':
         f1 = open(os.path.join('subscripts',str(i%int(args.t)) + '.sh'), 'a')

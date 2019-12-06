@@ -65,12 +65,20 @@ def compare_blast(line1,line2):
     ID2=float(str(line2).split('\t')[2])
     Loci1=(float(str(line1).split('\t')[6])+float(str(line1).split('\t')[7]))/2.0
     Loci2=(float(str(line2).split('\t')[6])+float(str(line2).split('\t')[7]))/2.0
-    if abs(Loci1 - Loci2) > 500 or ID1 == ID2:
+    Length1 = abs(float(str(line1).split('\t')[6]) - float(str(line1).split('\t')[7]))
+    Length2 = abs(float(str(line2).split('\t')[6]) - float(str(line2).split('\t')[7]))
+    if abs(Loci1 - Loci2) > 500:
         return [line1,line2]
     elif ID1 > ID2:
         return [line1]
     elif ID2 > ID1:
         return [line2]
+    elif ID1 == ID2:
+        # same identity, choose the longer one
+        if Length1 >= Length2:
+            return [line1]
+        else:
+            return [line2]
 
 
 def blast_list(file, Cutoff_identity,Cutoff_hitlength):

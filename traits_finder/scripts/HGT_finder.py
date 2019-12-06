@@ -45,10 +45,14 @@ parser.add_argument('--ft', '--fasttree',
                       metavar="/usr/local/bin/fasttree",
                       action='store', default='None', type=str)
 
+
 ################################################## Definition ########################################################
 args = parser.parse_args()
 fasta_format = args.fa
 orfs_format = args.orf
+Cutoff_HGT=0.99
+Cutoff_aa=0.9
+Cutoff_extended=0.1
 if args.s == 'None':
     input_dir = os.path.join(args.r,'summary')
     result_dir = os.path.join(args.r, 'HGT')
@@ -59,8 +63,11 @@ try:
     os.mkdir(result_dir)
 except OSError:
     pass
+try:
+    os.mkdir(result_dir + '/sub_sequences')
+except OSError:
+    pass
 workingdir=os.path.abspath(os.path.dirname(__file__))
-
 try:
     os.mkdir('HGTfinder_subscripts')
 except OSError:
@@ -79,101 +86,141 @@ def compare_loci(loci_new,loci_ref):
         return 0
 
 
-def run_cluster(input_fasta,cutoff=0.99):
+def run_cluster(input_fasta,output_clusters = 1, cutoff=0.99):
     print('Running usearch cluster for %s' % (input_fasta))
-    os.system('usearch -sort length -cluster_fast %s -id %s -centroids %s.cluster.aa -uc %s.uc'
-              %(input_fasta,cutoff,input_fasta,input_fasta))
-    print('finish running usearch cluster for %s' % (input_fasta))
+    # run cutoff -0.01
+    try:
+        f1 = open("%s.uc" % (input_fasta),'r')
+    except IOError:
+        os.system('%s -sort length -cluster_fast %s -id %s -centroids %s.cluster.aa -uc %s.uc'
+                  %(args.u, input_fasta,str(cutoff-0.01),input_fasta,input_fasta))
+    print('Finish running usearch cluster for %s' % (input_fasta))
     # read cluster results
     Clusters = dict()
     Clusters_seqs = dict()
     Clusters_extend_seqs = dict()
-    for lines in open(input_fasta+'.rc','r'):
+    Total_seq = 0
+    Cluster_num = 0
+    for lines in open(input_fasta+'.uc','r'):
         cluster = lines.split('\t')[1]
         record_name = lines.split('\t')[-2].split(' ')[0]
         if cluster not in Clusters:
             Clusters.setdefault(cluster,[record_name])
         else:
             Clusters[cluster].append(record_name)
-    for cluster in Clusters:
-        # at least 3 sequences in a cluster
-        if len(Clusters[cluster] > 2):
-            for record_name in Clusters[cluster]:
-                Clusters_seqs.setdefault(record_name,str(cluster))
-                record_subname = '_'.join(record_name.split('_')[0:-2])
-                if record_subname not in Clusters_extend_seqs:
-                    Clusters_extend_seqs.setdefault(record_subname,[[Clusters_seqs,loci_seq(record_name)]])
-                else:
-                    Clusters_extend_seqs[record_subname].append([Clusters_seqs,loci_seq(record_name)])
-    # clustering sequences
-    for record in SeqIO.parse(input_fasta, 'fasta'):
-        if str(record.id) in Clusters_seqs:
-            output_sequences=open(os.path.join(result_dir,'%s.%s.fasta'%(
-                os.path.split(input_fasta)[-1],
-                Clusters_seqs[str(record.id)])),'a')
-            output_sequences.write('>%s\n%s\n'%(str(record.id),str(record.seq)))
-            output_sequences.close()
-    return Clusters_extend_seqs
+        Total_seq += 1
+        Cluster_num = max(Cluster_num,int(cluster))
+    if output_clusters == 1:
+        if Cluster_num > 0:
+            Cutoff_HGT = max(3,int(Total_seq / Cluster_num))
+            print('A total of %s clusters for %s sequences\nSetting cutoff as %s'
+                  %(Cluster_num, Total_seq, Cutoff_HGT))
+            for cluster in Clusters:
+                # at least 3 sequences in a cluster
+                if len(Clusters[cluster]) >= Cutoff_HGT:
+                    for record_name in Clusters[cluster]:
+                        Clusters_seqs.setdefault(record_name,str(cluster))
+                        record_subname = '_'.join(record_name.split('_')[0:-2])
+                        if record_subname not in Clusters_extend_seqs:
+                            Clusters_extend_seqs.setdefault(record_subname,[[cluster,record_name,
+                                                                             loci_seq(record_name)]])
+                        else:
+                            Clusters_extend_seqs[record_subname].append([cluster,record_name,
+                                                                         loci_seq(record_name)])
+            # clustering sequences
+            print('Clustering sequences for %s' % (input_fasta))
+            for record in SeqIO.parse(input_fasta, 'fasta'):
+                if str(record.id) in Clusters_seqs:
+                    output_sequences=open(os.path.join(result_dir + '/sub_sequences','%s.%s.fasta'%(
+                        os.path.split(input_fasta)[-1],
+                        Clusters_seqs[str(record.id)])),'a')
+                    output_sequences.write('>%s\n%s\n'%(str(record.id),str(record.seq)))
+                    output_sequences.close()
+        return Clusters_extend_seqs
 
 
 def extract_extend(Clusters_extend_seqs,input_extend_fasta):
+    # check redundancy!!!
+    print('Extracting extended sequences from %s' % (input_extend_fasta))
     for record in SeqIO.parse(input_extend_fasta, 'fasta'):
         record_subname = '_'.join(str(record.id).split('_')[0:-2])
         if record_subname in Clusters_extend_seqs:
             for clusters in Clusters_extend_seqs[record_subname]:
                 if compare_loci(loci_seq(str(record.id)),clusters[-1]):
                     # the right extended sequences
-                    output_sequences = open(os.path.join(result_dir, '%s.%s.fasta' % (
+                    output_file = open(os.path.join(result_dir, args.t + '.all.traits.dna-dna_extended.mapping.txt'),
+                                       'a')
+                    output_file.write('%s\t%s\t%s\t%s\n'%(record_subname,str(clusters[0]),
+                                                      clusters[-2],str(record.id)))
+                    output_file.close()
+                    output_sequences = open(os.path.join(result_dir + '/sub_sequences', '%s.%s.fasta' % (
                         os.path.split(input_extend_fasta)[-1],
                         clusters[0])), 'a')
                     output_sequences.write('>%s\n%s\n' % (str(record.id), str(record.seq)))
                     output_sequences.close()
+                    break
 
 
-def run_alignment(input_folder,type_fasta,output_file):
-    all_clusters = glob.glob(os.path.join(result_dir, '%s.*.fasta' % (
+def run_alignment(input_folder,type_fasta,output_file,cutoff=0.99):
+    print('Running alignment for %s' % (input_folder))
+    all_clusters = glob.glob(os.path.join(result_dir + '/sub_sequences', '%s.*.fasta' % (
         os.path.split(input_folder)[-1])))
     for input_fasta in all_clusters:
         if "usearch" in args.u:
-            os.system('usearch -sortbylength %s -fastaout %s.sorted' % (input_fasta,input_fasta))
+            try:
+                f1 = open("%s.sorted" % (input_fasta), 'r')
+            except IOError:
+                os.system('%s -sortbylength %s -fastaout %s.sorted' % (args.u, input_fasta,input_fasta))
             input_fasta=input_fasta + '.sorted'
+            try:
+                f1 = open("%s.%s.usearch.txt" % (input_fasta,str(cutoff)), 'r')
+            except IOError:
+                output_file.write("%s -makeudb_usearch %s -output %s.udb\n"
+                                  % (args.u, input_fasta,input_fasta))
+                if type_fasta == 'dna':
+                    output_file.write("%s  -ublast %s -db %s.udb  -strand both -id %s -evalue 1e-2 -accel 0.5 -blast6out %s.%s.usearch.txt  -threads %s\n"
+                                      %(args.u,input_fasta,input_fasta,str(cutoff),input_fasta,str(cutoff),str(args.th)))
+                else:
+                    output_file.write(
+                        "%s  -ublast %s -db %s.udb  -id %s  -evalue 1e-2 -accel 0.5 -blast6out %s.%s.usearch.txt  -threads %s\n"
+                        % (args.u, input_fasta, input_fasta,str(cutoff),input_fasta,str(cutoff), str(args.th)))
         if args.mf != 'None' and args.ft != 'None':
-            if type_fasta == 'dna':
-                output_file.write("%s --nuc --adjustdirection --quiet --nofft --maxiterate 0 --retree 1 --thread %s %s > %s.align\n"
-                 % (args.mf, str(args.th), input_fasta, input_fasta))
-                output_file.write("%s -nt -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
-                 % (args.ft, input_fasta, input_fasta))
-            else:
-                output_file.write(
-                    "%s --amino --quiet --retree 1 --maxiterate 0 --nofft --thread %s %s > %s.align\n"
-                    % (args.mf, str(args.th), input_fasta, input_fasta))
-                output_file.write("%s -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
-                                  % (args.ft, input_fasta, input_fasta))
+            try:
+                f1 = open("%s.align.nwk" % (input_fasta), 'r')
+            except IOError:
+                if type_fasta == 'dna':
+                    output_file.write("%s --nuc --adjustdirection --quiet --nofft --maxiterate 0 --retree 1 --thread %s %s > %s.align\n"
+                     % (args.mf, str(args.th), input_fasta, input_fasta))
+                    output_file.write("%s -nt -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
+                     % (args.ft, input_fasta, input_fasta))
+                else:
+                    output_file.write(
+                        "%s --amino --quiet --retree 1 --maxiterate 0 --nofft --thread %s %s > %s.align\n"
+                        % (args.mf, str(args.th), input_fasta, input_fasta))
+                    output_file.write("%s -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
+                                      % (args.ft, input_fasta, input_fasta))
 
 
 ################################################### Programme #######################################################
-faa = os.path.join(args.s, args.t + '.all.traits.aa.*.fasta')
-fdna = os.path.join(args.s, args.t + '.all.traits.dna.*.fasta')
-fdna_500 = os.path.join(args.s, args.t + '.all.traits.dna.extra500.fasta')
+faa = os.path.join(args.s, args.t + '.all.traits.aa.fasta')
+fdna = os.path.join(args.s, args.t + '.all.traits.dna.fasta')
+fdna_500 = glob.glob(os.path.join(args.s, args.t + '.all.traits.dna.extra*.fasta'))[0]
 output_file = open(os.path.join('HGTfinder_subscripts/HGTfinder_subscripts.sh'), 'w')
 output_file.write("#!/bin/bash\n")
 # cluster dna sequences
-# identity cutoff is 99%
-Clusters_extend_seqs = run_cluster(fdna)
+# identity cutoff is 99%, but run cutoff - 0.01
+Clusters_extend_seqs = run_cluster(fdna,1,Cutoff_HGT)
 # extract 500bp extended sequences for dna clusters and cluster extended sequences
-# identity cutoff is 60%
-extract_extend(Clusters_extend_seqs, fdna_500)
-all_extend_clusters = glob.glob(os.path.join(result_dir, '%s.*.fasta' % (
-        os.path.split(fdna_500)[-1])))
-for input_fasta in all_extend_clusters:
-    run_cluster(input_fasta,0.6)
-    # run alignment for dna
-    run_alignment(input_fasta, 'dna', output_file)
+if Clusters_extend_seqs != dict():
+    extract_extend(Clusters_extend_seqs, fdna_500)
+    all_extend_clusters = glob.glob(os.path.join(result_dir + '/sub_sequences', '%s.*.fasta' % (
+            os.path.split(fdna_500)[-1])))
 # cluster aa sequences
-# identity cutoff is 99%
-run_cluster(faa)
+# identity cutoff is 90%
+run_cluster(faa,0,Cutoff_aa)
 # run alignment for dna
 run_alignment(fdna,'dna',output_file)
+run_alignment(fdna_500,'dna',output_file,Cutoff_extended)
 # run alignment for aa
-run_alignment(faa,'aa',output_file)
+run_alignment(faa,'aa',output_file,Cutoff_aa)
 output_file.close()

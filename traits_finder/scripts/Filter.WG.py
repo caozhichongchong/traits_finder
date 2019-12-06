@@ -60,18 +60,28 @@ def Calculate_length(file_name):
         f.close()
     return DB_length
 
+
 def compare_blast(All_hit_set,newline):
     ID2 = float(str(newline).split('\t')[2])
     Loci2 = (float(str(newline).split('\t')[6]) + float(str(newline).split('\t')[7])) / 2.0
+    Length2 = abs(float(str(newline).split('\t')[6]) - float(str(newline).split('\t')[7]))
     for oldlines in All_hit_set:
         ID1=float(str(oldlines).split('\t')[2])
         Loci1=(float(str(oldlines).split('\t')[6])+float(str(oldlines).split('\t')[7]))/2.0
-        if abs(Loci1 - Loci2) > 500 or ID1 == ID2:
+        Length1 = abs(float(str(oldlines).split('\t')[6]) - float(str(oldlines).split('\t')[7]))
+        if abs(Loci1 - Loci2) > 500:
+            # not the same region
             All_hit_set.append(newline)
             break
+        # similar region, choose the higher identity
         elif ID1 > ID2:
             break
         elif ID2 > ID1:
+            All_hit_set.append(newline)
+            All_hit_set.remove(oldlines)
+            break
+        elif ID1==ID2 and Length2 > Length1:
+            # same identity, choose the longer one
             All_hit_set.append(newline)
             All_hit_set.remove(oldlines)
             break

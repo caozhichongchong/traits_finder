@@ -120,14 +120,28 @@ def search(roottemp,filename):
                 if 'usearch' in args.u:
                     # Start search target genes by usearch
                     if args.dbf == 1:
+                        # genome file
+                        cmds += args.u + " -ublast " + os.path.join(roottemp, filename.split(orfs_format)[0]+ fasta_format) + \
+                                " -db " + args.db + ".udb  -strand both -evalue 1e-2 -accel 0.5 -blast6out " \
+                                + os.path.join(args.r + '/usearch/' + str(int(i/10000)),
+                                               filename.split(orfs_format)[0]+ fasta_format + '.usearch.txt') + \
+                                " -threads " + str(int(i_max)) + " \n"
+                        # AA file
                         cmds += args.u + " -ublast " + os.path.join(roottemp, filename) + \
                                 " -db " + args.db + ".udb  -strand both -evalue 1e-2 -accel 0.5 -blast6out " \
-                                + os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt') + \
+                                + os.path.join(args.r + '/usearch/' + str(int(i / 10000)), filename + '.usearch.txt') + \
                                 " -threads " + str(int(i_max)) + " \n"
                     else:
+                        # genome file
+                        cmds += args.u + " -ublast " + os.path.join(roottemp, filename.split(orfs_format)[0]+ fasta_format) + \
+                                " -db " + args.db + ".udb -evalue 1e-2 -accel 0.5 -blast6out " \
+                                + os.path.join(args.r + '/usearch/' + str(int(i/10000)),
+                                               filename.split(orfs_format)[0]+ fasta_format + '.usearch.txt') + \
+                                " -threads " + str(int(i_max)) + " \n"
+                        # AA file
                         cmds += args.u + " -ublast " + os.path.join(roottemp, filename) + \
                                 " -db " + args.db + ".udb -evalue 1e-2 -accel 0.5 -blast6out " \
-                                + os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt') + \
+                                + os.path.join(args.r + '/usearch/' + str(int(i / 10000)), filename + '.usearch.txt') + \
                                 " -threads " + str(int(i_max)) + " \n"
                 elif "diamond" in args.u:
                     # Start search target genes by diamond
@@ -181,7 +195,7 @@ def search(roottemp,filename):
                 except IOError:
                     pass
             if Blastsearch == 0:
-                # protein file
+                # protein database
                 cmds += str(args.bp) +" -query " + str(searchfile) + " -db " + args.db + " -out " + args.r + '/search_output/'+str(int(i/10000))+ \
                          "/"+filename+".blast.txt  -outfmt 6  -evalue "+str(args.e)+" -num_threads " + \
                         str(int(i_max)) + " \n"
@@ -327,7 +341,7 @@ for root,dirs,files in os.walk(in_dir):
 
 # search the database in all genomes
 i=0
-i_max = 40
+i_max = int(args.t)
 try:
     os.mkdir('subscripts')
 except OSError:

@@ -14,7 +14,7 @@ print ("\
 traits_finder searches and summarizes traits in genomes and metagenomes\n\
 input: reference database and folder of genomes/metagenomes\n\
 requirement: blast \n\n\
-optional: diamond, bwa, hs-blastn, usearch \n\n\
+optional: diamond, bwa, hs-blastn, usearch, mafft, fasttree \n\n\
 Copyright:An Ni Zhang, Prof. Eric Alm, MIT\n\n\
 Citation:\n\
 Contact anniz44@mit.edu\n\
@@ -35,10 +35,12 @@ def main():
                         help="traits_finder genome for analyzing genomes, \
                         traits_finder meta for analyzing metagenomes, \
                         traits_finder sum_genome for summarizing genome results,\
-                        traits_finder sum_meta for summarizing metagenome results",
+                        traits_finder sum_meta for summarizing metagenome results,\
+                             traits_finder HGT for finding candidate HGT of traits across species,\
+                             traits_finder HGT_sum for summarizing HGT",
                         type=str,
                         default='genome',
-                        choices=['genome', 'meta','sum_genome','sum_meta'],
+                        choices=['genome', 'meta','sum_genome','sum_meta','HGT','HGT_sum'],
                         action='store',
                         metavar='traits_finder command')
     required.add_argument("-db",
@@ -163,6 +165,12 @@ def main():
         os.system(cmd)
     elif args.command == 'HGT':
         cmd = ('python '+workingdir+'/scripts/HGT_finder.py -t %s --fa %s --orf %s --r %s --r16 %s --s %s --u %s --mf %s --ft %s --th %s \n'
+        %(str(os.path.split(args.db)[1]),str(args.fa),str(args.orf),str(args.r),str(args.r16),
+          str(os.path.join(args.r,'summary')),str(args.u),str(args.mf),str(args.ft),str(args.t)))
+        f1.write(cmd)
+        os.system(cmd)
+    elif args.command == 'HGT_sum':
+        cmd = ('python '+workingdir+'/scripts/HGT_finder_sum.py -t %s --fa %s --orf %s --r %s --r16 %s --s %s --u %s --mf %s --ft %s --th %s \n'
         %(str(os.path.split(args.db)[1]),str(args.fa),str(args.orf),str(args.r),str(args.r16),
           str(os.path.join(args.r,'summary')),str(args.u),str(args.mf),str(args.ft),str(args.t)))
         f1.write(cmd)

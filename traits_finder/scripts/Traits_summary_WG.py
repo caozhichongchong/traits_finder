@@ -56,7 +56,10 @@ try:
     os.mkdir(args.s)
 except OSError:
     pass
-
+try:
+    os.mkdir(os.path.join(args.s,'sub_sequences/'))
+except OSError:
+    pass
 
 ################################################### Function ########################################################
 def check_file(listoffiles):
@@ -117,13 +120,14 @@ outputfile_summary_fun,file_subfix,i):
                 outputfile_blast.write(Function.get(traits_gene,'None')+'\t'+str(lines))
                 if outputfile_aa_500 == 'None':
                     # amino acid search results
-                    Functionset.setdefault(str(lines).split('\t')[0],Function.get(traits_gene,'None'))
+                    Functionset.setdefault(str(lines).split('\t')[0],
+                                           Function.get(traits_gene,'None'))
                 else:
                     # dna search results
                     loci1=min(int(str(lines).split('\t')[6]),int(str(lines).split('\t')[7].split('\r')[0].split('\n')[0]))
                     loci2=max(int(str(lines).split('\t')[6]),int(str(lines).split('\t')[7].split('\r')[0].split('\n')[0]))
                     Functionset.setdefault('%s_%s_%s' %(str(lines).split('\t')[0],
-                    str(loci1-1),str(loci2)),Function.get(traits_gene,'None'))
+                    str(loci1-1),str(loci2)), Function.get(traits_gene,'None'))
             else:
                 # direct traits output
                 outputfile_blast.write(str(lines))
@@ -143,7 +147,7 @@ outputfile_summary_fun,file_subfix,i):
         outputfile_summary_fun.write('\n')
         # extract sequences
         aaout = blastout + '.aa'
-        aaout500 = blastout + '.extra500.aa'
+        aaout500 = blastout + '.extra*.aa'
         # merge traits fasta into functions
         for record in SeqIO.parse(aaout, 'fasta'):
                 if filename.split(file_subfix)[0] in str(record.id):
@@ -170,7 +174,7 @@ outputfile_summary_fun,file_subfix,i):
                         print('%s not found in blast output'%(filename.split(file_subfix)[0] + '_'+ str(record.id)))
         # merge traits extend 500 fasta
         if outputfile_aa_500 != 'None':
-            for record in SeqIO.parse(aaout500, 'fasta'):
+            for record in SeqIO.parse(glob.glob(aaout500)[0], 'fasta'):
                 if filename.split(file_subfix)[0] in str(record.id):
                     outputfile_aa_500.write('>'+str(record.id)+'\n'+str(record.seq)+'\n')
                 else:
@@ -179,6 +183,7 @@ outputfile_summary_fun,file_subfix,i):
     else:
         outputfile_summary.write(inputfile.split(file_subfix)[0] + '\tNo_hit\n')
         outputfile_summary_fun.write(inputfile.split(file_subfix)[0] + '\tNo_hit\n')
+
 
 ################################################### Programme #######################################################
 # load all files
@@ -203,8 +208,8 @@ fsum_aa_fun = open(os.path.join(args.s,args.t+'.all.traits.aa.summarize.function
 fsum_dna = open(os.path.join(args.s,args.t+'.all.traits.dna.summarize.gene.'+str(args.c)+'.txt'),'w')
 fsum_dna_fun = open(os.path.join(args.s,args.t+'.all.traits.dna.summarize.function.'+str(args.c)+'.txt'),'w')
 # sequences
-faa=os.path.join(args.s,args.t+'.all.traits.aa.fasta')
-fdna=os.path.join(args.s,args.t+'.all.traits.dna.fasta')
+faa=os.path.join(args.s,'sub_sequences/'+args.t+'.all.traits.aa.fasta')
+fdna=os.path.join(args.s,'sub_sequences/'+args.t+'.all.traits.dna.fasta')
 fdna_500=open(os.path.join(args.s,args.t+'.all.traits.dna.extra500.fasta'),'w')
 # reset output sequence files for all sequences
 outputfile_aa_file = open(faa,'w')
@@ -280,8 +285,10 @@ for filenames in Targetroot:
 
 
 # merge all sequences into one file
-os.system('cat %s > %s' %(faa.replace('fasta','*.fasta'),faa))
-os.system('cat %s > %s' %(fdna.replace('fasta','*.fasta'),fdna))
+os.system('cat %s > %s' %(faa.replace('fasta','*.fasta'),
+                          os.path.join(args.s, os.path.split(faa)[-1])))
+os.system('cat %s > %s' %(fdna.replace('fasta','*.fasta'),
+                          os.path.join(args.s, os.path.split(fdna)[-1])))
 
 
 # end of processing all traits
