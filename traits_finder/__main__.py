@@ -170,8 +170,8 @@ def main():
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'HGT_sum':
-        cmd = ('python '+workingdir+'/scripts/HGT_finder_sum.py -t %s --fa %s --orf %s --r %s --r16 %s --s %s --u %s --mf %s --ft %s --th %s \n'
-        %(str(os.path.split(args.db)[1]),str(args.fa),str(args.orf),str(args.r),str(args.r16),
+        cmd = ('python '+workingdir+'/scripts/HGT_finder_sum.py -t %s -m %s --fa %s --orf %s --r %s --r16 %s --s %s --u %s --mf %s --ft %s --th %s \n'
+        %(str(os.path.split(args.db)[1]),str(args.m),str(args.fa),str(args.orf),str(args.r),str(args.r16),
           str(os.path.join(args.r,'summary')),str(args.u),str(args.mf),str(args.ft),str(args.t)))
         f1.write(cmd)
         os.system(cmd)

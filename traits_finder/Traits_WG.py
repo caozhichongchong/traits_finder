@@ -180,7 +180,7 @@ except IOError:
                                       'windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert\n' % (
                                           workingdir +'/database/85_otus.fasta', workingdir +'/database/85_otus.fasta')))
                 f1.write(os.path.join(os.path.split(args.u)[0],
-                                      'hs-blastn index %s\n' % (
+                                      ' index %s\n' % (
                                           workingdir +'/database/85_otus.fasta')))
 # bash for all subscripts
 for file_name in list_of_files:

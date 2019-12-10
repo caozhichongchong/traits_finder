@@ -51,8 +51,8 @@ args = parser.parse_args()
 fasta_format = args.fa
 orfs_format = args.orf
 Cutoff_HGT=0.99
-Cutoff_aa=0.9
-Cutoff_extended=0.1
+Cutoff_aa=0.8
+Cutoff_extended=0.5
 if args.s == 'None':
     input_dir = os.path.join(args.r,'summary')
     result_dir = os.path.join(args.r, 'HGT')
@@ -94,7 +94,8 @@ def run_cluster(input_fasta,output_clusters = 1, cutoff=0.99):
     except IOError:
         os.system('%s -sort length -cluster_fast %s -id %s -centroids %s.cluster.aa -uc %s.uc'
                   %(args.u, input_fasta,str(cutoff-0.01),input_fasta,input_fasta))
-    print('Finish running usearch cluster for %s' % (input_fasta))
+    print('Finish running usearch cluster for %s using %s as cutoff' %
+          (input_fasta,str(cutoff-0.01)))
     # read cluster results
     Clusters = dict()
     Clusters_seqs = dict()
@@ -110,33 +111,36 @@ def run_cluster(input_fasta,output_clusters = 1, cutoff=0.99):
             Clusters[cluster].append(record_name)
         Total_seq += 1
         Cluster_num = max(Cluster_num,int(cluster))
-    if output_clusters == 1:
-        if Cluster_num > 0:
-            Cutoff_HGT = max(3,int(Total_seq / Cluster_num))
-            print('A total of %s clusters for %s sequences\nSetting cutoff as %s'
-                  %(Cluster_num, Total_seq, Cutoff_HGT))
-            for cluster in Clusters:
-                # at least 3 sequences in a cluster
-                if len(Clusters[cluster]) >= Cutoff_HGT:
-                    for record_name in Clusters[cluster]:
-                        Clusters_seqs.setdefault(record_name,str(cluster))
-                        record_subname = '_'.join(record_name.split('_')[0:-2])
+    if Cluster_num > 0:
+        cutoff_temp = max(3, int(Total_seq / Cluster_num))
+        print('A total of %s clusters for %s sequences\nSetting cutoff as %s'
+              % (Cluster_num, Total_seq, cutoff_temp))
+        for cluster in Clusters:
+            # at least 3 sequences in a cluster
+            if len(Clusters[cluster]) >= cutoff_temp:
+                for record_name in Clusters[cluster]:
+                    Clusters_seqs.setdefault(record_name, str(cluster))
+                    record_subname = '_'.join(record_name.split('_')[0:-2])
+                    if output_clusters == 1:
                         if record_subname not in Clusters_extend_seqs:
-                            Clusters_extend_seqs.setdefault(record_subname,[[cluster,record_name,
-                                                                             loci_seq(record_name)]])
+                            Clusters_extend_seqs.setdefault(record_subname, [[cluster, record_name,
+                                                                              loci_seq(record_name)]])
                         else:
-                            Clusters_extend_seqs[record_subname].append([cluster,record_name,
+                            Clusters_extend_seqs[record_subname].append([cluster, record_name,
                                                                          loci_seq(record_name)])
-            # clustering sequences
-            print('Clustering sequences for %s' % (input_fasta))
-            for record in SeqIO.parse(input_fasta, 'fasta'):
-                if str(record.id) in Clusters_seqs:
-                    output_sequences=open(os.path.join(result_dir + '/sub_sequences','%s.%s.fasta'%(
-                        os.path.split(input_fasta)[-1],
-                        Clusters_seqs[str(record.id)])),'a')
-                    output_sequences.write('>%s\n%s\n'%(str(record.id),str(record.seq)))
-                    output_sequences.close()
-        return Clusters_extend_seqs
+        # clustering sequences
+        print('Clustering sequences for %s' % (input_fasta))
+        for record in SeqIO.parse(input_fasta, 'fasta'):
+            if str(record.id) in Clusters_seqs:
+                output_sequences = open(os.path.join(result_dir + '/sub_sequences', '%s.%s.fasta' % (
+                    os.path.split(input_fasta)[-1],
+                    Clusters_seqs[str(record.id)])), 'a')
+                output_sequences.write('>%s\n%s\n' % (str(record.id), str(record.seq)))
+                output_sequences.close()
+    return Clusters_extend_seqs
+
+
+
 
 
 def extract_extend(Clusters_extend_seqs,input_extend_fasta):
@@ -177,18 +181,18 @@ def run_alignment(input_folder,type_fasta,output_file,cutoff=0.99):
             except IOError:
                 output_file.write("%s -makeudb_usearch %s -output %s.udb\n"
                                   % (args.u, input_fasta,input_fasta))
-                if type_fasta == 'dna':
-                    output_file.write("%s  -ublast %s -db %s.udb  -strand both -id %s -evalue 1e-2 -accel 0.5 -blast6out %s.%s.usearch.txt  -threads %s\n"
+                if  'dna' in type_fasta :
+                    output_file.write("%s  -ublast %s -db %s.udb  -strand both -id %s -evalue 1e-2  -acceptall -blast6out %s.%s.usearch.txt  -threads %s\n"
                                       %(args.u,input_fasta,input_fasta,str(cutoff),input_fasta,str(cutoff),str(args.th)))
                 else:
                     output_file.write(
-                        "%s  -ublast %s -db %s.udb  -id %s  -evalue 1e-2 -accel 0.5 -blast6out %s.%s.usearch.txt  -threads %s\n"
+                        "%s  -ublast %s -db %s.udb  -id %s  -evalue 1e-2  -acceptall -blast6out %s.%s.usearch.txt  -threads %s\n"
                         % (args.u, input_fasta, input_fasta,str(cutoff),input_fasta,str(cutoff), str(args.th)))
         if args.mf != 'None' and args.ft != 'None':
             try:
                 f1 = open("%s.align.nwk" % (input_fasta), 'r')
             except IOError:
-                if type_fasta == 'dna':
+                if 'dna' in type_fasta:
                     output_file.write("%s --nuc --adjustdirection --quiet --nofft --maxiterate 0 --retree 1 --thread %s %s > %s.align\n"
                      % (args.mf, str(args.th), input_fasta, input_fasta))
                     output_file.write("%s -nt -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
