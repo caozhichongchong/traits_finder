@@ -182,11 +182,11 @@ def run_alignment(input_folder,type_fasta,output_file,cutoff=0.99):
                 output_file.write("%s -makeudb_usearch %s -output %s.udb\n"
                                   % (args.u, input_fasta,input_fasta))
                 if  'dna' in type_fasta :
-                    output_file.write("%s  -ublast %s -db %s.udb  -strand both -id %s -evalue 1e-2  -acceptall -blast6out %s.%s.usearch.txt  -threads %s\n"
+                    output_file.write("%s -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
                                       %(args.u,input_fasta,input_fasta,str(cutoff),input_fasta,str(cutoff),str(args.th)))
                 else:
                     output_file.write(
-                        "%s  -ublast %s -db %s.udb  -id %s  -evalue 1e-2  -acceptall -blast6out %s.%s.usearch.txt  -threads %s\n"
+                        "%s  -usearch_global %s -db %s.udb  -id %s  -evalue 1e-2 -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
                         % (args.u, input_fasta, input_fasta,str(cutoff),input_fasta,str(cutoff), str(args.th)))
         if args.mf != 'None' and args.ft != 'None':
             try:
