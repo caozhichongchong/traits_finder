@@ -87,6 +87,7 @@ def run_16S(input_fasta,cutoff=0.97):
     try:
         f1 = open("%s.%s.usearch.txt" % (input_fasta, 0.6), 'r')
     except IOError:
+        # need fix
         #os.system("%s -makeudb_usearch %s -output %s.udb\n"
         #                  % (args.u, input_fasta, input_fasta))
         #os.system("%s  -ublast %s -db %s.udb  -strand both -id %s -evalue 1 -acceptall -blast6out %s.%s.usearch.txt  -threads %s\n"
