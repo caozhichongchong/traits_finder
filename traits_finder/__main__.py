@@ -141,14 +141,15 @@ def main():
     workingdir=os.path.abspath(os.path.dirname(__file__))
     ################################################### Programme #######################################################
     f1 = open ('traits_finder.log','w')
+    thread = min(args.t,40)
     if args.command in ['genome','mge'] :
         cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s\n'
-        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r[0]),str(args.r16),str(args.t),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
+        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r[0]),str(args.r16),str(thread),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'meta':
         cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s\n'
-        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r[0]),str(args.r16),str(args.t),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
+        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r[0]),str(args.r16),str(thread),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_genome':
@@ -180,13 +181,13 @@ def main():
     elif args.command == 'HGT':
         cmd = ('python '+workingdir+'/scripts/HGT_finder.py -t %s --r %s --s %s --u %s --mf %s --ft %s --th %s \n'
         %(str(os.path.split(args.db)[1]),str(args.r[0]),
-          str(os.path.join(args.r[0],'summary')),str(args.u),str(args.mf),str(args.ft),str(args.t)))
+          str(os.path.join(args.r[0],'summary')),str(args.u),str(args.mf),str(args.ft),str(thread)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'HGT_sum':
         cmd = ('python '+workingdir+'/scripts/HGT_finder_sum.py -t %s -m %s --r %s --s %s --u %s --mf %s --ft %s --th %s \n'
         %(str(os.path.split(args.db)[1]),str(args.m),str(args.r[0]),
-          str(os.path.join(args.r[0],'summary')),str(args.u),str(args.mf),str(args.ft),str(args.t)))
+          str(os.path.join(args.r[0],'summary')),str(args.u),str(args.mf),str(args.ft),str(thread)))
         f1.write(cmd)
         os.system(cmd)
 
