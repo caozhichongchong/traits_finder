@@ -7,19 +7,9 @@ import glob
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("-t",
                     help="trait name", type=str, default='ARG',metavar='trait name')
-# optional parameters
-parser.add_argument("--fa",
-                    help="input format of genome sequence", type=str,
-                    default='.fna.add',metavar='.fasta, .fna or .fa')
-parser.add_argument("--orf",
-                    help="input format of genome orfs", type=str,
-                    default='.genes.faa',metavar='.faa')
 # optional input setup
 parser.add_argument("--r",
                     help="input directory or folder of your previous results by Traits_WGD.py",
-                    type=str, default='Result',metavar='Result')
-parser.add_argument("--r16",
-                    help="input directory or folder of your previous 16S sequences extracted by Traits_WGD.py",
                     type=str, default='Result',metavar='Result')
 parser.add_argument("--s",
                     help="input directory or folder of your previous results by traits summary",
@@ -48,8 +38,6 @@ parser.add_argument('--ft', '--fasttree',
 
 ################################################## Definition ########################################################
 args = parser.parse_args()
-fasta_format = args.fa
-orfs_format = args.orf
 Cutoff_HGT=0.99
 Cutoff_aa=0.8
 Cutoff_extended=0.5
@@ -75,9 +63,12 @@ except OSError:
 
 ################################################### Function ########################################################
 def loci_seq(record_name):
-    loci1 = int(record_name.split('_')[-2])
-    loci2 = int(record_name.split('_')[-1])
-    return [loci1,loci2]
+    try:
+        loci1 = int(record_name.split('_')[-2])
+        loci2 = int(record_name.split('_')[-1])
+        return [loci1,loci2]
+    except ValueError:
+        print(record_name)
 
 def compare_loci(loci_new,loci_ref):
     if loci_new[0] <= loci_ref[0] and loci_new[1] >= loci_ref[1]:
@@ -104,7 +95,7 @@ def run_cluster(input_fasta,output_clusters = 1, cutoff=0.99):
     Cluster_num = 0
     for lines in open(input_fasta+'.uc','r'):
         cluster = lines.split('\t')[1]
-        record_name = lines.split('\t')[-2].split(' ')[0]
+        record_name = lines.split('\t')[8].split(' ')[0]
         if cluster not in Clusters:
             Clusters.setdefault(cluster,[record_name])
         else:
@@ -138,9 +129,6 @@ def run_cluster(input_fasta,output_clusters = 1, cutoff=0.99):
                 output_sequences.write('>%s\n%s\n' % (str(record.id), str(record.seq)))
                 output_sequences.close()
     return Clusters_extend_seqs
-
-
-
 
 
 def extract_extend(Clusters_extend_seqs,input_extend_fasta):

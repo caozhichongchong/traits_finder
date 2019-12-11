@@ -33,14 +33,18 @@ def main():
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('command',
                         help="traits_finder genome for analyzing genomes, \
+                        traits_finder mge for analyzing mobile genetic elements (MGEs), \
                         traits_finder meta for analyzing metagenomes, \
                         traits_finder sum_genome for summarizing genome results,\
+                        traits_finder sum_genome for summarizing MGE results,\
                         traits_finder sum_meta for summarizing metagenome results,\
                              traits_finder HGT for finding candidate HGT of traits across species,\
                              traits_finder HGT_sum for summarizing HGT",
                         type=str,
                         default='genome',
-                        choices=['genome', 'meta','sum_genome','sum_meta','HGT','HGT_sum'],
+                        choices=['genome','mge', 'meta',
+                        'sum_genome','sum_mge','sum_meta',
+                        'merge','HGT','HGT_sum'],
                         action='store',
                         metavar='traits_finder command')
     required.add_argument("-db",
@@ -80,12 +84,12 @@ def main():
                         help="input format of genomes orfs", type=str,
                           default='.genes.faa',metavar='.faa')
     optional.add_argument("--l",
-                          help="input list of a subset of genomes/metagenomes", type=str,
+                          help="input list of a subset of metagenomes", type=str,
                           default='None', metavar='list.txt')
     # optional output setup
     optional.add_argument("--r",
                         help="output directory or folder of your results",
-                        type=str, default='Result',metavar='Result')
+                        type=str, default='Result',metavar='Result', nargs='*')
     optional.add_argument("--r16",
                         help="output directory or folder of your 16S sequences",
                         type=str, default='Result',metavar='Result')
@@ -137,42 +141,52 @@ def main():
     workingdir=os.path.abspath(os.path.dirname(__file__))
     ################################################### Programme #######################################################
     f1 = open ('traits_finder.log','w')
-    if args.command == 'genome':
+    if args.command in ['genome','mge'] :
         cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s\n'
-        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r),str(args.r16),str(args.t),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
+        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r[0]),str(args.r16),str(args.t),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'meta':
         cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s\n'
-        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r),str(args.r16),str(args.t),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
+        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r[0]),str(args.r16),str(args.t),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_genome':
         cmd = ('python '+workingdir+'/scripts/Traits_summary_WG.py -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s -dbf %s \n'
-        %(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r),str(args.r16),str(os.path.join(args.r,'summary')),str(args.id),str(args.dbf)))
+        %(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r[0]),str(args.r16),str(os.path.join(args.r[0],'summary')),str(args.id),str(args.dbf)))
+        f1.write(cmd)
+        os.system(cmd)
+    elif args.command == 'sum_mge':
+        cmd = ('python '+workingdir+'/scripts/Traits_summary_WG.py --mge %s -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s -dbf %s \n'
+        %("2",str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r[0]),str(args.r16),str(os.path.join(args.r[0],'summary')),str(args.id),str(args.dbf)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_meta':
         #if args.s == 1:
         #   cmd = ('python '+workingdir+'/Copynumber_traits.py -i %s -i16 %s -o %s -f %s.blast.txt -f16 %s.16S.txt -l %s.length -tf %s -m %s -c %s'
-        #    % (str(os.path.join(args.r,'search_output/0'))),str(args.r16),str(os.path.join(args.r,'summary'))),str(args.fa),str(args.fa),str(args.db),str(args.m),str(args.meta),str(args.id))
+        #    % (str(os.path.join(args.r[0],'search_output/0'))),str(args.r16),str(os.path.join(args.r[0],'summary'))),str(args.fa),str(args.fa),str(args.db),str(args.m),str(args.meta),str(args.id))
         #else:
             #cmd = ('python '+workingdir+'/Copynumber_traits_hmm.py -i %s -i16 %s -o %s -f %s.hmm2.txt -f16 %s.16S.txt -l %s.length -tf %s -m %s -c %s'
-            #% (str(os.path.join(args.r,'search_output/0'))),str(args.r16),str(os.path.join(args.r,'summary'))),str(args.fa),str(args.fa),str(args.db),str(args.m),str(args.meta),str(args.e))
+            #% (str(os.path.join(args.r[0],'search_output/0'))),str(args.r16),str(os.path.join(args.r[0],'summary'))),str(args.fa),str(args.fa),str(args.db),str(args.m),str(args.meta),str(args.e))
         #cmd += ('python '+workingdir+'/scripts/Traits_summary_MG.py -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s\n'
-        #%(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r),str(args.r16),str(os.path.join(args.r,'summary')),str(args.id)))
+        #%(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r[0]),str(args.r16),str(os.path.join(args.r[0],'summary')),str(args.id)))
+        f1.write(cmd)
+        os.system(cmd)
+    elif args.command == 'merge':
+        cmd = ('python '+workingdir+'/scripts/Merge.dataset.py -t %s --r %s \n'
+        %(str(os.path.split(args.db)[1]),' '.join(args.r)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'HGT':
-        cmd = ('python '+workingdir+'/scripts/HGT_finder.py -t %s --fa %s --orf %s --r %s --r16 %s --s %s --u %s --mf %s --ft %s --th %s \n'
-        %(str(os.path.split(args.db)[1]),str(args.fa),str(args.orf),str(args.r),str(args.r16),
-          str(os.path.join(args.r,'summary')),str(args.u),str(args.mf),str(args.ft),str(args.t)))
+        cmd = ('python '+workingdir+'/scripts/HGT_finder.py -t %s --r %s --s %s --u %s --mf %s --ft %s --th %s \n'
+        %(str(os.path.split(args.db)[1]),str(args.r[0]),
+          str(os.path.join(args.r[0],'summary')),str(args.u),str(args.mf),str(args.ft),str(args.t)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'HGT_sum':
-        cmd = ('python '+workingdir+'/scripts/HGT_finder_sum.py -t %s -m %s --fa %s --orf %s --r %s --r16 %s --s %s --u %s --mf %s --ft %s --th %s \n'
-        %(str(os.path.split(args.db)[1]),str(args.m),str(args.fa),str(args.orf),str(args.r),str(args.r16),
-          str(os.path.join(args.r,'summary')),str(args.u),str(args.mf),str(args.ft),str(args.t)))
+        cmd = ('python '+workingdir+'/scripts/HGT_finder_sum.py -t %s -m %s --r %s --s %s --u %s --mf %s --ft %s --th %s \n'
+        %(str(os.path.split(args.db)[1]),str(args.m),str(args.r[0]),
+          str(os.path.join(args.r[0],'summary')),str(args.u),str(args.mf),str(args.ft),str(args.t)))
         f1.write(cmd)
         os.system(cmd)
 
