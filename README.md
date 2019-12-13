@@ -4,7 +4,7 @@
 * input: reference database and folder of genomes/metagenomes
 * requirement: python >= 3.0, blast or hmm
 * requirement: for hmm, you need to prepare the hmm database
-* optional: diamond, bwa, hs-blastn, usearch, mafft (and snp-sites)
+* optional: diamond, bwa, hs-blastn, usearch, mafft, fasttree
 
 ## Install
 `pip install traits_finder`\
@@ -25,12 +25,12 @@ https://pypi.org/project/traits_finder
 3. all genomes/metagenomes in a folder (-i your.input.folder)
 4. suffix or file extension of your genomes/metagenomes, such as .fasta or .fastq (-fa your.input.genome/metagenome.format)
 5. programs to run: blast for similarity search (-s 1 )or hmm for domain search (-s 2)
-6. optional programs to speedup! diamond, hs-blastn, usearch
-7. optional programs to look at sequence variants! bwa
+6. optional programs to speedup! diamond, hs-blastn (or usearch for 16S extracting), usearch (necessary for HGT and HGT_sum)
+7. optional programs to look at sequence variants! bwa, mafft, fasttree
 
 ## How to use it
 ### Search traits: boring and slow...
-1. search protein reference sequences in genomes by similarity search\
+1. search protein reference sequences in genomes (traits_finder genome) or mobile genetic elements (traits_finder mge) by similarity search\
 `traits_finder genome -db your.db -i your.input.folder -fa your.input.genome.format --orf your.input.orf.format --r your.output.folder --r16 your.output.folder.for.16s --u diamond --bp blastp -dbf 1 -s 1`\
 
 2. search protein reference sequences in metagenomes by similarity search\
@@ -57,6 +57,8 @@ https://pypi.org/project/traits_finder
 
 2. summarize traits in metagenomes\
 `traits_finder sum_meta -db your.db -m function.mapping.your.db -i your.input.folder -fa your.input.metagenomes.format --r your.output.folder --r16 your.output.folder.for.16s`\
+
+### HGT finder and summarizing: cool and fast! (still-testing)
 
 ## Results
 

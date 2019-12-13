@@ -24,12 +24,10 @@ parser.add_argument('--th',
                         metavar="1 or more", action='store', default=1, type=int)
 # requirement for software calling
 parser.add_argument('--u', '--usearch',
-                      help="Optional: use two-step method for blast search," +
-                           " \'None\' for using one step, \'usearch\' or \'diamond\' for using two-step \
-                           (complete path to usearch or diamond if not in PATH, \
-                           please make sure the search tools can be directly called), (default: \'None\')",
-                      metavar="None or usearch",
-                      action='store', default='None', type=str)
+                      help="Necessary: use usearch for 16s and gene clustering," +
+                           "if your gene fasta file is larger than 2GB, please also install hs-blastn",
+                      metavar="usearch",
+                      action='store', default='usearch', type=str)
 parser.add_argument('--mf', '--mafft',
                       help="Optional: complete path to mafft if not in PATH,",
                       metavar="/usr/local/bin/mafft",
@@ -75,11 +73,14 @@ def run_16S(input_fasta,cutoff=0.97):
     try:
         f1 = open("%s.%s.usearch.txt" % (input_fasta, 0.6), 'r')
     except IOError:
-        os.system("%s -makeudb_usearch %s -output %s.udb\n"
-                          % (args.u, input_fasta, input_fasta))
-        os.system("%s  -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
-                % (args.u, input_fasta, input_fasta, 0.6, input_fasta, 0.6, str(args.th)))
-        if "hs-blassn" in args.u:
+        if int(os.path.getsize(input_fasta)) <= 2*1E+9:
+        # smaller than 2G
+            os.system("%s -makeudb_usearch %s -output %s.udb\n"
+                              % (args.u, input_fasta, input_fasta))
+            os.system("%s  -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
+                    % (args.u, input_fasta, input_fasta, 0.6, input_fasta, 0.6, str(args.th)))
+        else:
+            print('Using hs-blastn instead of usearch because the input file is larger than 2GB\n')
             os.system('%s windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
                       ('hs-blastn',input_fasta,input_fasta))
             os.system('%s windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
@@ -185,9 +186,36 @@ def function_pair(Function_Set,Genome1,Genome2,type_fasta):
     return function_com(function1, function2)
 
 
-def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,input_prefix,cutoff):
+def extract_dna(dna_file,gene_list,input_fasta,output_script_file,type_fasta):
+    output_file = open(input_fasta,'a')
+    for record in SeqIO.parse(open(dna_file, 'r'), 'fasta'):
+        if str(record.id) in gene_list:
+            output_file.write('>%s\n%s\n' %(str(record.id),str(record.seq)))
+    output_file.close()
+    if args.mf != 'None':
+        try:
+            f1 = open("%s.align.nwk" % (input_fasta), 'r')
+        except IOError:
+            if 'dna' in type_fasta:
+                output_script_file.write(
+                    "%s --nuc --adjustdirection --quiet --nofft --maxiterate 0 --retree 1 --thread %s %s > %s.align\n"
+                    % (args.mf, str(args.th), input_fasta, input_fasta))
+                if  args.ft != 'None':
+                    output_script_file.write("%s -nt -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
+                                      % (args.ft, input_fasta, input_fasta))
+            else:
+                output_script_file.write(
+                    "%s --amino --quiet --retree 1 --maxiterate 0 --nofft --thread %s %s > %s.align\n"
+                    % (args.mf, str(args.th), input_fasta, input_fasta))
+                if args.ft != 'None':
+                    output_script_file.write("%s -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
+                                      % (args.ft, input_fasta, input_fasta))
+
+
+def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,input_prefix,cutoff,output_script_file):
     all_usearch = glob.glob(os.path.join(input_folder, input_prefix))
     for files in all_usearch:
+        Diff_gene_set = []
         for lines in open(files,'r'):
             if float(str(lines).split('\t')[2]) >= cutoff:
                 Genome1 = lines.split('\t')[0]
@@ -206,6 +234,13 @@ def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,inp
                                                        (Function,args.t,type_fasta)),'a')
                                 fout.write(Function+'\t'+str(cluster)+'\t'+lines)
                                 fout.close()
+                                # record diff gene set
+                                Gene1 = lines.split('\t')[0]
+                                Gene2 = lines.split('\t')[1]
+                                if Gene1 not in Diff_gene_set:
+                                        Diff_gene_set.append(Gene1)
+                                if Gene2 not in Diff_gene_set:
+                                        Diff_gene_set.append(Gene2)
                             else:
                                 # same 16S cluster
                                 fout = open(os.path.join(result_dir + '/sub_fun',
@@ -220,6 +255,13 @@ def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,inp
                                                    (Function,args.t,type_fasta)),'a')
                             fout.write(Function+'\t'+str(cluster)+'\t'+lines)
                             fout.close()
+        # extract dna and extra500 dna sequences for alignment
+        if args.mf != 'None' and Diff_gene_set !=[]:
+            extract_dna(files.split('.fasta.sorted')[0]+'.fasta.sorted', Diff_gene_set,
+                        os.path.join(result_dir + '/sub_fun',
+                                     "%s.%s.%s.diff.cluster.fasta" %
+                                     (Function, args.t, type_fasta)),
+                        output_script_file,type_fasta)
 
 
 def usearch_16S_load(input_file):
@@ -239,8 +281,8 @@ def HGT_finder_sum(cluster_16S,function_name,type_fasta,cutoff,diff,same,mge,out
     Diff_cluster=[]
     Diff_16S_min = Cutoff_16S
     Same_cluster=[]
-    Diff_genome_set=[]
     Same_genome_set = []
+    Diff_genome_set = []
     # calculate diff 16S clusters
     try:
         fdiff = open(diff,'r')
@@ -365,6 +407,10 @@ def HGT_finder_sum(cluster_16S,function_name,type_fasta,cutoff,diff,same,mge,out
 
 
 ################################################### Programme #######################################################
+# alignment scripts output
+output_script_file = open(os.path.join('HGTfinder_subscripts/HGTfinder_subscripts_alignment.sh'), 'w')
+output_script_file.write("#!/bin/bash\n")
+
 f16s = os.path.join(args.s, args.t + '.all.16S.fasta')
 faa = os.path.join(args.s, args.t + '.all.traits.aa.fasta')
 fdna = os.path.join(args.s, args.t + '.all.traits.dna.fasta')
@@ -379,11 +425,11 @@ Function_Set_aa=function_load(os.path.join(args.s, args.t + '.all.traits.aa.txt'
 cluster_16S = run_16S(f16s, Cutoff_16S)
 # filter usearch output into same 16S cluster and diff 16S clusters
 compare_traits_16S(Function_Set_dna, cluster_16S[0],'dna',result_dir +
-                              '/sub_sequences',os.path.split(fdna)[-1] + '*.usearch.txt',Cutoff_HGT)
+                              '/sub_sequences',os.path.split(fdna)[-1] + '*.usearch.txt',Cutoff_HGT,output_script_file)
 compare_traits_16S(Function_Set_aa, cluster_16S[0],'aa',result_dir +
-                             '/sub_sequences',os.path.split(faa)[-1] + '*.usearch.txt',Cutoff_aa)
+                             '/sub_sequences',os.path.split(faa)[-1] + '*.usearch.txt',Cutoff_aa,output_script_file)
 compare_traits_16S(Function_Set_dna, cluster_16S[0],'dna_extended',result_dir +
-                             '/sub_sequences',os.path.split(fdna_500)[-1] + '*.usearch.txt',Cutoff_extended)
+                             '/sub_sequences',os.path.split(fdna_500)[-1] + '*.usearch.txt',Cutoff_extended,output_script_file)
 # load diff 16S usearch result
 usearch_16S_load("%s.sorted.%s.usearch.txt" % (f16s,0.6))
 # calculate index for HGT
@@ -420,5 +466,4 @@ for function_diff in all_function_diff_same:
                        all_output)
         all_function.append(function_name)
 all_output.close()
-
-# check an essential and check an ARG (mcr-1)
+output_script_file.close()

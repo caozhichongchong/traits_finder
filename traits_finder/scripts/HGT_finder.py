@@ -20,12 +20,10 @@ parser.add_argument('--th',
                         metavar="1 or more", action='store', default=1, type=int)
 # requirement for software calling
 parser.add_argument('--u', '--usearch',
-                      help="Optional: use two-step method for blast search," +
-                           " \'None\' for using one step, \'usearch\' or \'diamond\' for using two-step \
-                           (complete path to usearch or diamond if not in PATH, \
-                           please make sure the search tools can be directly called), (default: \'None\')",
-                      metavar="None or usearch",
-                      action='store', default='None', type=str)
+                      help="Necessary: use usearch for 16s and gene clustering," +
+                           "if your gene fasta file is larger than 2GB, please also install hs-blastn",
+                      metavar="usearch",
+                      action='store', default='usearch', type=str)
 parser.add_argument('--mf', '--mafft',
                       help="Optional: complete path to mafft if not in PATH,",
                       metavar="/usr/local/bin/mafft",
@@ -76,17 +74,82 @@ def compare_loci(loci_new,loci_ref):
     else:
         return 0
 
+def cutoff_set(filesize,cutoff):
+    if int(filesize) <= 10*1E+6:
+        # 10Mb
+        return cutoff - 0.05
+    elif int(filesize) <= 100*1E+6:
+        # 0.1G
+        return cutoff - 0.1
+    elif int(filesize) <= 1*1E+9:
+        # 1G
+        return cutoff - 0.2
+    elif int(filesize) <= 2*1E+9:
+        # 2G
+        return 0.5
+    else:
+        # larger than 2G, run self-clustering
+        return 0
+
+
+def self_clustering(input_usearch,output_uc):
+    # for sequences without any hits, remove from clustering
+    output_uc = open(output_uc,'w')
+    clusters = dict()
+    cluster_num = 0
+    for lines in open(input_usearch):
+        Gene1 = lines.split('\t')[0]
+        Gene2 = lines.split('\t')[1]
+        if Gene1 not in clusters and Gene2 not in clusters:
+            cluster_num += 1
+            clusters.setdefault(Gene1,cluster_num)
+            clusters.setdefault(Gene2, cluster_num)
+            output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n'%(cluster_num,Gene1))
+            output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
+        else:
+            if Gene1 not in clusters:
+                Gene2_cluster = clusters[Gene2]
+                clusters.setdefault(Gene1, Gene2_cluster)
+                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene2_cluster, Gene1))
+            elif Gene2 not in clusters:
+                Gene1_cluster = clusters[Gene1]
+                clusters.setdefault(Gene2, Gene1_cluster)
+                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene1_cluster, Gene2))
+            else:
+                # both genes are set
+                pass
+    output_uc.close()
+
 
 def run_cluster(input_fasta,output_clusters = 1, cutoff=0.99):
-    print('Running usearch cluster for %s' % (input_fasta))
-    # run cutoff -0.01
+    # run cutoff_set
     try:
         f1 = open("%s.uc" % (input_fasta),'r')
     except IOError:
-        os.system('%s -sort length -cluster_fast %s -id %s -centroids %s.cluster.aa -uc %s.uc'
-                  %(args.u, input_fasta,str(cutoff-0.01),input_fasta,input_fasta))
-    print('Finish running usearch cluster for %s using %s as cutoff' %
-          (input_fasta,str(cutoff-0.01)))
+        filesize = os.path.getsize(input_fasta)
+        newcutoff = cutoff_set(filesize, cutoff)
+        if newcutoff > 0:
+            print('Running usearch cluster for %s, filesize %s, cutoff %s' % (input_fasta,filesize,newcutoff))
+            os.system('%s -sort length -cluster_fast %s -id %s -centroids %s.cluster.aa -uc %s.uc -threads %s'
+                      %(args.u, input_fasta,str(newcutoff),input_fasta,input_fasta,args.th))
+        else:
+            print ('Please install hs-blastn because the input file is larger than 2GB\n')
+            print ('Running self-clustering using hs-blastn\n')
+            newcutoff = 0.5
+            print('Running self-clustering for %s, filesize %s, cutoff %s' % (input_fasta, filesize, newcutoff))
+            os.system('%s windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
+                      ('hs-blastn', input_fasta, input_fasta))
+            os.system('%s windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
+                      ('hs-blastn', input_fasta, input_fasta))
+            os.system('%s index %s' % ('hs-blastn', input_fasta))
+            os.system(
+                "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s.%s.usearch.txt -outfmt 6 -evalue 1 -perc_identity %s -num_threads %s\n" \
+                % ('hs-blastn', input_fasta,
+                   input_fasta, input_fasta, input_fasta, newcutoff,
+                   newcutoff, str(args.th)))
+            self_clustering('%s.%s.usearch.txt' % (input_fasta, newcutoff), input_fasta + '.uc')
+    print('Finish running usearch cluster for %s' %
+          (input_fasta))
     # read cluster results
     Clusters = dict()
     Clusters_seqs = dict()
@@ -170,27 +233,12 @@ def run_alignment(input_folder,type_fasta,output_file,cutoff=0.99):
                 output_file.write("%s -makeudb_usearch %s -output %s.udb\n"
                                   % (args.u, input_fasta,input_fasta))
                 if  'dna' in type_fasta :
-                    output_file.write("%s -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
+                    output_file.write("%s -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 32 -blast6out %s.%s.usearch.txt  -threads %s\n"
                                       %(args.u,input_fasta,input_fasta,str(cutoff),input_fasta,str(cutoff),str(args.th)))
                 else:
                     output_file.write(
-                        "%s  -usearch_global %s -db %s.udb  -id %s  -evalue 1e-2 -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
+                        "%s  -usearch_global %s -db %s.udb  -id %s  -evalue 1e-2 -maxaccepts 0 -maxrejects 32 -blast6out %s.%s.usearch.txt  -threads %s\n"
                         % (args.u, input_fasta, input_fasta,str(cutoff),input_fasta,str(cutoff), str(args.th)))
-        if args.mf != 'None' and args.ft != 'None':
-            try:
-                f1 = open("%s.align.nwk" % (input_fasta), 'r')
-            except IOError:
-                if 'dna' in type_fasta:
-                    output_file.write("%s --nuc --adjustdirection --quiet --nofft --maxiterate 0 --retree 1 --thread %s %s > %s.align\n"
-                     % (args.mf, str(args.th), input_fasta, input_fasta))
-                    output_file.write("%s -nt -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
-                     % (args.ft, input_fasta, input_fasta))
-                else:
-                    output_file.write(
-                        "%s --amino --quiet --retree 1 --maxiterate 0 --nofft --thread %s %s > %s.align\n"
-                        % (args.mf, str(args.th), input_fasta, input_fasta))
-                    output_file.write("%s -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
-                                      % (args.ft, input_fasta, input_fasta))
 
 
 ################################################### Programme #######################################################
@@ -200,7 +248,7 @@ fdna_500 = glob.glob(os.path.join(args.s, args.t + '.all.traits.dna.extra*.fasta
 output_file = open(os.path.join('HGTfinder_subscripts/HGTfinder_subscripts.sh'), 'w')
 output_file.write("#!/bin/bash\n")
 # cluster dna sequences
-# identity cutoff is 99%, but run cutoff - 0.01
+# identity cutoff is 99%, but run cutoff - x
 Clusters_extend_seqs = run_cluster(fdna,1,Cutoff_HGT)
 # extract 500bp extended sequences for dna clusters and cluster extended sequences
 if Clusters_extend_seqs != dict():

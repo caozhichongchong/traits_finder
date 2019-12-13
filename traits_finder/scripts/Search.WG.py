@@ -198,7 +198,7 @@ def search(roottemp,filename):
                 # protein database
                 cmds += str(args.bp) +" -query " + str(searchfile) + " -db " + args.db + " -out " + args.r + '/search_output/'+str(int(i/10000))+ \
                          "/"+filename+".blast.txt  -outfmt 6  -evalue "+str(args.e)+" -num_threads " + \
-                        str(int(i_max)) + " \n"
+                        str(min(int(i_max),40)) + " \n"
                 if args.dbf != 1:
                     # genome file
                     cmds += str(args.bp).replace('blastp', 'blastx') + " -query " + str(
@@ -206,7 +206,7 @@ def search(roottemp,filename):
                             + " -db " + args.db + " -out " + args.r + '/search_output/' + str(int(i / 10000)) + \
                             "/" + filename.split(orfs_format)[0]+ fasta_format \
                             + ".blast.txt  -outfmt 6 -evalue " + str(args.e) + " -num_threads " + \
-                            str(int(i_max)) + " \n"
+                            str(min(int(i_max),40)) + " \n"
             # fiter blast result
             Blastsearchfilter = 0
             for root, dirs, files in os.walk(args.r + '/search_output'):
