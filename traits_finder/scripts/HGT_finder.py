@@ -84,44 +84,66 @@ def cutoff_set(filesize,cutoff):
     elif int(filesize) <= 1*1E+9:
         # 1G
         return cutoff - 0.2
-    elif int(filesize) <= 2*1E+9:
-        # 2G
-        return 0.5
     else:
-        # larger than 2G, run self-clustering
+        # larger than 1G, run self-clustering
         return 0
 
 
-def self_clustering(input_usearch,output_uc):
+def self_clustering(input_usearch, output_uc, cutoff):
     # for sequences without any hits, remove from clustering
-    output_uc = open(output_uc,'w')
+    output_uc = open(output_uc, 'w')
     clusters = dict()
     cluster_num = 0
     for lines in open(input_usearch):
         Gene1 = lines.split('\t')[0]
         Gene2 = lines.split('\t')[1]
+        ID = float(lines.split('\t')[2])
         if Gene1 not in clusters and Gene2 not in clusters:
             cluster_num += 1
-            clusters.setdefault(Gene1,cluster_num)
-            clusters.setdefault(Gene2, cluster_num)
-            output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n'%(cluster_num,Gene1))
-            output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
-        else:
-            if Gene1 not in clusters:
-                Gene2_cluster = clusters[Gene2]
-                clusters.setdefault(Gene1, Gene2_cluster)
-                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene2_cluster, Gene1))
-            elif Gene2 not in clusters:
-                Gene1_cluster = clusters[Gene1]
-                clusters.setdefault(Gene2, Gene1_cluster)
-                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene1_cluster, Gene2))
+            if ID < cutoff:
+                # diff cluster
+                clusters.setdefault(Gene1, cluster_num)
+                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
+                cluster_num += 1
+                clusters.setdefault(Gene2, cluster_num)
+                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
             else:
-                # both genes are set
-                pass
+                # same cluster
+                clusters.setdefault(Gene1, cluster_num)
+                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
+                clusters.setdefault(Gene2, cluster_num)
+                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
+        else:
+            if ID < cutoff:
+                # diff cluster
+                if Gene1 not in clusters:
+                    cluster_num += 1
+                    clusters.setdefault(Gene1, cluster_num)
+                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
+                elif Gene2 not in clusters:
+                    cluster_num += 1
+                    clusters.setdefault(Gene2, cluster_num)
+                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
+                else:
+                    # both genes are set
+                    pass
+            else:
+                # same cluster
+                if Gene1 not in clusters:
+                    Gene2_cluster = clusters[Gene2]
+                    clusters.setdefault(Gene1, Gene2_cluster)
+                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene2_cluster, Gene1))
+                elif Gene2 not in clusters:
+                    Gene1_cluster = clusters[Gene1]
+                    clusters.setdefault(Gene2, Gene1_cluster)
+                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene1_cluster, Gene2))
+                else:
+                    # both genes are set
+                    pass
     output_uc.close()
 
 
-def run_cluster(input_fasta,output_clusters = 1, cutoff=0.99):
+def run_cluster(input_fasta, output_clusters = 1, cutoff=0.99):
     # run cutoff_set
     try:
         f1 = open("%s.uc" % (input_fasta),'r')
@@ -135,19 +157,27 @@ def run_cluster(input_fasta,output_clusters = 1, cutoff=0.99):
         else:
             print ('Please install hs-blastn because the input file is larger than 2GB\n')
             print ('Running self-clustering using hs-blastn\n')
-            newcutoff = 0.5
+            newcutoff = cutoff - 0.2
             print('Running self-clustering for %s, filesize %s, cutoff %s' % (input_fasta, filesize, newcutoff))
-            os.system('%s windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
-                      ('hs-blastn', input_fasta, input_fasta))
-            os.system('%s windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
-                      ('hs-blastn', input_fasta, input_fasta))
-            os.system('%s index %s' % ('hs-blastn', input_fasta))
-            os.system(
-                "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s.%s.usearch.txt -outfmt 6 -evalue 1 -perc_identity %s -num_threads %s\n" \
-                % ('hs-blastn', input_fasta,
-                   input_fasta, input_fasta, input_fasta, newcutoff,
-                   newcutoff, str(args.th)))
-            self_clustering('%s.%s.usearch.txt' % (input_fasta, newcutoff), input_fasta + '.uc')
+            try:
+                f1 = open("%s.%s.usearch.txt" % (input_fasta,newcutoff), 'r')
+            except IOError:
+                try:
+                    f1 = open("%s.counts.obinary" % (input_fasta), 'r')
+                except IOError:
+                    os.system('makeblastdb -in %s -input_type fasta -dbtype nucl' %
+                              (input_fasta))
+                    os.system('windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
+                              (input_fasta, input_fasta))
+                    os.system('windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
+                              (input_fasta, input_fasta))
+                    os.system('%s index %s' % ('hs-blastn', input_fasta))
+                os.system(
+                    "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s.%s.usearch.txt -outfmt 6 -evalue 1 -perc_identity %s -num_threads %s\n" \
+                    % ('hs-blastn', input_fasta,
+                       input_fasta, input_fasta, input_fasta, newcutoff,
+                       newcutoff, str(args.th)))
+            self_clustering('%s.%s.usearch.txt' % (input_fasta, newcutoff), input_fasta + '.uc', newcutoff)
     print('Finish running usearch cluster for %s' %
           (input_fasta))
     # read cluster results

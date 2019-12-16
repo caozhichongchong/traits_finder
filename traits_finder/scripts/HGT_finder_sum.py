@@ -137,11 +137,16 @@ def run_16S(input_fasta,cutoff=0.97):
                     % (args.u, input_fasta, input_fasta, 0.6, input_fasta, 0.6, str(args.th)))
             else:
                 print('Using hs-blastn instead of usearch because the input file is larger than 2GB\n')
-                os.system('%s windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
-                          ('hs-blastn', input_fasta, input_fasta))
-                os.system('%s windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
-                          ('hs-blastn', input_fasta, input_fasta))
-                os.system('%s index %s' % ('hs-blastn', input_fasta))
+                try:
+                    f1 = open("%s.counts.obinary" % (input_fasta), 'r')
+                except IOError:
+                    os.system('makeblastdb -in %s -input_type fasta -dbtype nucl' %
+                              (input_fasta))
+                    os.system('windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
+                              (input_fasta, input_fasta))
+                    os.system('windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
+                              ( input_fasta, input_fasta))
+                    os.system('%s index %s' % ('hs-blastn', input_fasta))
                 os.system(
                     "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s.%s.usearch.txt -outfmt 6 -evalue 1 -perc_identity %s -num_threads %s\n" \
                     % ('hs-blastn', input_fasta,
