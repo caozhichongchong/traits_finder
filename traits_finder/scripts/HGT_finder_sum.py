@@ -58,38 +58,96 @@ workingdir=os.path.abspath(os.path.dirname(__file__))
 
 
 ################################################### Function ########################################################
+def self_clustering(input_usearch, output_uc):
+    # for sequences without any hits, remove from clustering
+    output_uc = open(output_uc, 'w')
+    clusters = dict()
+    cluster_num = 0
+    for lines in open(input_usearch):
+        Gene1 = lines.split('\t')[0]
+        Gene2 = lines.split('\t')[1]
+        ID = float(lines.split('\t')[2])
+        if Gene1 not in clusters and Gene2 not in clusters:
+            cluster_num += 1
+            if ID < Cutoff_16S:
+                # diff cluster
+                clusters.setdefault(Gene1, cluster_num)
+                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
+                cluster_num += 1
+                clusters.setdefault(Gene2, cluster_num)
+                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
+            else:
+                # same cluster
+                clusters.setdefault(Gene1, cluster_num)
+                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
+                clusters.setdefault(Gene2, cluster_num)
+                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
+        else:
+            if ID < Cutoff_16S:
+                # diff cluster
+                if Gene1 not in clusters:
+                    cluster_num += 1
+                    clusters.setdefault(Gene1, cluster_num)
+                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
+                elif Gene2 not in clusters:
+                    cluster_num += 1
+                    clusters.setdefault(Gene2, cluster_num)
+                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
+                else:
+                    # both genes are set
+                    pass
+            else:
+                # same cluster
+                if Gene1 not in clusters:
+                    Gene2_cluster = clusters[Gene2]
+                    clusters.setdefault(Gene1, Gene2_cluster)
+                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene2_cluster, Gene1))
+                elif Gene2 not in clusters:
+                    Gene1_cluster = clusters[Gene1]
+                    clusters.setdefault(Gene2, Gene1_cluster)
+                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene1_cluster, Gene2))
+                else:
+                    # both genes are set
+                    pass
+    output_uc.close()
+
+
 def run_16S(input_fasta,cutoff=0.97):
     print('Running usearch cluster for %s' % (input_fasta))
     try:
         f1 = open("%s.sorted.uc" % (input_fasta),'r')
+        input_fasta = input_fasta + '.sorted'
     except IOError:
-        os.system('%s -sort length -cluster_fast %s -id %s -centroids %s.sorted.cluster.aa -uc %s.sorted.uc'
-                  % (args.u, input_fasta, cutoff, input_fasta, input_fasta))
-    try:
-        f1 = open("%s.sorted" % (input_fasta), 'r')
-    except IOError:
-        os.system('%s -sortbylength %s -fastaout %s.sorted' % (args.u, input_fasta, input_fasta))
-    input_fasta = input_fasta + '.sorted'
-    try:
-        f1 = open("%s.%s.usearch.txt" % (input_fasta, 0.6), 'r')
-    except IOError:
-        if int(os.path.getsize(input_fasta)) <= 2*1E+9:
-        # smaller than 2G
-            os.system("%s -makeudb_usearch %s -output %s.udb\n"
-                              % (args.u, input_fasta, input_fasta))
-            os.system("%s  -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
+        #os.system('%s -sort length -cluster_fast %s -id %s -centroids %s.sorted.cluster.aa -uc %s.sorted.uc'
+        #          % (args.u, input_fasta, cutoff, input_fasta, input_fasta))
+        try:
+            f1 = open("%s.sorted" % (input_fasta), 'r')
+        except IOError:
+            os.system('%s -sortbylength %s -fastaout %s.sorted' % (args.u, input_fasta, input_fasta))
+        input_fasta = input_fasta + '.sorted'
+        try:
+            f1 = open("%s.%s.usearch.txt" % (input_fasta, 0.6), 'r')
+        except IOError:
+            if int(os.path.getsize(input_fasta)) <= 2 * 1E+9:
+                # smaller than 2G
+                os.system("%s -makeudb_usearch %s -output %s.udb\n"
+                          % (args.u, input_fasta, input_fasta))
+                os.system(
+                    "%s  -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
                     % (args.u, input_fasta, input_fasta, 0.6, input_fasta, 0.6, str(args.th)))
-        else:
-            print('Using hs-blastn instead of usearch because the input file is larger than 2GB\n')
-            os.system('%s windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
-                      ('hs-blastn',input_fasta,input_fasta))
-            os.system('%s windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
-                      ('hs-blastn',input_fasta,input_fasta))
-            os.system('%s index %s' % ('hs-blastn',input_fasta))
-            os.system( "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s.%s.usearch.txt -outfmt 6 -evalue 1 -perc_identity %s -num_threads %s\n" \
-                        % ('hs-blastn', input_fasta,
-                           input_fasta, input_fasta, input_fasta,0.6,
-                           0.6, str(args.th)))
+            else:
+                print('Using hs-blastn instead of usearch because the input file is larger than 2GB\n')
+                os.system('%s windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
+                          ('hs-blastn', input_fasta, input_fasta))
+                os.system('%s windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
+                          ('hs-blastn', input_fasta, input_fasta))
+                os.system('%s index %s' % ('hs-blastn', input_fasta))
+                os.system(
+                    "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s.%s.usearch.txt -outfmt 6 -evalue 1 -perc_identity %s -num_threads %s\n" \
+                    % ('hs-blastn', input_fasta,
+                       input_fasta, input_fasta, input_fasta, 0.6,
+                       0.6, str(args.th)))
+        self_clustering('%s.%s.usearch.txt' % (input_fasta, 0.6), input_fasta + '.uc')
     print('finish running usearch cluster for %s' % (input_fasta))
     # read cluster results
     Clusters = dict()
@@ -137,7 +195,7 @@ def compare_16S(Genome1,Genome2,cluster_16S_seqs):
         Cluster1 = cluster_16S_seqs[Genome1]
         Cluster2 = cluster_16S_seqs[Genome2]
         if Cluster1 != Cluster2:
-            diff_16S.setdefault(Genome1+'_'+Genome2,0)
+            diff_16S.setdefault(Genome1+'_'+Genome2,Cutoff_16S)
         return Cluster1 != Cluster2
     elif "mge_" in Genome1 or "mge_" in Genome2:
         return "mge"
@@ -196,6 +254,7 @@ def extract_dna(dna_file,gene_list,input_fasta,output_script_file,type_fasta):
         try:
             f1 = open("%s.align.nwk" % (input_fasta), 'r')
         except IOError:
+            f1 = open("%s.align.nwk" % (input_fasta), 'w')
             if 'dna' in type_fasta:
                 output_script_file.write(
                     "%s --nuc --adjustdirection --quiet --nofft --maxiterate 0 --retree 1 --thread %s %s > %s.align\n"
@@ -255,7 +314,7 @@ def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,inp
                                                    (Function,args.t,type_fasta)),'a')
                             fout.write(Function+'\t'+str(cluster)+'\t'+lines)
                             fout.close()
-        # extract dna and extra500 dna sequences for alignment
+        # extract sequences for alignment
         if args.mf != 'None' and Diff_gene_set !=[]:
             extract_dna(files.split('.fasta.sorted')[0]+'.fasta.sorted', Diff_gene_set,
                         os.path.join(result_dir + '/sub_fun',
