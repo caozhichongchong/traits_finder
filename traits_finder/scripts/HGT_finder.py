@@ -60,6 +60,23 @@ except OSError:
     pass
 
 ################################################### Function ########################################################
+def checkfile(filename, i):
+    try:
+        f1 = open(filename, 'r')
+        if os.path.getsize(filename) > 0:
+            for lines in f1:
+                try:
+                    lines.split('\t')[i]
+                    return 'not empty'
+                except IndexError:
+                    return 'wrong content by spliting %s \\t' % (str(i))
+                break
+        else:
+            return 'empty'
+    except IOError:
+        return 'non-existed'
+
+
 def loci_seq(record_name):
     try:
         loci1 = int(record_name.split('_')[-2])
@@ -94,52 +111,56 @@ def self_clustering(input_usearch, output_uc, cutoff):
     output_uc = open(output_uc, 'w')
     clusters = dict()
     cluster_num = 0
-    for lines in open(input_usearch):
-        Gene1 = lines.split('\t')[0]
-        Gene2 = lines.split('\t')[1]
-        ID = float(lines.split('\t')[2])
-        if Gene1 not in clusters and Gene2 not in clusters:
-            cluster_num += 1
-            if ID < cutoff:
-                # diff cluster
-                clusters.setdefault(Gene1, cluster_num)
-                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
-                cluster_num += 1
-                clusters.setdefault(Gene2, cluster_num)
-                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
-            else:
-                # same cluster
-                clusters.setdefault(Gene1, cluster_num)
-                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
-                clusters.setdefault(Gene2, cluster_num)
-                output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
-        else:
-            if ID < cutoff:
-                # diff cluster
-                if Gene1 not in clusters:
+    Checkoutput = checkfile(input_usearch, 2)
+    if Checkoutput == 'not empty':
+        for lines in open(input_usearch):
+                Gene1 = lines.split('\t')[0]
+                Gene2 = lines.split('\t')[1]
+                ID = float(lines.split('\t')[2])
+                if Gene1 not in clusters and Gene2 not in clusters:
                     cluster_num += 1
-                    clusters.setdefault(Gene1, cluster_num)
-                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
-                elif Gene2 not in clusters:
-                    cluster_num += 1
-                    clusters.setdefault(Gene2, cluster_num)
-                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
+                    if ID < cutoff:
+                        # diff cluster
+                        clusters.setdefault(Gene1, cluster_num)
+                        output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
+                        cluster_num += 1
+                        clusters.setdefault(Gene2, cluster_num)
+                        output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
+                    else:
+                        # same cluster
+                        clusters.setdefault(Gene1, cluster_num)
+                        output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
+                        clusters.setdefault(Gene2, cluster_num)
+                        output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
                 else:
-                    # both genes are set
-                    pass
-            else:
-                # same cluster
-                if Gene1 not in clusters:
-                    Gene2_cluster = clusters[Gene2]
-                    clusters.setdefault(Gene1, Gene2_cluster)
-                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene2_cluster, Gene1))
-                elif Gene2 not in clusters:
-                    Gene1_cluster = clusters[Gene1]
-                    clusters.setdefault(Gene2, Gene1_cluster)
-                    output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene1_cluster, Gene2))
-                else:
-                    # both genes are set
-                    pass
+                    if ID < cutoff:
+                        # diff cluster
+                        if Gene1 not in clusters:
+                            cluster_num += 1
+                            clusters.setdefault(Gene1, cluster_num)
+                            output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
+                        elif Gene2 not in clusters:
+                            cluster_num += 1
+                            clusters.setdefault(Gene2, cluster_num)
+                            output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
+                        else:
+                            # both genes are set
+                            pass
+                    else:
+                        # same cluster
+                        if Gene1 not in clusters:
+                            Gene2_cluster = clusters[Gene2]
+                            clusters.setdefault(Gene1, Gene2_cluster)
+                            output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene2_cluster, Gene1))
+                        elif Gene2 not in clusters:
+                            Gene1_cluster = clusters[Gene1]
+                            clusters.setdefault(Gene2, Gene1_cluster)
+                            output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (Gene1_cluster, Gene2))
+                        else:
+                            # both genes are set
+                            pass
+    else:
+        print('file %s is %s' % (input_usearch, Checkoutput))
     output_uc.close()
 
 
@@ -186,15 +207,19 @@ def run_cluster(input_fasta, output_clusters = 1, cutoff=0.99):
     Clusters_extend_seqs = dict()
     Total_seq = 0
     Cluster_num = 0
-    for lines in open(input_fasta+'.uc','r'):
-        cluster = lines.split('\t')[1]
-        record_name = lines.split('\t')[8].split(' ')[0]
-        if cluster not in Clusters:
-            Clusters.setdefault(cluster,[record_name])
-        else:
-            Clusters[cluster].append(record_name)
-        Total_seq += 1
-        Cluster_num = max(Cluster_num,int(cluster))
+    Checkoutput = checkfile(input_fasta+'.uc', 8)
+    if Checkoutput == 'not empty':
+        for lines in open(input_fasta+'.uc','r'):
+                cluster = lines.split('\t')[1]
+                record_name = lines.split('\t')[8].split(' ')[0]
+                if cluster not in Clusters:
+                    Clusters.setdefault(cluster,[record_name])
+                else:
+                    Clusters[cluster].append(record_name)
+                Total_seq += 1
+                Cluster_num = max(Cluster_num,int(cluster))
+    else:
+        print('file %s is %s' % (input_fasta+'.uc', Checkoutput))
     if Cluster_num > 0:
         cutoff_temp = max(3, int(Total_seq / Cluster_num))
         print('A total of %s clusters for %s sequences\nSetting cutoff as %s'
