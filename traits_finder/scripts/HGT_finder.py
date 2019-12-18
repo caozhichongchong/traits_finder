@@ -39,6 +39,11 @@ args = parser.parse_args()
 Cutoff_HGT=0.99
 Cutoff_aa=0.8
 Cutoff_extended=0.5
+# set output
+script_i = 0
+script_i_max = int(args.th)
+
+
 if args.s == 'None':
     input_dir = os.path.join(args.r,'summary')
     result_dir = os.path.join(args.r, 'HGT')
@@ -252,26 +257,26 @@ def run_cluster(input_fasta, output_clusters = 1, cutoff=0.99):
 def extract_extend(Clusters_extend_seqs,input_extend_fasta):
     # check redundancy!!!
     print('Extracting extended sequences from %s' % (input_extend_fasta))
+    output_map_file = open(os.path.join(result_dir, args.t + '.all.traits.dna-dna_extended.mapping.txt'),
+                       'w')
     for record in SeqIO.parse(input_extend_fasta, 'fasta'):
         record_subname = '_'.join(str(record.id).split('_')[0:-2])
         if record_subname in Clusters_extend_seqs:
             for clusters in Clusters_extend_seqs[record_subname]:
                 if compare_loci(loci_seq(str(record.id)),clusters[-1]):
                     # the right extended sequences
-                    output_file = open(os.path.join(result_dir, args.t + '.all.traits.dna-dna_extended.mapping.txt'),
-                                       'a')
-                    output_file.write('%s\t%s\t%s\t%s\n'%(record_subname,str(clusters[0]),
+                    output_map_file.write('%s\t%s\t%s\t%s\n'%(record_subname,str(clusters[0]),
                                                       clusters[-2],str(record.id)))
-                    output_file.close()
                     output_sequences = open(os.path.join(result_dir + '/sub_sequences', '%s.%s.fasta' % (
                         os.path.split(input_extend_fasta)[-1],
                         clusters[0])), 'a')
                     output_sequences.write('>%s\n%s\n' % (str(record.id), str(record.seq)))
                     output_sequences.close()
                     break
+    output_map_file.close()
 
 
-def run_alignment(input_folder,type_fasta,output_file,cutoff=0.99):
+def run_alignment(input_folder,type_fasta,cutoff,script_i):
     print('Running alignment for %s' % (input_folder))
     all_clusters = glob.glob(os.path.join(result_dir + '/sub_sequences', '%s.*.fasta' % (
         os.path.split(input_folder)[-1])))
@@ -285,6 +290,9 @@ def run_alignment(input_folder,type_fasta,output_file,cutoff=0.99):
             try:
                 f1 = open("%s.%s.usearch.txt" % (input_fasta,str(cutoff)), 'r')
             except IOError:
+                output_file = open(('HGTfinder_subscripts/HGTfinder.%s.sh'%(int(script_i % script_i_max))), 'a')
+                script_i += 1
+                output_file.write("#!/bin/bash\n")
                 output_file.write("%s -makeudb_usearch %s -output %s.udb\n"
                                   % (args.u, input_fasta,input_fasta))
                 if  'dna' in type_fasta :
@@ -294,14 +302,13 @@ def run_alignment(input_folder,type_fasta,output_file,cutoff=0.99):
                     output_file.write(
                         "%s  -usearch_global %s -db %s.udb  -id %s  -evalue 1e-2 -maxaccepts 0 -maxrejects 32 -blast6out %s.%s.usearch.txt  -threads %s\n"
                         % (args.u, input_fasta, input_fasta,str(cutoff),input_fasta,str(cutoff), str(args.th)))
-
+                output_file.close()
 
 ################################################### Programme #######################################################
 faa = os.path.join(args.s, args.t + '.all.traits.aa.fasta')
 fdna = os.path.join(args.s, args.t + '.all.traits.dna.fasta')
 fdna_500 = glob.glob(os.path.join(args.s, args.t + '.all.traits.dna.extra*.fasta'))[0]
-output_file = open(os.path.join('HGTfinder_subscripts/HGTfinder_subscripts.sh'), 'w')
-output_file.write("#!/bin/bash\n")
+
 # cluster dna sequences
 # identity cutoff is 99%, but run cutoff - x
 Clusters_extend_seqs = run_cluster(fdna,1,Cutoff_HGT)
@@ -314,8 +321,14 @@ if Clusters_extend_seqs != dict():
 # identity cutoff is 90%
 run_cluster(faa,0,Cutoff_aa)
 # run alignment for dna
-run_alignment(fdna,'dna',output_file)
-run_alignment(fdna_500,'dna',output_file,Cutoff_extended)
+run_alignment(fdna,'dna',Cutoff_HGT, script_i)
+run_alignment(fdna_500,'dna',Cutoff_extended,script_i)
 # run alignment for aa
-run_alignment(faa,'aa',output_file,Cutoff_aa)
-output_file.close()
+run_alignment(faa,'aa',Cutoff_aa,script_i)
+# collect all bash files
+list_of_files = glob.glob('HGTfinder_subscripts/HGTfinder.*.sh')
+f1 = open("HGTfinder.sh", 'w')
+f1.write("#!/bin/bash\nsource ~/.bashrc\n")
+for file_name in list_of_files:
+    f1.write("jobmit %s HGTfinder big\n" % (file_name))
+f1.close()

@@ -43,6 +43,9 @@ Cutoff_16S=0.97
 Cutoff_HGT=0.99
 Cutoff_aa=0.8
 Cutoff_extended=0.5
+# set output
+script_i = 0
+script_i_max = int(args.th)
 
 if args.s == 'None':
     input_dir = os.path.join(args.r,'summary')
@@ -55,7 +58,10 @@ try:
 except OSError:
     pass
 workingdir=os.path.abspath(os.path.dirname(__file__))
-
+try:
+    os.mkdir('HGTfinder_subscripts')
+except OSError:
+    pass
 
 ################################################### Function ########################################################
 def checkfile(filename,i):
@@ -278,7 +284,7 @@ def function_pair(Function_Set,Genome1,Genome2,type_fasta):
     return function_com(function1, function2)
 
 
-def extract_dna(dna_file,gene_list,input_fasta,output_script_file,type_fasta):
+def extract_dna(dna_file,gene_list,input_fasta,type_fasta,script_i):
     output_file = open(input_fasta,'a')
     for record in SeqIO.parse(open(dna_file, 'r'), 'fasta'):
         if str(record.id) in gene_list:
@@ -289,6 +295,9 @@ def extract_dna(dna_file,gene_list,input_fasta,output_script_file,type_fasta):
             f1 = open("%s.align.nwk" % (input_fasta), 'r')
         except IOError:
             f1 = open("%s.align.nwk" % (input_fasta), 'w')
+            output_script_file = open(('HGTfinder_subscripts/HGTalign.%s.sh')%(int(script_i % script_i_max)), 'a')
+            script_i += 1
+            output_script_file.write("#!/bin/bash\n")
             if 'dna' in type_fasta:
                 output_script_file.write(
                     "%s --nuc --adjustdirection --quiet --nofft --maxiterate 0 --retree 1 --thread %s %s > %s.align\n"
@@ -303,9 +312,10 @@ def extract_dna(dna_file,gene_list,input_fasta,output_script_file,type_fasta):
                 if args.ft != 'None':
                     output_script_file.write("%s -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
                                       % (args.ft, input_fasta, input_fasta))
+            output_script_file.close()
 
 
-def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,input_prefix,cutoff,output_script_file):
+def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,input_prefix,cutoff,script_i):
     all_usearch = glob.glob(os.path.join(input_folder, input_prefix))
     for files in all_usearch:
         Diff_gene_set = []
@@ -358,7 +368,7 @@ def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,inp
                         os.path.join(result_dir + '/sub_fun',
                                      "%s.%s.%s.diff.cluster.fasta" %
                                      (Function, args.t, type_fasta)),
-                        output_script_file,type_fasta)
+                        type_fasta,script_i)
 
 
 def usearch_16S_load(input_file):
@@ -510,10 +520,7 @@ def HGT_finder_sum(cluster_16S,function_name,type_fasta,cutoff,diff,same,mge,out
 
 
 ################################################### Programme #######################################################
-# alignment scripts output
-output_script_file = open(os.path.join('HGTfinder_subscripts/HGTfinder_subscripts_alignment.sh'), 'w')
-output_script_file.write("#!/bin/bash\n")
-
+# set input
 f16s = os.path.join(args.s, args.t + '.all.16S.fasta')
 faa = os.path.join(args.s, args.t + '.all.traits.aa.fasta')
 fdna = os.path.join(args.s, args.t + '.all.traits.dna.fasta')
@@ -528,11 +535,11 @@ Function_Set_aa=function_load(os.path.join(args.s, args.t + '.all.traits.aa.txt'
 cluster_16S = run_16S(f16s, Cutoff_16S)
 # filter usearch output into same 16S cluster and diff 16S clusters
 compare_traits_16S(Function_Set_dna, cluster_16S[0],'dna',result_dir +
-                              '/sub_sequences',os.path.split(fdna)[-1] + '*.usearch.txt',Cutoff_HGT,output_script_file)
+                              '/sub_sequences',os.path.split(fdna)[-1] + '*.usearch.txt',Cutoff_HGT,script_i)
 compare_traits_16S(Function_Set_aa, cluster_16S[0],'aa',result_dir +
-                             '/sub_sequences',os.path.split(faa)[-1] + '*.usearch.txt',Cutoff_aa,output_script_file)
+                             '/sub_sequences',os.path.split(faa)[-1] + '*.usearch.txt',Cutoff_aa,script_i)
 compare_traits_16S(Function_Set_dna, cluster_16S[0],'dna_extended',result_dir +
-                             '/sub_sequences',os.path.split(fdna_500)[-1] + '*.usearch.txt',Cutoff_extended,output_script_file)
+                             '/sub_sequences',os.path.split(fdna_500)[-1] + '*.usearch.txt',Cutoff_extended,script_i)
 # load diff 16S usearch result
 usearch_16S_load("%s.sorted.%s.usearch.txt" % (f16s,0.6))
 # calculate index for HGT
@@ -569,4 +576,10 @@ for function_diff in all_function_diff_same:
                        all_output)
         all_function.append(function_name)
 all_output.close()
-output_script_file.close()
+# collect all bash files
+list_of_files = glob.glob('HGTfinder_subscripts/HGTalign.*.sh')
+f1 = open("HGTalign.sh", 'w')
+f1.write("#!/bin/bash\nsource ~/.bashrc\n")
+for file_name in list_of_files:
+    f1.write("jobmit %s HGTalign big\n" % (file_name))
+f1.close()
