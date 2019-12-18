@@ -295,19 +295,22 @@ def extract_dna(dna_file,gene_list,input_fasta,type_fasta,script_i):
             f1 = open("%s.align.nwk" % (input_fasta), 'r')
         except IOError:
             f1 = open("%s.align.nwk" % (input_fasta), 'w')
+            print(script_i)
             output_script_file = open(('HGTfinder_subscripts/HGTalign.%s.sh')%(int(script_i % script_i_max)), 'a')
             script_i += 1
+            print(script_i)
             output_script_file.write("#!/bin/bash\n")
+            output_script_file.write('python %s/remove.duplicated.seq.py -i %s \n' % (workingdir,input_fasta))
             if 'dna' in type_fasta:
                 output_script_file.write(
-                    "%s --nuc --adjustdirection --quiet --nofft --maxiterate 0 --retree 1 --thread %s %s > %s.align\n"
+                    "%s --nuc --adjustdirection --quiet --nofft --maxiterate 0 --retree 1 --thread %s %s.dereplicated.id.fasta > %s.align\n"
                     % (args.mf, str(args.th), input_fasta, input_fasta))
                 if  args.ft != 'None':
                     output_script_file.write("%s -nt -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
                                       % (args.ft, input_fasta, input_fasta))
             else:
                 output_script_file.write(
-                    "%s --amino --quiet --retree 1 --maxiterate 0 --nofft --thread %s %s > %s.align\n"
+                    "%s --amino --quiet --retree 1 --maxiterate 0 --nofft --thread %s %s.dereplicated.id.fasta > %s.align\n"
                     % (args.mf, str(args.th), input_fasta, input_fasta))
                 if args.ft != 'None':
                     output_script_file.write("%s -quiet -fastest -nosupport %s.align > %s.align.nwk\n"

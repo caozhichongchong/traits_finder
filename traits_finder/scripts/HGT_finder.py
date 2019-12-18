@@ -304,6 +304,7 @@ def run_alignment(input_folder,type_fasta,cutoff,script_i):
                         % (args.u, input_fasta, input_fasta,str(cutoff),input_fasta,str(cutoff), str(args.th)))
                 output_file.close()
 
+
 ################################################### Programme #######################################################
 faa = os.path.join(args.s, args.t + '.all.traits.aa.fasta')
 fdna = os.path.join(args.s, args.t + '.all.traits.dna.fasta')
