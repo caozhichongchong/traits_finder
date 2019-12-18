@@ -310,7 +310,8 @@ fsum_aa_fun.write('\n')
 fsum_dna.write('SampleID')
 for functions in Functionlist:
     fsum_dna.write('\t'+str(functions))
-fsum_dna_fun.write('\n')
+fsum_dna.write('\n')
+fsum_dna_fun.write('SampleID')
 for functions in allfunction:
     fsum_dna_fun.write('\t'+str(functions))
 fsum_dna_fun.write('\n')
