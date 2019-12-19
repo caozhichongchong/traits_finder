@@ -59,7 +59,7 @@ except OSError:
     pass
 workingdir=os.path.abspath(os.path.dirname(__file__))
 try:
-    os.mkdir('HGTfinder_subscripts')
+    os.mkdir('HGT_subscripts')
 except OSError:
     pass
 
@@ -81,6 +81,17 @@ def checkfile(filename,i):
         return 'non-existed'
 
 
+def usearch_16S_load(input_file):
+    Checkoutput = checkfile(input_file, 2)
+    if Checkoutput == 'not empty':
+        for lines in open(input_file,'r'):
+            if lines.split('\t')[0] + '_' + lines.split('\t')[1] not in ID_16S and \
+                    lines.split('\t')[1] + '_' + lines.split('\t')[0] not in ID_16S:
+                ID_16S.setdefault(lines.split('\t')[0] + '_' + lines.split('\t')[1], float(lines.split('\t')[2])/100.0)
+    else:
+        print('file %s is %s' % (input_file, Checkoutput))
+
+
 def self_clustering(input_usearch, output_uc):
     # for sequences without any hits, remove from clustering
     output_uc = open(output_uc, 'w')
@@ -91,10 +102,13 @@ def self_clustering(input_usearch, output_uc):
         for lines in open(input_usearch):
                 Gene1 = lines.split('\t')[0]
                 Gene2 = lines.split('\t')[1]
-                ID = float(lines.split('\t')[2])
+                ID = float(lines.split('\t')[2])/100.0
+                if Gene1 + '_' + Gene2 not in ID_16S and \
+                        Gene2 + '_' + Gene1 not in ID_16S:
+                    ID_16S.setdefault(Gene1 + '_' + Gene2,ID)
                 if Gene1 not in clusters and Gene2 not in clusters:
                     cluster_num += 1
-                    if ID < Cutoff_16S:
+                    if ID < (Cutoff_16S):
                         # diff cluster
                         clusters.setdefault(Gene1, cluster_num)
                         output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene1))
@@ -108,7 +122,7 @@ def self_clustering(input_usearch, output_uc):
                         clusters.setdefault(Gene2, cluster_num)
                         output_uc.write('*\t%s\t*\t*\t*\t*\t*\t*\t%s\t*\n' % (cluster_num, Gene2))
                 else:
-                    if ID < Cutoff_16S:
+                    if ID < (Cutoff_16S):
                         # diff cluster
                         if Gene1 not in clusters:
                             cluster_num += 1
@@ -140,46 +154,53 @@ def self_clustering(input_usearch, output_uc):
 
 
 def run_16S(input_fasta,cutoff=0.97):
-    print('Running usearch cluster for %s' % (input_fasta))
     try:
-        f1 = open("%s.sorted.uc" % (input_fasta),'r')
-        input_fasta = input_fasta + '.sorted'
+        f1 = open("%s.sorted" % (input_fasta), 'r')
     except IOError:
-        #os.system('%s -sort length -cluster_fast %s -id %s -centroids %s.sorted.cluster.aa -uc %s.sorted.uc'
-        #          % (args.u, input_fasta, cutoff, input_fasta, input_fasta))
-        try:
-            f1 = open("%s.sorted" % (input_fasta), 'r')
-        except IOError:
-            os.system('%s -sortbylength %s -fastaout %s.sorted' % (args.u, input_fasta, input_fasta))
-        input_fasta = input_fasta + '.sorted'
-        try:
-            f1 = open("%s.%s.usearch.txt" % (input_fasta, 0.6), 'r')
-        except IOError:
-            if int(os.path.getsize(input_fasta)) <= 2 * 1E+9:
-                # smaller than 2G
-                os.system("%s -makeudb_usearch %s -output %s.udb\n"
-                          % (args.u, input_fasta, input_fasta))
-                os.system(
-                    "%s  -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
-                    % (args.u, input_fasta, input_fasta, 0.6, input_fasta, 0.6, str(args.th)))
-            else:
-                print('Using hs-blastn instead of usearch because the input file is larger than 2GB\n')
-                try:
-                    f1 = open("%s.counts.obinary" % (input_fasta), 'r')
-                except IOError:
-                    os.system('makeblastdb -in %s -input_type fasta -dbtype nucl' %
-                              (input_fasta))
-                    os.system('windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
-                              (input_fasta, input_fasta))
-                    os.system('windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
-                              ( input_fasta, input_fasta))
-                    os.system('%s index %s' % ('hs-blastn', input_fasta))
-                os.system(
-                    "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s.%s.usearch.txt -outfmt 6 -evalue 1 -perc_identity %s -num_threads %s\n" \
-                    % ('hs-blastn', input_fasta,
-                       input_fasta, input_fasta, input_fasta, 0.6,
-                       0.6, str(args.th)))
-        self_clustering('%s.%s.usearch.txt' % (input_fasta, 0.6), input_fasta + '.uc')
+        os.system('%s -sortbylength %s -fastaout %s.sorted' % (args.u, input_fasta, input_fasta))
+    input_fasta = input_fasta + '.sorted'
+    try:
+        f1 = open("%s.%s.usearch.txt" % (input_fasta, 0.6), 'r')
+    except IOError:
+        print('Running usearch for %s' % (input_fasta))
+        if int(os.path.getsize(input_fasta)) <= 2 * 1E+9:
+            # smaller than 2G
+            os.system("%s -makeudb_usearch %s -output %s.udb\n"
+                      % (args.u, input_fasta, input_fasta))
+            os.system(
+                "%s  -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
+                % (args.u, input_fasta, input_fasta, 0.6, input_fasta, 0.6, str(args.th)))
+        else:
+            print('Using hs-blastn instead of usearch because the input file is larger than 2GB\n')
+            try:
+                f1 = open("%s.counts.obinary" % (input_fasta), 'r')
+            except IOError:
+                os.system('makeblastdb -in %s -input_type fasta -dbtype nucl' %
+                          (input_fasta))
+                os.system('windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
+                          (input_fasta, input_fasta))
+                os.system('windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
+                          (input_fasta, input_fasta))
+                os.system('%s index %s' % ('hs-blastn', input_fasta))
+            os.system(
+                "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s.%s.usearch.txt -outfmt 6 -evalue 1 -perc_identity %s -num_threads %s\n" \
+                % ('hs-blastn', input_fasta,
+                   input_fasta, input_fasta, input_fasta, 0.6,
+                   0.6, str(args.th)))
+    try:
+        f1 = open("%s.uc" % (input_fasta),'r')
+    except IOError:
+        print('Running usearch cluster for %s' % (input_fasta))
+        # smaller than 2G
+        if int(os.path.getsize(input_fasta)) <= 2 * 1E+9:
+            os.system('%s -sort length -cluster_fast %s -id %s -centroids %s.cluster.aa -uc %s.uc -threads %s'
+                      % (args.u, input_fasta, cutoff, input_fasta, input_fasta, args.th))
+        else:
+            print('We roughly clustered the 16S by 99% identity\n')
+            self_clustering('%s.%s.usearch.txt' % (input_fasta, 0.6), input_fasta + '.uc')
+    # load 16S usearch result
+    if ID_16S == dict():
+        usearch_16S_load("%s.%s.usearch.txt" % (input_fasta, 0.6))
     print('finish running usearch cluster for %s' % (input_fasta))
     # read cluster results
     Clusters = dict()
@@ -227,16 +248,23 @@ def find_genome(Genome1,cluster_16S_seqs):
         return 'None'
 
 
-def compare_16S(Genome1,Genome2,cluster_16S_seqs):
+def compare_16S(Genome1,Genome2,cluster_16S_seqs,cutoff):
     if 'reference' not in Genome1 and 'reference' not in Genome2:
         Genome1 = find_genome(Genome1,cluster_16S_seqs)
         Genome2 = find_genome(Genome2,cluster_16S_seqs)
     if Genome1 != 'None' and Genome2 != 'None':
-        Cluster1 = cluster_16S_seqs[Genome1]
-        Cluster2 = cluster_16S_seqs[Genome2]
-        if Cluster1 != Cluster2:
-            diff_16S.setdefault(Genome1+'_'+Genome2,Cutoff_16S)
-        return Cluster1 != Cluster2
+        if Genome1 + '_' + Genome2 in ID_16S:
+            if ID_16S[Genome1 + '_' + Genome2] < cutoff:
+                return True
+            else:
+                return False
+        elif Genome2 + '_' + Genome1 in ID_16S:
+            if ID_16S[Genome2 + '_' + Genome1] < cutoff:
+                return True
+            else:
+                return False
+        else:
+            return '16S missing'
     elif "mge_" in Genome1 or "mge_" in Genome2:
         return "mge"
     else:
@@ -295,10 +323,8 @@ def extract_dna(dna_file,gene_list,input_fasta,type_fasta,script_i):
             f1 = open("%s.align.nwk" % (input_fasta), 'r')
         except IOError:
             f1 = open("%s.align.nwk" % (input_fasta), 'w')
-            print(script_i)
-            output_script_file = open(('HGTfinder_subscripts/HGTalign.%s.sh')%(int(script_i % script_i_max)), 'a')
+            output_script_file = open(('HGT_subscripts/HGTalign.%s.sh')%(int(script_i % script_i_max)), 'a')
             script_i += 1
-            print(script_i)
             output_script_file.write("#!/bin/bash\n")
             output_script_file.write('python %s/remove.duplicated.seq.py -i %s \n' % (workingdir,input_fasta))
             if 'dna' in type_fasta:
@@ -316,6 +342,7 @@ def extract_dna(dna_file,gene_list,input_fasta,type_fasta,script_i):
                     output_script_file.write("%s -quiet -fastest -nosupport %s.align > %s.align.nwk\n"
                                       % (args.ft, input_fasta, input_fasta))
             output_script_file.close()
+    return script_i
 
 
 def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,input_prefix,cutoff,script_i):
@@ -325,12 +352,12 @@ def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,inp
         Checkoutput = checkfile(files, 2)
         if Checkoutput == 'not empty':
             for lines in open(files,'r'):
-                    if float(str(lines).split('\t')[2]) >= cutoff:
+                    if float(str(lines).split('\t')[2])/100.0 >= cutoff:
                         Genome1 = lines.split('\t')[0]
                         Genome2 = lines.split('\t')[1]
                         # not the same gene
                         if Genome1 != Genome2 and "reference" not in Genome1 and "reference" not in Genome2:
-                            compare_result= compare_16S(Genome1,Genome2,cluster_16S_seqs)
+                            compare_result= compare_16S(Genome1,Genome2,cluster_16S_seqs,Cutoff_16S)
                             Function=function_pair(Function_Set,Genome1,Genome2,type_fasta)
                             cluster=int(os.path.split(files)[-1].split('.fasta.sorted')[0].split('.')[-1])
                             if compare_result != '16S missing':
@@ -367,23 +394,12 @@ def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,inp
             print('file %s is %s' % (files, Checkoutput))
         # extract sequences for alignment
         if args.mf != 'None' and Diff_gene_set !=[]:
-            extract_dna(files.split('.fasta.sorted')[0]+'.fasta.sorted', Diff_gene_set,
+            script_i = extract_dna(files.split('.fasta.sorted')[0]+'.fasta.sorted', Diff_gene_set,
                         os.path.join(result_dir + '/sub_fun',
                                      "%s.%s.%s.diff.cluster.fasta" %
                                      (Function, args.t, type_fasta)),
                         type_fasta,script_i)
-
-
-def usearch_16S_load(input_file):
-    Checkoutput = checkfile(input_file, 2)
-    if Checkoutput == 'not empty':
-        for lines in open(input_file,'r'):
-                if lines.split('\t')[0]+'_'+lines.split('\t')[1] in diff_16S:
-                    diff_16S[lines.split('\t')[0]+'_'+lines.split('\t')[1]]=float(lines.split('\t')[2])
-                elif lines.split('\t')[1]+'_'+lines.split('\t')[0] in diff_16S:
-                    diff_16S[lines.split('\t')[1]+'_'+lines.split('\t')[0]]=float(lines.split('\t')[2])
-    else:
-        print('file %s is %s' % (input_file, Checkoutput))
+    return script_i
 
 
 def HGT_finder_sum(cluster_16S,function_name,type_fasta,cutoff,diff,same,mge,output_file1):
@@ -414,7 +430,7 @@ def HGT_finder_sum(cluster_16S,function_name,type_fasta,cutoff,diff,same,mge,out
             Gene_pair=function_com(Gene1, Gene2)
             if Gene_pair not in Gene_set and "reference" not in Gene_pair:
                 Gene_set.append(Gene_pair)
-                ID = float(lines.split('\t')[4])
+                ID = float(lines.split('\t')[4])/100.0
                 Genome1 = find_genome(Gene1, cluster_16S[0])
                 cluster1 = cluster_16S[0][Genome1]
                 Genome2 = find_genome(Gene2, cluster_16S[0])
@@ -428,17 +444,18 @@ def HGT_finder_sum(cluster_16S,function_name,type_fasta,cutoff,diff,same,mge,out
                         if cluster1 != cluster2:
                             Result[6] += len(cluster_16S[-1][cluster1])+len(cluster_16S[-1][cluster2])
                         else:
-                            print('Error of compare_traits_16S: %s and %s should have different 16S clusters'
-                                  %(Gene1,Gene2))
+                            print('%s and %s have the same 16S clusters but < %s 16S similarity'
+                                  %(Gene1,Gene2,Cutoff_16S))
+                            Result[6] += len(cluster_16S[-1][cluster1])
                     # calculate total number of gene clusters
                     if lines.split('\t')[1] not in Diff_cluster:
                         Diff_cluster.append(lines.split('\t')[1])
                     # calculate lowest 16S similarity for same gene in diff 16S clusters
                     lowest_id = Cutoff_16S
-                    if Genome1 +'_'+Genome2 in diff_16S:
-                        lowest_id = diff_16S[Genome1 +'_'+Genome2]/100.0
-                    elif Genome2 +'_'+Genome1 in diff_16S:
-                        lowest_id = diff_16S[Genome2 +'_'+Genome1]/100.0
+                    if Genome1 +'_'+Genome2 in ID_16S:
+                        lowest_id = ID_16S[Genome1 +'_'+Genome2]
+                    elif Genome2 +'_'+Genome1 in ID_16S:
+                        lowest_id = ID_16S[Genome2 +'_'+Genome1]
                     Diff_16S_min = min(float(lowest_id),Diff_16S_min)
                     output_file2.write('%s\t%.3f\t%.3f\n'
                                            % (Genome_pair,(ID),lowest_id))
@@ -475,8 +492,9 @@ def HGT_finder_sum(cluster_16S,function_name,type_fasta,cutoff,diff,same,mge,out
                         if cluster1 == cluster2:
                             Result[11] += len(cluster_16S[-1][cluster1])
                         else:
-                            print('Error of compare_traits_16S: %s and %s should have the same 16S cluster'
-                                  % (Gene1, Gene2))
+                            Result[11] += len(cluster_16S[-1][cluster1]) + len(cluster_16S[-1][cluster2])
+                            print('%s and %s have different 16S clusters but >= %s 16S similarity'
+                                  % (Gene1, Gene2, Cutoff_16S))
                     # calculate total number of gene clusters
                     if lines.split('\t')[1] not in Same_cluster:
                         Same_cluster.append(lines.split('\t')[1])
@@ -528,7 +546,7 @@ f16s = os.path.join(args.s, args.t + '.all.16S.fasta')
 faa = os.path.join(args.s, args.t + '.all.traits.aa.fasta')
 fdna = os.path.join(args.s, args.t + '.all.traits.dna.fasta')
 fdna_500 = glob.glob(os.path.join(args.s, args.t + '.all.traits.dna.extra*.fasta'))[0]
-diff_16S = dict()
+ID_16S = dict()
 
 # load traits search file for functions
 Function_Set_dna=function_load(os.path.join(args.s, args.t + '.all.traits.dna.txt'))
@@ -537,14 +555,16 @@ Function_Set_aa=function_load(os.path.join(args.s, args.t + '.all.traits.aa.txt'
 # cluster 16S, by 3% similarity
 cluster_16S = run_16S(f16s, Cutoff_16S)
 # filter usearch output into same 16S cluster and diff 16S clusters
-compare_traits_16S(Function_Set_dna, cluster_16S[0],'dna',result_dir +
+print('compare %s trait identity to 16S' %('dna'))
+script_i = compare_traits_16S(Function_Set_dna, cluster_16S[0],'dna',result_dir +
                               '/sub_sequences',os.path.split(fdna)[-1] + '*.usearch.txt',Cutoff_HGT,script_i)
-compare_traits_16S(Function_Set_aa, cluster_16S[0],'aa',result_dir +
+print('compare %s trait identity to 16S' %('aa'))
+script_i = compare_traits_16S(Function_Set_aa, cluster_16S[0],'aa',result_dir +
                              '/sub_sequences',os.path.split(faa)[-1] + '*.usearch.txt',Cutoff_aa,script_i)
-compare_traits_16S(Function_Set_dna, cluster_16S[0],'dna_extended',result_dir +
+print('compare %s trait identity to 16S' %('extended dna'))
+script_i = compare_traits_16S(Function_Set_dna, cluster_16S[0],'dna_extended',result_dir +
                              '/sub_sequences',os.path.split(fdna_500)[-1] + '*.usearch.txt',Cutoff_extended,script_i)
-# load diff 16S usearch result
-usearch_16S_load("%s.sorted.%s.usearch.txt" % (f16s,0.6))
+
 # calculate index for HGT
 # load each function
 all_function_diff_same = glob.glob(os.path.join(result_dir + '/sub_fun','*dna.diff.cluster'))+\
@@ -562,15 +582,18 @@ for function_diff in all_function_diff_same:
     function_mge=function_diff.replace('.diff.cluster','.mge.cluster')
     function_name = os.path.split(function_diff)[-1].split('.')[0]
     if function_name not in all_function:
+        print('summarize potential HGT of %s %s trait with cutoff of %s' % ('dna',function_name,Cutoff_HGT))
         HGT_finder_sum(cluster_16S,function_name,'dna',
                        Cutoff_HGT,function_diff,function_same,function_mge,
                        all_output)
+        print('summarize potential HGT of %s %s trait with cutoff of %s' % ('aa', function_name, Cutoff_aa))
         HGT_finder_sum(cluster_16S, function_name, 'aa',
                        Cutoff_aa,
                        function_diff.replace('.dna.diff.cluster', '.aa.diff.cluster'),
                        function_same.replace('.dna.same.cluster', '.aa.same.cluster'),
                        function_diff.replace('.dna.diff.cluster', '.aa.mge.cluster'),
                        all_output)
+        print('summarize potential HGT of %s %s trait with cutoff of %s' % ('extended dna', function_name, Cutoff_extended))
         HGT_finder_sum(cluster_16S, function_name, 'dna_extended',
                        Cutoff_extended,
                        function_diff.replace('.dna.diff.cluster', '.dna_extended.diff.cluster'),
@@ -580,7 +603,7 @@ for function_diff in all_function_diff_same:
         all_function.append(function_name)
 all_output.close()
 # collect all bash files
-list_of_files = glob.glob('HGTfinder_subscripts/HGTalign.*.sh')
+list_of_files = glob.glob('HGT_subscripts/HGTalign.*.sh')
 f1 = open("HGTalign.sh", 'w')
 f1.write("#!/bin/bash\nsource ~/.bashrc\n")
 for file_name in list_of_files:

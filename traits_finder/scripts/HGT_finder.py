@@ -60,7 +60,7 @@ except OSError:
     pass
 workingdir=os.path.abspath(os.path.dirname(__file__))
 try:
-    os.mkdir('HGTfinder_subscripts')
+    os.mkdir('HGT_subscripts')
 except OSError:
     pass
 
@@ -121,7 +121,7 @@ def self_clustering(input_usearch, output_uc, cutoff):
         for lines in open(input_usearch):
                 Gene1 = lines.split('\t')[0]
                 Gene2 = lines.split('\t')[1]
-                ID = float(lines.split('\t')[2])
+                ID = float(lines.split('\t')[2])/100.0
                 if Gene1 not in clusters and Gene2 not in clusters:
                     cluster_num += 1
                     if ID < cutoff:
@@ -290,7 +290,7 @@ def run_alignment(input_folder,type_fasta,cutoff,script_i):
             try:
                 f1 = open("%s.%s.usearch.txt" % (input_fasta,str(cutoff)), 'r')
             except IOError:
-                output_file = open(('HGTfinder_subscripts/HGTfinder.%s.sh'%(int(script_i % script_i_max))), 'a')
+                output_file = open(('HGT_subscripts/HGTfinder.%s.sh'%(int(script_i % script_i_max))), 'a')
                 script_i += 1
                 output_file.write("#!/bin/bash\n")
                 output_file.write("%s -makeudb_usearch %s -output %s.udb\n"
@@ -303,6 +303,7 @@ def run_alignment(input_folder,type_fasta,cutoff,script_i):
                         "%s  -usearch_global %s -db %s.udb  -id %s  -evalue 1e-2 -maxaccepts 0 -maxrejects 32 -blast6out %s.%s.usearch.txt  -threads %s\n"
                         % (args.u, input_fasta, input_fasta,str(cutoff),input_fasta,str(cutoff), str(args.th)))
                 output_file.close()
+    return script_i
 
 
 ################################################### Programme #######################################################
@@ -322,12 +323,12 @@ if Clusters_extend_seqs != dict():
 # identity cutoff is 90%
 run_cluster(faa,0,Cutoff_aa)
 # run alignment for dna
-run_alignment(fdna,'dna',Cutoff_HGT, script_i)
-run_alignment(fdna_500,'dna',Cutoff_extended,script_i)
+script_i = run_alignment(fdna,'dna',Cutoff_HGT, script_i)
+script_i = run_alignment(fdna_500,'dna',Cutoff_extended,script_i)
 # run alignment for aa
-run_alignment(faa,'aa',Cutoff_aa,script_i)
+script_i = run_alignment(faa,'aa',Cutoff_aa,script_i)
 # collect all bash files
-list_of_files = glob.glob('HGTfinder_subscripts/HGTfinder.*.sh')
+list_of_files = glob.glob('HGT_subscripts/HGTfinder.*.sh')
 f1 = open("HGTfinder.sh", 'w')
 f1.write("#!/bin/bash\nsource ~/.bashrc\n")
 for file_name in list_of_files:
