@@ -148,7 +148,7 @@ def search(roottemp,filename):
                         cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n"\
                         %(args.u,args.db,args.db, os.path.join(roottemp, filename) ,
                           os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt'),
-                          str(args.e),str(int(i_max)))
+                          str(args.e),str(min(int(i_max),40)))
                 cmds += 'python '+ workingdir +'/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                     int(i / 10000)) + ' \n'
                 searchfile = os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt.aa')
@@ -169,7 +169,7 @@ def search(roottemp,filename):
                 # for short metagenomic reads
                 cmds += str(args.bp) +" -query " + str(searchfile) + " -db " + args.db + " -out " + args.r + '/search_output/'+str(int(i/10000))+ \
                          "/"+filename+".blast.txt  -outfmt 6 -evalue "+str(args.e)+" -num_threads " + \
-                        str(int(i_max)) + " \n"
+                        str(min(int(i_max), 40)) + " \n"
                 # fiter blast result
             Blastsearchfilter = 0
             for root, dirs, files in os.walk(args.r + '/search_output'):
@@ -265,7 +265,7 @@ def search(roottemp,filename):
                     workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta",
                        os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt'),
                        os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt'),
-                       str(args.e), str(int(i_max)))
+                       str(args.e), str(min(int(i_max),40)))
             cmds += 'python '+ workingdir +'/Extract.16S.MG.py -i ' + roottemp.replace('_faa','_fasta') + ' -f ' + \
                     filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
                 int(i / 10000)) + ' \n'

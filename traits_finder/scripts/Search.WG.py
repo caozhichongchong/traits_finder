@@ -166,7 +166,7 @@ def search(roottemp,filename):
                             roottemp, filename.split(orfs_format)[0]+ fasta_format),os.path.join(
                             args.r + '/usearch/' + str(int(i / 10000)),
                             filename.split(orfs_format)[0]+ fasta_format + '.usearch.txt'),
-                          str(args.e),str(int(i_max)))
+                          str(args.e),str(min(int(i_max),40)))
                 if args.dbf == 1:
                     # genome file
                     cmds += 'python '+ workingdir +'/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
@@ -320,7 +320,7 @@ def search(roottemp,filename):
                 roottemp, filename.split(orfs_format)[0]+ fasta_format), os.path.join(
                 args.r16+'/' + str(int(i/10000)),
                 filename.split(orfs_format)[0]+ fasta_format + '.16S.txt'),
-                       str(args.e), str(int(i_max)))
+                       str(args.e), str(min(int(i_max),40)))
             cmds += 'python '+ workingdir +'/Extract.16S.WG.py -i ' + roottemp + ' -f ' + \
                     filename.split(orfs_format)[0]+ fasta_format + ' -n .16S.txt -r ' + args.r16 + '/' + str(
                 int(i / 10000)) + ' \n'

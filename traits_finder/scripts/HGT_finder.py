@@ -202,7 +202,7 @@ def run_cluster(input_fasta, output_clusters = 1, cutoff=0.99):
                     "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s.%s.usearch.txt -outfmt 6 -evalue 1 -perc_identity %s -num_threads %s\n" \
                     % ('hs-blastn', input_fasta,
                        input_fasta, input_fasta, input_fasta, newcutoff,
-                       newcutoff, str(args.th)))
+                       newcutoff, str(min(int(args.th),40))))
             self_clustering('%s.%s.usearch.txt' % (input_fasta, newcutoff), input_fasta + '.uc', newcutoff)
     print('Finish running usearch cluster for %s' %
           (input_fasta))
