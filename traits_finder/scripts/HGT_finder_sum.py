@@ -234,12 +234,6 @@ def function_load(input_file):
                     Function_Set.setdefault(gene,[[function,[int(lines.split('\t')[7]),int(lines.split('\t')[8])]]])
                 else:
                     Function_Set[gene].append([function,[int(lines.split('\t')[7]),int(lines.split('\t')[8])]])
-                # database gene
-                gene = lines.split('\t')[2]
-                if gene not in Function_Set:
-                    Function_Set.setdefault(gene, [[function, [int(lines.split('\t')[7]), int(lines.split('\t')[8])]]])
-                else:
-                    Function_Set[gene].append([function, [int(lines.split('\t')[7]), int(lines.split('\t')[8])]])
     else:
         print('file %s is %s' % (input_file, Checkoutput))
     return Function_Set
@@ -256,22 +250,23 @@ def find_genome(Genome1,cluster_16S_seqs):
 
 
 def compare_16S(Genome1,Genome2,cluster_16S_seqs,cutoff):
-    if 'reference' not in Genome1 and 'reference' not in Genome2:
+    if 'reference' not in Genome1 and 'reference' not in Genome2\
+            and 'mge' not in Genome1 and 'mge' not in Genome2:
         Genome1 = find_genome(Genome1,cluster_16S_seqs)
         Genome2 = find_genome(Genome2,cluster_16S_seqs)
-    if Genome1 != 'None' and Genome2 != 'None':
-        if Genome1 + '_' + Genome2 in ID_16S:
-            if ID_16S[Genome1 + '_' + Genome2] < cutoff:
-                return True
+        if Genome1 != 'None' and Genome2 != 'None':
+            if Genome1 + '_' + Genome2 in ID_16S:
+                if ID_16S[Genome1 + '_' + Genome2] < cutoff:
+                    return True
+                else:
+                    return False
+            elif Genome2 + '_' + Genome1 in ID_16S:
+                if ID_16S[Genome2 + '_' + Genome1] < cutoff:
+                    return True
+                else:
+                    return False
             else:
-                return False
-        elif Genome2 + '_' + Genome1 in ID_16S:
-            if ID_16S[Genome2 + '_' + Genome1] < cutoff:
-                return True
-            else:
-                return False
-        else:
-            return '16S missing'
+                return '16S missing'
     elif "mge_" in Genome1 or "mge_" in Genome2:
         return "mge"
     else:
@@ -292,13 +287,21 @@ def compare_loci(loci_new,loci_ref):
         return 0
 
 
-def function_find(Function_Set,Genome):
-    loci_new=loci_seq(Genome)
-    Genome_name='_'.join(Genome.split('_')[0:-2])
-    for functions in Function_Set.get(Genome_name):
-        loci_ref=functions[-1]
-        if compare_loci(loci_new, loci_ref) == 1:
-            return functions[0]
+def function_find(Function_Set, Genome, type_fasta):
+    if "reference" not in Genome:
+        # query genes
+        if type_fasta == 'aa':
+            return Function_Set.get(Genome)[0][0]
+        else:
+            loci_new=loci_seq(Genome)
+            Genome_name='_'.join(Genome.split('_')[0:-2])
+            for functions in Function_Set.get(Genome_name):
+                loci_ref=functions[-1]
+                if compare_loci(loci_new, loci_ref) == 1:
+                    return functions[0]
+    else:
+        return "reference"
+
 
 def function_com(function1, function2):
     if function1 == function2:
@@ -310,12 +313,12 @@ def function_com(function1, function2):
 
 
 def function_pair(Function_Set,Genome1,Genome2,type_fasta):
-    if type_fasta == 'aa':
-        function1=Function_Set.get(Genome1)[0][0]
-        function2 = Function_Set.get(Genome2)[0][0]
-    else:
-        function1 = function_find(Function_Set, Genome1)
-        function2 = function_find(Function_Set, Genome2)
+    function1 = function_find(Function_Set, Genome1, type_fasta)
+    function2 = function_find(Function_Set, Genome2, type_fasta)
+    if function2 == 'reference':
+        function2 = function1
+    if function1 == 'reference':
+        function1 = function2
     return function_com(function1, function2)
 
 
@@ -366,6 +369,7 @@ def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,inp
         Checkoutput = checkfile(files, 2)
         if Checkoutput == 'not empty':
             for lines in open(files,'r'):
+                try:
                     if float(str(lines).split('\t')[2])/100.0 >= cutoff:
                         Genome1 = lines.split('\t')[0]
                         Genome2 = lines.split('\t')[1]
@@ -408,6 +412,9 @@ def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,inp
                             add_gene_and_function(Diff_gene_set, Function, Genome1)
                         if "reference" in Genome2:
                             add_gene_and_function(Diff_gene_set, Function, Genome2)
+                except IndexError:
+                    print('file %s is %s' % (files, 'wrong content by spliting %s \\t' % ('2')))
+                    print(lines)
         else:
             print('file %s is %s' % (files, Checkoutput))
         # extract sequences for alignment
@@ -583,7 +590,6 @@ ID_16S = dict()
 # load traits search file for functions
 Function_Set_dna=function_load(os.path.join(args.s, args.t + '.all.traits.dna.txt'))
 Function_Set_aa=function_load(os.path.join(args.s, args.t + '.all.traits.aa.txt'))
-
 # cluster 16S, by 3% similarity
 cluster_16S = run_16S(f16s, Cutoff_16S)
 # filter usearch output into same 16S cluster and diff 16S clusters
@@ -599,8 +605,8 @@ script_i = compare_traits_16S(Function_Set_dna, cluster_16S[0],'dna_extended',re
 
 # calculate index for HGT
 # load each function
-all_function_diff_same = glob.glob(os.path.join(result_dir + '/sub_fun','*dna.diff.cluster'))+\
-glob.glob(os.path.join(result_dir + '/sub_fun','*dna.same.cluster'))
+all_function_diff_same = glob.glob(os.path.join(result_dir + '/sub_fun','*aa.diff.cluster'))+\
+glob.glob(os.path.join(result_dir + '/sub_fun','*aa.same.cluster'))
 all_output = open(os.path.join(result_dir,'HGT.summary.dna.%s.aa.%s.16S.%s.txt'
                                    % (Cutoff_HGT,Cutoff_aa,Cutoff_16S)),'w')
 all_function = []
@@ -610,27 +616,28 @@ all_output.write('function_name\ttype\tcutoff\tcluster_num_diff\t16S_range_diff\
 for function_diff in all_function_diff_same:
     # for each function
     function_diff = function_diff.replace('.same.cluster', '.diff.cluster')
-    function_same=function_diff.replace('.diff.cluster','.same.cluster')
-    function_mge=function_diff.replace('.diff.cluster','.mge.cluster')
+    function_same = function_diff.replace('.diff.cluster','.same.cluster')
+    function_mge = function_diff.replace('.diff.cluster','.mge.cluster')
     function_name = os.path.split(function_diff)[-1].split('.')[0]
     if function_name not in all_function:
         print('summarize potential HGT of %s %s trait with cutoff of %s' % ('dna',function_name,Cutoff_HGT))
         HGT_finder_sum(cluster_16S,function_name,'dna',
-                       Cutoff_HGT,function_diff,function_same,function_mge,
+                       Cutoff_HGT,
+                       function_diff.replace('.aa.diff.cluster', '.dna.diff.cluster'),
+                       function_same.replace('.aa.same.cluster', '.dna.same.cluster'),
+                       function_diff.replace('.aa.diff.cluster', '.dna.mge.cluster'),
                        all_output)
         print('summarize potential HGT of %s %s trait with cutoff of %s' % ('aa', function_name, Cutoff_aa))
         HGT_finder_sum(cluster_16S, function_name, 'aa',
                        Cutoff_aa,
-                       function_diff.replace('.dna.diff.cluster', '.aa.diff.cluster'),
-                       function_same.replace('.dna.same.cluster', '.aa.same.cluster'),
-                       function_diff.replace('.dna.diff.cluster', '.aa.mge.cluster'),
+                       function_diff, function_same, function_mge,
                        all_output)
         print('summarize potential HGT of %s %s trait with cutoff of %s' % ('extended dna', function_name, Cutoff_extended))
         HGT_finder_sum(cluster_16S, function_name, 'dna_extended',
                        Cutoff_extended,
-                       function_diff.replace('.dna.diff.cluster', '.dna_extended.diff.cluster'),
-                       function_same.replace('.dna.same.cluster', '.dna_extended.same.cluster'),
-                       function_diff.replace('.dna.diff.cluster', '.dna_extended.mge.cluster'),
+                       function_diff.replace('.aa.diff.cluster', '.dna_extended.diff.cluster'),
+                       function_same.replace('.aa.same.cluster', '.dna_extended.same.cluster'),
+                       function_diff.replace('.aa.diff.cluster', '.dna_extended.mge.cluster'),
                        all_output)
         all_function.append(function_name)
 all_output.close()
