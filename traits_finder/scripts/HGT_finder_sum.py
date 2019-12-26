@@ -227,7 +227,7 @@ def function_load(input_file):
     Checkoutput = checkfile(input_file, 8)
     if Checkoutput == 'not empty':
         for lines in open(input_file,'r'):
-                function = lines.split('\t')[0]
+                function = lines.split('\t')[0].replace("(","").replace(")","").replace(".","_")
                 gene = lines.split('\t')[1]
                 # query gene
                 if gene not in Function_Set:
@@ -250,8 +250,7 @@ def find_genome(Genome1,cluster_16S_seqs):
 
 
 def compare_16S(Genome1,Genome2,cluster_16S_seqs,cutoff):
-    if 'reference' not in Genome1 and 'reference' not in Genome2\
-            and 'mge' not in Genome1 and 'mge' not in Genome2:
+    if  'mge' not in Genome1 and 'mge' not in Genome2:
         Genome1 = find_genome(Genome1,cluster_16S_seqs)
         Genome2 = find_genome(Genome2,cluster_16S_seqs)
         if Genome1 != 'None' and Genome2 != 'None':
@@ -267,7 +266,9 @@ def compare_16S(Genome1,Genome2,cluster_16S_seqs,cutoff):
                     return False
             else:
                 return '16S missing'
-    elif "mge_" in Genome1 or "mge_" in Genome2:
+        else:
+            return '16S missing'
+    elif "mge" in Genome1 or "mge" in Genome2:
         return "mge"
     else:
         return '16S missing'
@@ -402,7 +403,7 @@ def compare_traits_16S(Function_Set,cluster_16S_seqs,type_fasta,input_folder,inp
                                         fout.write(Function+'\t'+str(cluster)+'\t'+lines)
                                         fout.close()
                                 else:
-                                    # different 16S clusters
+                                    # mge clusters
                                     fout=open(os.path.join(result_dir + '/sub_fun',
                                                            "%s.%s.%s.mge.cluster" %
                                                            (Function,args.t,type_fasta)),'a')
@@ -457,45 +458,49 @@ def HGT_finder_sum(cluster_16S,function_name,type_fasta,cutoff,diff,same,mge,out
             Gene2 = lines.split('\t')[3]
             Gene_pair=function_com(Gene1, Gene2)
             if Gene_pair not in Gene_set and "reference" not in Gene_pair:
-                Gene_set.append(Gene_pair)
-                ID = float(lines.split('\t')[4])/100.0
-                Genome1 = find_genome(Gene1, cluster_16S[0])
-                cluster1 = cluster_16S[0][Genome1]
-                Genome2 = find_genome(Gene2, cluster_16S[0])
-                cluster2 = cluster_16S[0][Genome2]
-                if Genome1 != Genome2:
-                    # count genome pairs
-                    Genome_pair = function_com(Genome1, Genome2)
-                    if Genome_pair not in Diff_genome_set:
-                        Diff_genome_set.append(Genome_pair)
-                        # calculate total number of 16S
-                        if cluster1 not in Cluster_16S_Set:
-                            Result[6] += len(cluster_16S[-1][cluster1])
-                            Cluster_16S_Set.append(cluster1)
-                        if cluster1 != cluster2:
-                            if cluster2 not in Cluster_16S_Set:
-                                Result[6] += len(cluster_16S[-1][cluster2])
-                                Cluster_16S_Set.append(cluster2)
-                        else:
-                            pass
-                            #print('%s and %s have the same 16S clusters but < %s 16S similarity'
-                            #      %(Gene1,Gene2,Cutoff_16S))
-                    # calculate total number of gene clusters
-                    if lines.split('\t')[1] not in Diff_cluster:
-                        Diff_cluster.append(lines.split('\t')[1])
-                    # calculate lowest 16S similarity for same gene in diff 16S clusters
-                    lowest_id = Cutoff_16S
-                    if Genome1 +'_'+Genome2 in ID_16S:
-                        lowest_id = ID_16S[Genome1 +'_'+Genome2]
-                    elif Genome2 +'_'+Genome1 in ID_16S:
-                        lowest_id = ID_16S[Genome2 +'_'+Genome1]
-                    Diff_16S_min = min(float(lowest_id),Diff_16S_min)
-                    output_file2.write('%s\t%.3f\t%.3f\n'
-                                           % (Genome_pair,(ID),lowest_id))
-                    if '.dna_extended.' in diff:
-                        if ID >= 0.9:
-                            output_file3.write('%s\t%.3f\t%.3f\n'
-                                               % (Genome_pair, (ID), lowest_id))
+                try:
+                    Gene_set.append(Gene_pair)
+                    ID = float(lines.split('\t')[4])/100.0
+                    Genome1 = find_genome(Gene1, cluster_16S[0])
+                    cluster1 = cluster_16S[0][Genome1]
+                    Genome2 = find_genome(Gene2, cluster_16S[0])
+                    cluster2 = cluster_16S[0][Genome2]
+                    if Genome1 != Genome2:
+                        # count genome pairs
+                        Genome_pair = function_com(Genome1, Genome2)
+                        if Genome_pair not in Diff_genome_set:
+                            Diff_genome_set.append(Genome_pair)
+                            # calculate total number of 16S
+                            if cluster1 not in Cluster_16S_Set:
+                                Result[6] += len(cluster_16S[-1][cluster1])
+                                Cluster_16S_Set.append(cluster1)
+                            if cluster1 != cluster2:
+                                if cluster2 not in Cluster_16S_Set:
+                                    Result[6] += len(cluster_16S[-1][cluster2])
+                                    Cluster_16S_Set.append(cluster2)
+                            else:
+                                pass
+                                #print('%s and %s have the same 16S clusters but < %s 16S similarity'
+                                #      %(Gene1,Gene2,Cutoff_16S))
+                        # calculate total number of gene clusters
+                        if lines.split('\t')[1] not in Diff_cluster:
+                            Diff_cluster.append(lines.split('\t')[1])
+                        # calculate lowest 16S similarity for same gene in diff 16S clusters
+                        lowest_id = Cutoff_16S
+                        if Genome1 +'_'+Genome2 in ID_16S:
+                            lowest_id = ID_16S[Genome1 +'_'+Genome2]
+                        elif Genome2 +'_'+Genome1 in ID_16S:
+                            lowest_id = ID_16S[Genome2 +'_'+Genome1]
+                        Diff_16S_min = min(float(lowest_id),Diff_16S_min)
+                        output_file2.write('%s\t%.3f\t%.3f\n'
+                                               % (Genome_pair,(ID),lowest_id))
+                        if '.dna_extended.' in diff:
+                            if ID >= 0.9:
+                                output_file3.write('%s\t%.3f\t%.3f\n'
+                                                   % (Genome_pair, (ID), lowest_id))
+                except KeyError:
+                    # missing 16S
+                    pass
         if '.dna_extended.' in diff:
             output_file3.close()
         output_file2.close()
@@ -511,32 +516,36 @@ def HGT_finder_sum(cluster_16S,function_name,type_fasta,cutoff,diff,same,mge,out
             Gene2 = lines.split('\t')[3]
             Gene_pair = function_com(Gene1, Gene2)
             if Gene_pair not in Gene_set:
-                Gene_set.append(Gene_pair)
-                Genome1 = find_genome(Gene1, cluster_16S[0])
-                cluster1 = cluster_16S[0][Genome1]
-                Genome2 = find_genome(Gene2, cluster_16S[0])
-                cluster2 = cluster_16S[0][Genome2]
-                # calculate total number of 16S
-                if Genome1 != Genome2:
-                    # count genome pairs
-                    Genome_pair = function_com(Genome1, Genome2)
-                    if Genome_pair not in Same_genome_set:
-                        Same_genome_set.append(Genome_pair)
-                        # calculate total number of 16S
-                        if cluster1 not in Cluster_16S_Set:
-                            Result[11] += len(cluster_16S[-1][cluster1])
-                            Cluster_16S_Set.append(cluster1)
-                        if cluster1 == cluster2:
-                            pass
-                        else:
-                            if cluster2 not in Cluster_16S_Set:
-                                Result[11] += len(cluster_16S[-1][cluster2])
-                                Cluster_16S_Set.append(cluster2)
-                            #print('%s and %s have different 16S clusters but >= %s 16S similarity'
-                            #      % (Gene1, Gene2, Cutoff_16S))
-                    # calculate total number of gene clusters
-                    if lines.split('\t')[1] not in Same_cluster:
-                        Same_cluster.append(lines.split('\t')[1])
+                try:
+                    Gene_set.append(Gene_pair)
+                    Genome1 = find_genome(Gene1, cluster_16S[0])
+                    cluster1 = cluster_16S[0][Genome1]
+                    Genome2 = find_genome(Gene2, cluster_16S[0])
+                    cluster2 = cluster_16S[0][Genome2]
+                    # calculate total number of 16S
+                    if Genome1 != Genome2:
+                        # count genome pairs
+                        Genome_pair = function_com(Genome1, Genome2)
+                        if Genome_pair not in Same_genome_set:
+                            Same_genome_set.append(Genome_pair)
+                            # calculate total number of 16S
+                            if cluster1 not in Cluster_16S_Set:
+                                Result[11] += len(cluster_16S[-1][cluster1])
+                                Cluster_16S_Set.append(cluster1)
+                            if cluster1 == cluster2:
+                                pass
+                            else:
+                                if cluster2 not in Cluster_16S_Set:
+                                    Result[11] += len(cluster_16S[-1][cluster2])
+                                    Cluster_16S_Set.append(cluster2)
+                                #print('%s and %s have different 16S clusters but >= %s 16S similarity'
+                                #      % (Gene1, Gene2, Cutoff_16S))
+                        # calculate total number of gene clusters
+                        if lines.split('\t')[1] not in Same_cluster:
+                            Same_cluster.append(lines.split('\t')[1])
+                except KeyError:
+                    # missing 16S
+                    pass
     else:
         print('file %s is %s' % (same, Checkoutput))
     # calculate MGEs
@@ -605,41 +614,45 @@ script_i = compare_traits_16S(Function_Set_dna, cluster_16S[0],'dna_extended',re
 
 # calculate index for HGT
 # load each function
-all_function_diff_same = glob.glob(os.path.join(result_dir + '/sub_fun','*aa.diff.cluster'))+\
-glob.glob(os.path.join(result_dir + '/sub_fun','*aa.same.cluster'))
+all_function_diff_same = glob.glob(os.path.join(result_dir + '/sub_fun','*.diff.cluster'))+\
+glob.glob(os.path.join(result_dir + '/sub_fun','*.same.cluster'))
 all_output = open(os.path.join(result_dir,'HGT.summary.dna.%s.aa.%s.16S.%s.txt'
                                    % (Cutoff_HGT,Cutoff_aa,Cutoff_16S)),'w')
-all_function = []
 all_output.write('function_name\ttype\tcutoff\tcluster_num_diff\t16S_range_diff\thit_diff\tgenome_num_diff\t'+
                       'percentage_diff_pair\tcluster_num_same\t16S_range_same\thit_same\tgenome_num_same\tpercentage_same_pair\t'+
                       'genome_to_mge\tmge_to_mge\n')
+all_function = []
 for function_diff in all_function_diff_same:
-    # for each function
-    function_diff = function_diff.replace('.same.cluster', '.diff.cluster')
-    function_same = function_diff.replace('.diff.cluster','.same.cluster')
-    function_mge = function_diff.replace('.diff.cluster','.mge.cluster')
     function_name = os.path.split(function_diff)[-1].split('.')[0]
     if function_name not in all_function:
-        print('summarize potential HGT of %s %s trait with cutoff of %s' % ('dna',function_name,Cutoff_HGT))
-        HGT_finder_sum(cluster_16S,function_name,'dna',
-                       Cutoff_HGT,
-                       function_diff.replace('.aa.diff.cluster', '.dna.diff.cluster'),
-                       function_same.replace('.aa.same.cluster', '.dna.same.cluster'),
-                       function_diff.replace('.aa.diff.cluster', '.dna.mge.cluster'),
-                       all_output)
-        print('summarize potential HGT of %s %s trait with cutoff of %s' % ('aa', function_name, Cutoff_aa))
-        HGT_finder_sum(cluster_16S, function_name, 'aa',
-                       Cutoff_aa,
-                       function_diff, function_same, function_mge,
-                       all_output)
-        print('summarize potential HGT of %s %s trait with cutoff of %s' % ('extended dna', function_name, Cutoff_extended))
-        HGT_finder_sum(cluster_16S, function_name, 'dna_extended',
-                       Cutoff_extended,
-                       function_diff.replace('.aa.diff.cluster', '.dna_extended.diff.cluster'),
-                       function_same.replace('.aa.same.cluster', '.dna_extended.same.cluster'),
-                       function_diff.replace('.aa.diff.cluster', '.dna_extended.mge.cluster'),
-                       all_output)
         all_function.append(function_name)
+print(all_function,all_function_diff_same)
+for function_name in all_function:
+    # for each function
+    function_diff = os.path.join(result_dir + '/sub_fun',"%s.%s.%s.diff.cluster" % (function_name,args.t,'dna'))
+    function_same = os.path.join(result_dir + '/sub_fun',"%s.%s.%s.same.cluster" % (function_name,args.t,'dna'))
+    function_mge = os.path.join(result_dir + '/sub_fun',"%s.%s.%s.mge.cluster" % (function_name,args.t,'dna'))
+    print('summarize potential HGT of %s %s trait with cutoff of %s' % ('dna', function_name, Cutoff_HGT))
+    HGT_finder_sum(cluster_16S, function_name, 'dna',
+                   Cutoff_HGT,
+                   function_diff,
+                   function_same,
+                   function_diff,
+                   all_output)
+    print('summarize potential HGT of %s %s trait with cutoff of %s' % ('aa', function_name, Cutoff_aa))
+    HGT_finder_sum(cluster_16S, function_name, 'aa',
+                   Cutoff_aa,
+                   function_diff.replace('.dna.diff.cluster', '.aa.diff.cluster'),
+                   function_same.replace('.dna.same.cluster', '.aa.same.cluster'),
+                   function_diff.replace('.dna.diff.cluster', '.aa.mge.cluster'),
+                   all_output)
+    print('summarize potential HGT of %s %s trait with cutoff of %s' % ('extended dna', function_name, Cutoff_extended))
+    HGT_finder_sum(cluster_16S, function_name, 'dna_extended',
+                   Cutoff_extended,
+                   function_diff.replace('.dna.diff.cluster', '.dna_extended.diff.cluster'),
+                   function_same.replace('.dna.same.cluster', '.dna_extended.same.cluster'),
+                   function_diff.replace('.dna.diff.cluster', '.dna_extended.mge.cluster'),
+                   all_output)
 all_output.close()
 # collect all bash files
 list_of_files = glob.glob('HGT_subscripts/HGTalign.*.sh')
