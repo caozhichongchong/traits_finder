@@ -178,7 +178,7 @@ def search(roottemp,filename):
                         int(i / 10000)) + ' \n'
                     searchfile = os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt.aa')
                     # genome file
-                    cmds += 'python '+ workingdir +'/Extract.MG.py  -p 2 -d 2000 -i ' + roottemp + ' -f ' +\
+                    cmds += 'python '+ workingdir +'/Extract.MG.py  -p 1 -i ' + roottemp + ' -f ' +\
                     filename.split(orfs_format)[0]+ fasta_format + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                         int(i / 10000)) + ' \n'
         else:
