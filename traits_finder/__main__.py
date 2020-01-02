@@ -139,9 +139,83 @@ def main():
     ################################################## Definition ########################################################
     args = parser.parse_args()
     workingdir=os.path.abspath(os.path.dirname(__file__))
+    ################################################### Function ########################################################
+    def makedatabase(search_method,db_file,db_type):
+        # for blast database
+        if db_type == 1:
+            #dna database
+            if 'blast' in search_method:
+                try:
+                    f1 = open("%s.nhr" % (db_file), 'r')
+                except IOError:
+                    os.system('%s -in %s -input_type fasta -dbtype nucl' %
+                              (os.path.join(os.path.split(search_method)[0], 'makeblastdb'), db_file))
+            if 'hs-blastn' in search_method:
+                try:
+                    f1 = open("%s.counts.obinary" % (db_file), 'r')
+                except IOError:
+                    os.system('windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
+                              (db_file, db_file))
+                    os.system('windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
+                              (db_file, db_file))
+                    os.system('%s index %s' % (os.path.join(os.path.split(search_method)[0], 'makeblastdb'), db_file))
+            if 'hmm' in search_method:
+                if '.hmm' not in db_file:
+                    try:
+                        f1 = open("%s.hmm" % (db_file), 'r')
+                    except IOError:
+                        os.system('%s %s %s.hmm' %
+                              (os.path.join(os.path.split(search_method)[0], 'makehmmerdb'), db_file,db_file))
+        else:
+            # aa database
+            if 'blast' in search_method:
+                try:
+                    f1 = open("%s.phr" % (db_file), 'r')
+                except IOError:
+                    os.system('%s -in %s -input_type fasta -dbtype prot' %
+                              (os.path.join(os.path.split(search_method)[0], 'makeblastdb'), db_file))
+            if 'diamond' in search_method:
+                if '.dmnd' not in db_file:
+                    try:
+                        f1 = open("%s.dmnd" % (db_file), 'r')
+                    except IOError:
+                        os.system('%s makedb --in %s -d %s.dmnd' %
+                                  (search_method, db_file,db_file))
+            if 'hmm' in search_method:
+                if '.hmm' not in db_file:
+                    try:
+                        f1 = open("%s.hmm" % (db_file), 'r')
+                    except IOError:
+                        os.system('%s %s.hmm %s' %
+                                  (os.path.join(os.path.split(search_method)[0], 'hmmbuild'), db_file,db_file))
+        if 'usearch' in search_method:
+            if '.udb' not in db_file:
+                try:
+                    f1 = open("%s.udb" % (db_file), 'r')
+                except IOError:
+                    os.system('%s -makeudb_usearch %s -output %s.udb' %
+                              (search_method, db_file, db_file))
+
+
     ################################################### Programme #######################################################
     f1 = open ('traits_finder.log','w')
     thread = int(args.t)
+    # make database
+    if args.s == 1:
+        if args.bp != 'None':
+            makedatabase(args.bp, args.db, args.dbf)
+            makedatabase(args.bp, workingdir + "/database/Butyrate.pro.fasta", 2)
+        if args.u != 'None':
+            makedatabase(args.u, args.db, args.dbf)
+            if 'usearch' in args.u:
+                makedatabase(args.u, workingdir + "/database/85_otus.fasta", 1)
+                makedatabase(args.u, workingdir + "/database/85_otus.fasta.all.V4_V5.fasta", 1)
+            if 'diamond' in args.u:
+                makedatabase(args.u, workingdir + "/database/all_KO30.pro.fasta", 2)
+                makedatabase(args.u, workingdir + "/database/Butyrate.pro.fasta", 2)
+    else:
+        makedatabase(args.hmm, args.db, args.dbf)
+    # run traits finding
     if args.command in ['genome','mge'] :
         cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s\n'
         % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r[0]),str(args.r16),str(thread),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
@@ -180,7 +254,7 @@ def main():
         os.system(cmd)
     elif args.command == 'HGT':
         if 'usearch' not in args.u:
-            print('Must install and set --u as usearch or path to usearch')
+            print('Must install usearch and set --u as usearch or path to usearch')
             print('if your gene fasta file is larger than 2GB, please also install hs-blastn')
         else:
             cmd = ('python '+workingdir+'/scripts/HGT_finder.py -t %s --r %s --s %s --u %s --mf %s --ft %s --th %s \n'
@@ -190,7 +264,8 @@ def main():
             os.system(cmd)
     elif args.command == 'HGT_sum':
         if 'usearch' not in args.u:
-            print('Must install and set --u as usearch or path to usearch')
+            print('Must install usearch and set --u as usearch or path to usearch')
+            print('if your gene fasta file is larger than 2GB, please also install hs-blastn')
         else:
             cmd = ('python '+workingdir+'/scripts/HGT_finder_sum.py -t %s -m %s --r %s --s %s --u %s --mf %s --ft %s --th %s \n'
             %(str(os.path.split(args.db)[1]),str(args.m),str(args.r[0]),

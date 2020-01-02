@@ -61,7 +61,7 @@ def Extractaa(root, searchfile, orffile, resultdir):
                     else:
                         AA_seq.setdefault(AA, ['whole'])
             tag = 'fasta'
-            if 'fastq' in orffile:
+            if orffile.split('.')[-1] in ['fastq','f1']:
                 tag = 'fastq'
             for record in SeqIO.parse(open(os.path.join(root, orffile), 'r'), tag):
                 AA = str(record.id)

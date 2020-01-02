@@ -120,6 +120,7 @@ def search(roottemp,filename):
                     ftry = open(os.path.join(root, filename + '.usearch.txt.aa'), 'r')
                     searchfile = os.path.join(root, filename + '.usearch.txt.aa')
                     Usearch=1
+                    break
                 except IOError:
                     pass
             if Usearch == 0:
@@ -163,6 +164,7 @@ def search(roottemp,filename):
                     ftry_blast = open(os.path.join(root, filename + '.blast.txt'), 'r')
                     ftry_blast_file = os.path.join(root, filename + '.blast.txt')
                     Blastsearch = 1
+                    break
                 except IOError:
                     pass
             if Blastsearch == 0:
@@ -176,6 +178,7 @@ def search(roottemp,filename):
                 try:
                     ftry = open(os.path.join(root, filename + '.blast.txt.filter'), 'r')
                     Blastsearchfilter = 1
+                    break
                 except IOError:
                     pass
             if Blastsearchfilter == 0:
@@ -199,6 +202,7 @@ def search(roottemp,filename):
             try:
                 ftry = open(os.path.join(root, filename + '.hmm'), 'r')
                 Blastsearch = 1
+                break
             except IOError:
                 pass
         if Blastsearch == 0:
@@ -242,6 +246,7 @@ def search(roottemp,filename):
         try:
             ftry = open(os.path.join(root, filename + '.16S.txt'), 'r')
             Search16s = 1
+            break
         except IOError:
             pass
     if Search16s == 0:
@@ -269,6 +274,29 @@ def search(roottemp,filename):
             cmds += 'python '+ workingdir +'/Extract.16S.MG.py -i ' + roottemp.replace('_faa','_fasta') + ' -f ' + \
                     filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
                 int(i / 10000)) + ' \n'
+    # cell number calculation
+    Search16s = 0
+    for root, dirs, files in os.walk(args.r16):
+        try:
+            ftry = open(os.path.join(root, filename + '.uscmg.blastx.txt'), 'r')
+            Search16s = 1
+            break
+        except IOError:
+            pass
+    if Search16s == 0:
+        # with diamond
+        if "diamond" in args.u:
+            # Start search essential single copy genes
+            cmds += 'python ' + workingdir + '/undone.MG.py -i ' + os.path.join(roottemp.replace('_faa', '_fasta'),
+                                                                                filename + ' \n')
+            cmds += args.u + " -usearch_global " + os.path.join(roottemp.replace('_faa', '_fasta'), filename) + \
+                    " -db " + workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
+                    + os.path.join(args.r16 + '/' + str(int(i / 10000)), filename + '.16S.txt') + \
+                    " -threads " + str(int(i_max)) + " \n"
+            cmds += args.u + " blastx -q " + os.path.join(roottemp.replace('_faa', '_fasta'), filename) +\
+                     " -d " + workingdir + "/../database/all_KO30.pro.fa.dmnd -o " + \
+                    os.path.join(args.r16 + '/' + str(int(i / 10000)), filename + '.uscmg.blastx.txt') + \
+                     " -f tab  -p 1 -e 3  --id 0.45 --max-target-seqs 1 --threads " + str(int(i_max)) + " \n"
     return cmds
 
 

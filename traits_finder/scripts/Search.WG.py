@@ -114,6 +114,7 @@ def search(roottemp,filename):
                     ftry = open(os.path.join(root, filename + '.usearch.txt.aa'), 'r')
                     searchfile = os.path.join(root, filename + '.usearch.txt.aa')
                     Usearch=1
+                    break
                 except IOError:
                     pass
             if Usearch == 0:
@@ -192,6 +193,7 @@ def search(roottemp,filename):
                     ftry_blast = open(os.path.join(root, filename + '.blast.txt'), 'r')
                     ftry_blast_file = os.path.join(root, filename + '.blast.txt')
                     Blastsearch = 1
+                    break
                 except IOError:
                     pass
             if Blastsearch == 0:
@@ -213,6 +215,7 @@ def search(roottemp,filename):
                 try:
                     ftry = open(os.path.join(root, filename + '.blast.txt.filter'), 'r')
                     Blastsearchfilter = 1
+                    break
                 except IOError:
                     pass
             if Blastsearchfilter == 0:
@@ -281,6 +284,7 @@ def search(roottemp,filename):
             try:
                 ftry = open(os.path.join(root, filename + '.hmm'), 'r')
                 Blastsearch = 1
+                break
             except IOError:
                 pass
         if Blastsearch == 0:
@@ -295,6 +299,7 @@ def search(roottemp,filename):
         try:
             ftry = open(os.path.join(root, filename.split(orfs_format)[0]+ fasta_format + '.16S.txt'), 'r')
             Search16s = 1
+            break
         except IOError:
             pass
     if Search16s == 0:
