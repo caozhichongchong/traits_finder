@@ -37,7 +37,8 @@ parser.add_argument('-s',
                     action='store', default=1, type=int)
 # optional parameters
 parser.add_argument("--fa",
-                    help="input format of metagenomes sequence", type=str, default='.fasta',metavar='.fasta, .fna or .fa')
+                    help="input format of metagenomes sequence", type=str,
+                    default='.fasta',metavar='.fasta or .fastq')
 #parser.add_argument("--orf",
 #                    help="input format of genome orfs", type=str, default='.genes.faa',metavar='.faa')
 # optional output setup
@@ -94,18 +95,6 @@ workingdir=os.path.abspath(os.path.dirname(__file__))
 
 
 ################################################### Function ########################################################
-def addname(filedir, file_name):
-    Fasta_name = open(os.path.join(filedir,file_name), 'r')
-    f = open(os.path.join(filedir,file_name + '.add'), 'w')
-    in_dir, input_file = os.path.split(file_name)
-    for record in SeqIO.parse(Fasta_name, 'fasta'):
-        if len(str(record.seq).replace(' ',''))>0:
-            # remove empty ORF sequences, otherwise there could be a problem for blast, usearch and diamond
-            f.write('>'+str(input_file)+'_'+str(record.id) + '\t' + str(record.description).replace('\t', ' ') + '\n' + str(
-                str(record.seq)) + '\n')
-    f.close()
-
-
 def search(roottemp,filename):
     # search the database for each file
     cmds = ''
@@ -366,12 +355,6 @@ for files in Targetroot:
                 os.mkdir(args.r + '/bwa/' + str(int(i / 10000)))
             except OSError:
                 pass
-        # add filename to orf
-        #try:
-        #    ftry = open(os.path.join(roottemp, str(filename) + ".add"), 'r')
-        #except IOError:
-        #    addname(roottemp, str(filename))
-        #filename = filename + ".add"
         # search the database in WGD
         cmds = search(roottemp, filename)
         f1.write(cmds)

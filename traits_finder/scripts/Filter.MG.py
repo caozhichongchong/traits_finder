@@ -60,6 +60,7 @@ def Calculate_length(file_name):
         f.close()
     return DB_length
 
+
 def compare_blast(line1,line2):
     ID1=float(str(line1).split('\t')[2])
     ID2=float(str(line2).split('\t')[2])

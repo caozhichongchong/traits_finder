@@ -237,14 +237,9 @@ def main():
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_meta':
-        #if args.s == 1:
-        #   cmd = ('python '+workingdir+'/Copynumber_traits.py -i %s -i16 %s -o %s -f %s.blast.txt -f16 %s.16S.txt -l %s.length -tf %s -m %s -c %s'
-        #    % (str(os.path.join(args.r[0],'search_output/0'))),str(args.r16),str(os.path.join(args.r[0],'summary'))),str(args.fa),str(args.fa),str(args.db),str(args.m),str(args.meta),str(args.id))
-        #else:
-            #cmd = ('python '+workingdir+'/Copynumber_traits_hmm.py -i %s -i16 %s -o %s -f %s.hmm2.txt -f16 %s.16S.txt -l %s.length -tf %s -m %s -c %s'
-            #% (str(os.path.join(args.r[0],'search_output/0'))),str(args.r16),str(os.path.join(args.r[0],'summary'))),str(args.fa),str(args.fa),str(args.db),str(args.m),str(args.meta),str(args.e))
-        #cmd += ('python '+workingdir+'/scripts/Traits_summary_MG.py -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s\n'
-        #%(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r[0]),str(args.r16),str(os.path.join(args.r[0],'summary')),str(args.id)))
+        cmd = ('python ' + workingdir + '/Traits_summary_MG.py -db %s -dbf %s -t %s -s %s -fa %s -m %s --r %s --r16 %s --meta %s\n'
+                    % (str(args.db), str(args.dbf),str(os.path.split(args.db)[1]), str(args.s), str(args.fa), str(args.m), str(args.r[0]),
+                       str(args.r16), str(args.meta)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'merge':
