@@ -34,7 +34,7 @@ parser.add_argument("-m",
                         default='Butyrate.pro.mapping.txt',
                         metavar='database.mapping.txt')
 # optional  setup
-optional.add_argument("--meta",
+parser.add_argument("--meta",
                         help="metadata  of metagenomes", type=str,
                         default='None',
                         metavar='metadata.metagenomes.txt')

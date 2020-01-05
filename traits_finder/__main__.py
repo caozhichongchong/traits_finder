@@ -201,10 +201,19 @@ def main():
     f1 = open ('traits_finder.log','w')
     thread = int(args.t)
     # make database
+    if args.db == 'but':
+        args.db = workingdir + "/database/Butyrate.pro.fasta"
+        args.dbf = 2
+        args.s = 1
+        args.m = workingdir + "/database/Butyrate.pro.fasta.mapping.txt"
+    if args.db == 'ARG':
+        args.db = workingdir + "/database/SARG.db.fasta"
+        args.dbf = 2
+        args.s = 1
+        args.m = workingdir + "/database/SARG.db.fasta.mapping.txt"
     if args.s == 1:
         if args.bp != 'None':
             makedatabase(args.bp, args.db, args.dbf)
-            makedatabase(args.bp, workingdir + "/database/Butyrate.pro.fasta", 2)
         if args.u != 'None':
             makedatabase(args.u, args.db, args.dbf)
             if 'usearch' in args.u:
@@ -212,7 +221,6 @@ def main():
                 makedatabase(args.u, workingdir + "/database/85_otus.fasta.all.V4_V5.fasta", 1)
             if 'diamond' in args.u:
                 makedatabase(args.u, workingdir + "/database/all_KO30.pro.fasta", 2)
-                makedatabase(args.u, workingdir + "/database/Butyrate.pro.fasta", 2)
     else:
         makedatabase(args.hmm, args.db, args.dbf)
     # run traits finding
@@ -237,7 +245,7 @@ def main():
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_meta':
-        cmd = ('python ' + workingdir + '/Traits_summary_MG.py -db %s -dbf %s -t %s -s %s -fa %s -m %s --r %s --r16 %s --meta %s\n'
+        cmd = ('python ' + workingdir + '/scripts/Traits_summary_MG.py -db %s -dbf %s -t %s -s %s -fa %s -m %s --r %s --r16 %s --meta %s\n'
                     % (str(args.db), str(args.dbf),str(os.path.split(args.db)[1]), str(args.s), str(args.fa), str(args.m), str(args.r[0]),
                        str(args.r16), str(args.meta)))
         f1.write(cmd)
