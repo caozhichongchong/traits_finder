@@ -30,6 +30,7 @@ https://pypi.org/project/traits_finder
 
 ## How to use it
 ### Search traits: boring and slow...
+#### Database installed in traits_finder: antibiotic resistant genes (-db ARG), butyrate producing genes (-db but)
 1. search protein reference sequences in genomes (traits_finder genome) or mobile genetic elements (traits_finder mge) by similarity search\
 `traits_finder genome -db your.db -i your.input.folder -fa your.input.genome.format --orf your.input.orf.format --r your.output.folder --r16 your.output.folder.for.16s --u diamond --bp blastp -dbf 1 -s 1`\
 
@@ -56,7 +57,7 @@ https://pypi.org/project/traits_finder
 `traits_finder sum_genome -db your.db -m function.mapping.your.db -i your.input.folder -fa your.input.genome.format --orf your.input.orf.format --r your.output.folder --r16 your.output.folder.for.16s`\
 
 2. summarize traits in metagenomes\
-`traits_finder sum_meta -db your.db -m function.mapping.your.db -i your.input.folder -fa your.input.metagenomes.format --r your.output.folder --r16 your.output.folder.for.16s`\
+`traits_finder sum_meta -db your.db -m function.mapping.your.db -i your.input.folder -fa your.input.metagenomes.format --r your.output.folder --r16 your.output.folder.for.16s --meta metadata.txt`\
 
 ### HGT finder and summarizing: cool and fast! (still-testing)
 
