@@ -94,7 +94,7 @@ def norm_pairend(Dataset, sample):
         Dataset[sample] = Dataset[sample][0]
 
 
-def output_copy(Dataset,sample,fout1,fout2,fout3):
+def output_copy(Dataset,sample,metadata, fout1,fout2,fout3):
     # calculate copy per 16S
     if sample in Cell16S:
         fout1.write(sample)
@@ -148,8 +148,8 @@ def sum_output():
         metadata = '\t'
         if samples in Meta:
             metadata += Meta[samples]
-        output_copy(Trait, sample, fout1, fout2, fout3)
-        output_copy(Trait_fun, sample, fout4, fout5, fout6)
+        output_copy(Trait, samples, metadata, fout1, fout2, fout3)
+        output_copy(Trait_fun, samples, metadata, fout4, fout5, fout6)
     fout1.close()
     fout2.close()
     fout3.close()
@@ -195,7 +195,9 @@ if args.meta != 'None':
 os.system('python %s/Cell_number_MG.py -m %s -fa %s -r16 %s -r %s'
           %(workingdir,workingdir + "/../database/all_KO30_name.list",
             args.fa, args.r16, args.r))
-
+print('python %s/Cell_number_MG.py -m %s -fa %s -r16 %s -r %s'
+          %(workingdir,workingdir + "/../database/all_KO30_name.list",
+            args.fa, args.r16, args.r))
 
 # input cell number
 Cellnum=dict()

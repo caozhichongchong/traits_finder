@@ -77,15 +77,14 @@ except IOError:
 
 if Cell_out == 0 or Cell16S_out == 0:
     # load all files
+    # should load 16S
     inputfiles=glob.glob(os.path.join(args.r16,'*.uscmg.blastx.txt'))
-
     # load cell number mapping file
     # gene ID: genotype ID, length
     Mapping = dict()
     for lines in open(args.m, 'r'):
         Mapping.setdefault(lines.split('\t')[0],
                            [lines.split('\t')[1],float(lines.split('\t')[2].split('\r')[0].split('\n')[0])])
-
     # process cell num and 16S calculating
     Cellnum=dict()
     Cell16S=dict()

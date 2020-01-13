@@ -105,20 +105,8 @@ if args.dbf == 1:
 else:
     blast_set=args.bp.replace('blastn','blastp')
     diamond_set=args.u.replace('diamond','diamond-blastp')
-# search the database in all genomes
-cmds = 'python '+ workingdir +'/scripts/Search.WG.py -i ' + args.i  +\
-                ' -db ' + args.db + ' -dbf ' + str(args.dbf) + ' -s ' + str(args.s) + ' --r ' + str(args.r) + ' --t ' + str(args.t) + \
-                ' --u ' + str(diamond_set) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(blast_set) + \
-                ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + ' --fa ' + str(args.fa) + \
-                ' --e ' + str(args.e) + ' --orf ' + str(args.orf) + ' --r16 ' + str(args.r16)+\
-        ' --bwa ' + str(args.bwa) + ' \n'
-#print(cmds)
-os.system(cmds)
 
-# run all bash
-list_of_files = glob.glob('subscripts/*.sh')
-f1 = open("all.sh", 'w')
-f1.write("#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n")
+
 # make all database
 if args.s == 1:
     if args.bwa != 'None':
@@ -182,6 +170,22 @@ except IOError:
                 f1.write(os.path.join(os.path.split(args.u)[0],
                                       ' index %s\n' % (
                                           workingdir +'/database/85_otus.fasta')))
+
+# search the database in all genomes
+cmds = 'python '+ workingdir +'/scripts/Search.WG.py -i ' + args.i  +\
+                ' -db ' + args.db + ' -dbf ' + str(args.dbf) + ' -s ' + str(args.s) + ' --r ' + str(args.r) + ' --t ' + str(args.t) + \
+                ' --u ' + str(diamond_set) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(blast_set) + \
+                ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + ' --fa ' + str(args.fa) + \
+                ' --e ' + str(args.e) + ' --orf ' + str(args.orf) + ' --r16 ' + str(args.r16)+\
+        ' --bwa ' + str(args.bwa) + ' \n'
+#print(cmds)
+os.system(cmds)
+
+# run all bash
+list_of_files = glob.glob('subscripts/*.sh')
+f1 = open("all.sh", 'w')
+f1.write("#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n")
+
 # bash for all subscripts
 for file_name in list_of_files:
     if all(keys not in file_name for keys in ['SearchWG.sh','all.sh']):

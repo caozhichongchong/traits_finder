@@ -107,19 +107,7 @@ else:
     blast_set=args.bp.replace('blastn','blastx')
     diamond_set=args.u.replace('diamond','diamond-blastx')
 
-# search the database in all genomes
-cmds = 'python '+ workingdir +'/scripts/Search.MG.py -i ' + args.i  +\
-                ' -db ' + args.db + ' -dbf ' + str(args.dbf) + ' -s ' + str(args.s) + ' --r ' + str(args.r) + ' --t ' + str(args.t) + \
-                ' --u ' + str(diamond_set) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(blast_set) + \
-                ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + ' --fa ' + str(args.fa) + \
-                ' --e ' + str(args.e) + ' -l ' + str(args.l) + ' --r16 ' + str(args.r16)\
-       + ' --bwa ' + str(args.bwa) + ' \n'
-os.system(cmds)
 
-# run all bash
-list_of_files = glob.glob('subscripts/*.sh')
-f1 = open("all.sh", 'w')
-f1.write("#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n")
 # make all database
 if args.s == 1:
     if args.bwa != 'None':
@@ -182,6 +170,23 @@ except IOError:
                 f1.write(os.path.join(os.path.split(args.u)[0],
                                       'hs-blastn index %s\n' % (
                                           workingdir +'/database/85_otus.fasta.all.V4_V5.fasta')))
+
+
+# search the database in all genomes
+cmds = 'python '+ workingdir +'/scripts/Search.MG.py -i ' + args.i  +\
+                ' -db ' + args.db + ' -dbf ' + str(args.dbf) + ' -s ' + str(args.s) + ' --r ' + str(args.r) + ' --t ' + str(args.t) + \
+                ' --u ' + str(diamond_set) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(blast_set) + \
+                ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + ' --fa ' + str(args.fa) + \
+                ' --e ' + str(args.e) + ' -l ' + str(args.l) + ' --r16 ' + str(args.r16)\
+       + ' --bwa ' + str(args.bwa) + ' \n'
+os.system(cmds)
+
+# run all bash
+list_of_files = glob.glob('subscripts/*.sh')
+f1 = open("all.sh", 'w')
+f1.write("#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n")
+
+
 # bash for all subscripts
 for file_name in list_of_files:
     if not any(files in file_name for files in ['all.sh','SearchMG.sh']):
