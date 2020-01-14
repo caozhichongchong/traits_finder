@@ -89,7 +89,7 @@ except OSError:
     pass
 workingdir=os.path.abspath(os.path.dirname(__file__))
 try:
-    os.system('rm -rf HGT_subscripts')
+    #os.system('rm -rf HGT_subscripts')
     os.mkdir('HGT_subscripts')
 except OSError:
     pass
@@ -115,7 +115,7 @@ class HGT_function:
         self.outputfile = outputfile
         self.outputfile_list = []
         output_file = open(outputfile,'w')
-        output_file.write('genome_pair\tid_gene\tid_16S\n')
+        output_file.write('function\tgenome_pair\tid_gene\tid_16S\n')
         output_file.close()
         self.Same_genome_set = set()
         self.Diff_genome_set = set()
@@ -273,7 +273,7 @@ def function_load(input_file,type_fasta):
                     if args.g == 'F':
                         function = line_set[0].replace("(","").replace(")","").replace(".","_").replace(" ","_").replace("-","_")
                     else:
-                        function = line_set[2]
+                        function = line_set[2] #reference gene name
                     loci_new = loci_seq(gene)
                     gene = gene[0:gene.rfind('_', 0, (gene.rfind('_') - 1))]
                     # query gene
