@@ -38,13 +38,12 @@ def main():
                         traits_finder sum_genome for summarizing genome results,\
                         traits_finder sum_genome for summarizing MGE results,\
                         traits_finder sum_meta for summarizing metagenome results,\
-                             traits_finder HGT for finding candidate HGT of traits across species,\
-                             traits_finder HGT_sum for summarizing HGT",
+                             traits_finder HGT for finding candidate HGT of traits across species",
                         type=str,
                         default='genome',
                         choices=['genome','mge', 'meta',
                         'sum_genome','sum_mge','sum_meta',
-                        'merge','HGT','HGT_sum'],
+                        'merge','HGT'],
                         action='store',
                         metavar='traits_finder command')
     required.add_argument("-db",
@@ -256,16 +255,6 @@ def main():
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'HGT':
-        if 'usearch' not in args.u:
-            print('Must install usearch and set --u as usearch or path to usearch')
-            print('if your gene fasta file is larger than 2GB, please also install hs-blastn')
-        else:
-            cmd = ('python '+workingdir+'/scripts/HGT_finder.py -t %s --r %s --s %s --u %s --mf %s --ft %s --th %s \n'
-            %(str(os.path.split(args.db)[1]),str(args.r[0]),
-              str(os.path.join(args.r[0],'summary')),str(args.u),str(args.mf),str(args.ft),str(thread)))
-            f1.write(cmd)
-            os.system(cmd)
-    elif args.command == 'HGT_sum':
         if 'usearch' not in args.u:
             print('Must install usearch and set --u as usearch or path to usearch')
             print('if your gene fasta file is larger than 2GB, please also install hs-blastn')
