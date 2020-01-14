@@ -600,7 +600,8 @@ def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,script_i,output_f
             for lines in open(files,'r'):
                 try:
                     line_set = lines.split('\t',maxsplit=4)
-                    if float(line_set[2])/100.0 >= cutoff:
+                    ID = float(line_set[2]) / 100.0
+                    if ID >= cutoff:
                         newGene1 = line_set[0]
                         newGene2 = line_set[1]
                         Function = function_pair(newGene1, newGene2)
@@ -657,7 +658,7 @@ def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,script_i,output_f
                                                             add_gene_and_function(Diff_gene_set, Function, newGene1)
                                                             add_gene_and_function(Diff_gene_set, Function, newGene2)
                                                         # calculate diff 16S clusters
-                                                        ID = float(line_set[3]) / 100.0
+                                                        ID = float(line_set[2]) / 100.0
                                                         # calculate total number of 16S
                                                         HGT_function_temp.adddiffgenome_set(Genome_pair)
                                                         HGT_function_temp.adddiff16Scluster(cluster1)
@@ -668,7 +669,7 @@ def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,script_i,output_f
                                                             lowest_id = ID_16S[Genome_pair]
                                                         HGT_function_temp.setDiff_16S_min(lowest_id)
                                                         HGT_function_temp.addoutput('%s\t%s\t%.3f\t%.3f\n'
-                                                                                    % (Function, Genome_pair, (ID), lowest_id))
+                                                                                    % (Function, Genome_pair, ID, lowest_id))
                                                     else:
                                                         # same 16S cluster
                                                         # output blast results into same.cluster
