@@ -667,8 +667,8 @@ def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,script_i,output_f
                                                         if Genome_pair in ID_16S:
                                                             lowest_id = ID_16S[Genome_pair]
                                                         HGT_function_temp.setDiff_16S_min(lowest_id)
-                                                        HGT_function_temp.addoutput('%s\t%.3f\t%.3f\n'
-                                                                                    % (Genome_pair, (ID), lowest_id))
+                                                        HGT_function_temp.addoutput('%s\t%s\t%.3f\t%.3f\n'
+                                                                                    % (Function, Genome_pair, (ID), lowest_id))
                                                     else:
                                                         # same 16S cluster
                                                         # output blast results into same.cluster
@@ -758,6 +758,13 @@ def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,script_i,output_f
             Result[i] = str(Result[i])
         output_file1.write('\t'.join(Result) + '\n')
         HGT_function_temp.writeoutput()
+    # merge all sub_fun_summary
+    os.path.join(result_dir, 'sub_fun_summary/%s.%s.%.2f.identity.summary.txt'
+                 % (Function, type_fasta, cutoff))
+    os.system('cat %s > %s' % (
+        os.path.join(result_dir, 'sub_fun_summary/*.identity.summary.txt'),
+        os.path.join(result_dir, 'all.identity.summary.txt')
+    ))
     # extract sequences for alignment
     if args.mf != 'None' and Diff_gene_set != dict():
         print('%s extract sequences' % (datetime.now()))
