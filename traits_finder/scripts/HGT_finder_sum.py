@@ -395,8 +395,8 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
     except IOError:
         print('%s Running usearch for %s' % (datetime.now(), input_fasta))
         filesize = int(os.path.getsize(input_fasta))
-        if filesize <= 2E+7 and args.u != 'None':
-            # smaller than 20Mb
+        if filesize <= 3E+7 and args.u != 'None':
+            # smaller than 30Mb
             try:
                 f1 = open("%s.udb" % (input_fasta), 'r')
             except IOError:
@@ -436,11 +436,11 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
                    cutoff2, str(min(int(args.th), 40))))
         else:
             if type_fasta == 'aa':
-                print('input file %s is too large for usearch %s, please provide diamond --dm' % (
-                    input_fasta, filesize))
+                print('Input file %s is %sMb, too large for usearch\nPlease provide diamond using --dm' % (
+                    input_fasta, filesize/1E+7))
             else:
-                print('input file %s is too large for usearch %s, please provide hs-blastn --hs' % (
-                input_fasta, filesize))
+                print('Input file %s is %sMb, too large for usearch\nPlease provide hs-blastn using --hs' % (
+                input_fasta, filesize/1E+7))
     if clustering == 'T':
         try:
             f1 = open("%s.uc" % (input_fasta),'r')
