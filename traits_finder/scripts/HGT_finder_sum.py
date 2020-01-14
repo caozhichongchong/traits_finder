@@ -80,10 +80,13 @@ try:
 except OSError:
     pass
 try:
+    os.mkdir(result_dir + '/sub_fun_summary')
+except OSError:
+    pass
+try:
     os.mkdir(result_dir + '/sub_fun')
 except OSError:
     pass
-
 workingdir=os.path.abspath(os.path.dirname(__file__))
 try:
     os.system('rm -rf HGT_subscripts')
@@ -605,7 +608,7 @@ def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,script_i,output_f
                         if Function not in Function_list:
                             HGT_function_temp = HGT_function()
                             HGT_function_temp.init(Function, type_fasta, cutoff, '%.3f-1.000' % ((Cutoff_16S)),
-                                                   os.path.join(result_dir,'%s.%s.%.2f.identity.summary.txt'
+                                                   os.path.join(result_dir,'sub_fun_summary/%s.%s.%.2f.identity.summary.txt'
                                                                 % (Function,type_fasta,cutoff)))
                             Function_list.setdefault(Function,HGT_function_temp)
                         HGT_function_temp = Function_list[Function]
