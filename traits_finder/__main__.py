@@ -110,19 +110,30 @@ def main():
     # requirement for software calling
     optional.add_argument('--u','--usearch',
                         help="Optional: use two-step method for blast search,"+
-                             " \'None\' for using one step, \'usearch\' or \'diamond\' for using two-step \
-                             (complete path to usearch or diamond if not in PATH, \
-                             please make sure the search tools can be directly called), (default: \'None\')",
+                             " \'None\' for using one step, \'usearch\' for using two-step \
+                             (complete path to usearch if not in PATH), (default: \'None\')",
                         metavar="None or usearch",
                         action='store', default='None', type=str)
+    optional.add_argument('--dm', '--diamond',
+                          help="Optional: use two-step method for blast search," +
+                               " \'None\' for using one step, \'diamond\' for using two-step \
+                               (complete path to diamond if not in PATH), (default: \'None\')",
+                          metavar="None or diamond",
+                          action='store', default='None', type=str)
+    optional.add_argument('--hs',
+                          help="Optional: use two-step method for blast search," +
+                               " \'None\' for using one step, \'hs-blastn\' for using two-step \
+                               (complete path to hs-blastn if not in PATH), (default: \'None\')",
+                          metavar="None or hs-blastn",
+                          action='store', default='None', type=str)
     optional.add_argument('--hmm',
                         help="Optional: complete path to hmmscan if not in PATH,",
                         metavar="/usr/local/bin/hmmscan",
                         action='store', default='hmmscan', type=str)
     optional.add_argument('--bp','--blast',
-                        help="Optional: complete path to blastp or blastn if not in PATH, \'None\' for no blast search",
-                        metavar="/usr/local/bin/blastp",
-                        action='store', default='blastp', type=str)
+                        help="Optional: complete path to blast if not in PATH, \'None\' for no blast search",
+                        metavar="/usr/local/bin/blast",
+                        action='store', default='blast', type=str)
     optional.add_argument('--bwa',
                         help="Optional: complete path to bwa if not in PATH,",
                         metavar="/usr/local/bin/bwa",
@@ -139,7 +150,17 @@ def main():
     args = parser.parse_args()
     workingdir=os.path.abspath(os.path.dirname(__file__))
     ################################################### Function ########################################################
+    def split_string_last(input_string, substring):
+        return input_string[0: input_string.rfind(substring)]
+
+
     def makedatabase(search_method,db_file,db_type):
+        # for bwa database
+        if 'bwa' in search_method:
+            try:
+                f1=open(db_file+'.bwt','r')
+            except IOError:
+                os.system('%s index %s \n' % (search_method, db_file))
         # for blast database
         if db_type == 1:
             #dna database
@@ -178,8 +199,8 @@ def main():
                     try:
                         f1 = open("%s.dmnd" % (db_file), 'r')
                     except IOError:
-                        os.system('%s makedb --in %s -d %s.dmnd' %
-                                  (search_method, db_file,db_file))
+                        os.system('%sdiamond makedb --in %s -d %s.dmnd' %
+                                  (split_string_last(args.dm, 'diamond'), db_file,db_file))
             if 'hmm' in search_method:
                 if '.hmm' not in db_file:
                     try:
@@ -215,22 +236,30 @@ def main():
             makedatabase(args.bp, args.db, args.dbf)
         if args.u != 'None':
             makedatabase(args.u, args.db, args.dbf)
-            if 'usearch' in args.u:
-                makedatabase(args.u, workingdir + "/database/85_otus.fasta", 1)
-                makedatabase(args.u, workingdir + "/database/85_otus.fasta.all.V4_V5.fasta", 1)
-            if 'diamond' in args.u:
-                makedatabase(args.u, workingdir + "/database/all_KO30.pro.fasta", 2)
+            makedatabase(args.u, workingdir + "/database/85_otus.fasta", 1)
+            makedatabase(args.u, workingdir + "/database/85_otus.fasta.all.V4_V5.fasta", 1)
+        if args.dm !='None':
+            makedatabase(args.dm, args.db, args.dbf)
+            makedatabase(args.dm, workingdir + "/database/all_KO30.pro.fasta", 2)
+        if args.hs !='None':
+            makedatabase(args.hs, args.db, args.dbf)
+            makedatabase(args.hs, workingdir + "/database/85_otus.fasta", 1)
+            makedatabase(args.hs, workingdir + "/database/85_otus.fasta.all.V4_V5.fasta", 1)
     else:
         makedatabase(args.hmm, args.db, args.dbf)
+    if args.bwa != 'None':
+        makedatabase(args.u, args.db, args.dbf)
+
+
     # run traits finding
     if args.command in ['genome','mge'] :
-        cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s\n'
-        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r[0]),str(args.r16),str(thread),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
+        cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s\n'
+        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r[0]),str(args.r16),str(thread),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'meta':
-        cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --hmm %s --bp %s --bwa %s\n'
-        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r[0]),str(args.r16),str(thread),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.hmm),str(args.bp),str(args.bwa)))
+        cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s\n'
+        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r[0]),str(args.r16),str(thread),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_genome':
@@ -255,13 +284,12 @@ def main():
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'HGT':
-        if 'usearch' not in args.u:
-            print('Must install usearch and set --u as usearch or path to usearch')
-            print('if your gene fasta file is larger than 2GB, please also install hs-blastn')
+        if args.u == 'None' and args.hs == 'None':
+            print('please install usearch or hs-blastn')
         else:
-            cmd = ('python '+workingdir+'/scripts/HGT_finder_sum.py -t %s -m %s --r %s --s %s --u %s --mf %s --ft %s --th %s \n'
+            cmd = ('python ' + workingdir + '/scripts/HGT_finder_sum.py -t %s -m %s --r %s --s %s --u %s --dm %s --hs %s --mf %s --ft %s --th %s --bp %s\n'
             %(str(os.path.split(args.db)[1]),str(args.m),str(args.r[0]),
-              str(os.path.join(args.r[0],'summary')),str(args.u),str(args.mf),str(args.ft),str(thread)))
+              str(os.path.join(args.r[0],'summary')),str(args.u),str(args.dm),str(args.hs),str(args.mf),str(args.ft),str(thread),str(args.bp)))
             f1.write(cmd)
             os.system(cmd)
 

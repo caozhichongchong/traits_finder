@@ -64,21 +64,32 @@ parser.add_argument('--e',
                     default=1e-5, action='store', type=float, metavar='1e-5',
                     help='Optional: set the evalue cutoff for blast or hmm (default is 1e-5)')
 # requirement for software calling
-parser.add_argument('--u',
-                    help="Optional: use two-step method for blast search,"+
-                         " \'None\' for using one step, \'usearch\' or \'diamond-blastx\' for using two-step \
-                         (complete path to usearch or diamond if not in PATH, \
-                         please make sure the search tools can be directly called), (default: \'None\')",
-                    metavar="None or usearch",
-                    action='store', default='None', type=str)
+parser.add_argument('--u','--usearch',
+                        help="Optional: use two-step method for blast search,"+
+                             " \'None\' for using one step, \'usearch\' for using two-step \
+                             (complete path to usearch if not in PATH), (default: \'None\')",
+                        metavar="None or usearch",
+                        action='store', default='None', type=str)
+parser.add_argument('--dm', '--diamond',
+                      help="Optional: use two-step method for blast search," +
+                           " \'None\' for using one step, \'diamond\' for using two-step \
+                           (complete path to diamond if not in PATH), (default: \'None\')",
+                      metavar="None or diamond",
+                      action='store', default='None', type=str)
+parser.add_argument('--hs',
+                      help="Optional: use two-step method for blast search," +
+                           " \'None\' for using one step, \'hs-blastn\' for using two-step \
+                           (complete path to hs-blastn if not in PATH), (default: \'None\')",
+                      metavar="None or hs-blastn",
+                      action='store', default='None', type=str)
 parser.add_argument('--hmm',
                     help="Optional: complete path to hmmscan if not in PATH,",
                     metavar="/usr/local/bin/hmmscan",
                     action='store', default='hmmscan', type=str)
 parser.add_argument('--bp',
-                    help="Optional: complete path to blastx or blastn if not in PATH,",
-                    metavar="/usr/local/bin/blastx",
-                    action='store', default='blastx', type=str)
+                    help="Optional: complete path to blast if not in PATH,",
+                    metavar="/usr/local/bin/blast",
+                    action='store', default='blast', type=str)
 parser.add_argument('--bwa',
                     help="Optional: complete path to bwa if not in PATH,",
                     metavar="/usr/local/bin/bwa",
@@ -95,25 +106,29 @@ workingdir=os.path.abspath(os.path.dirname(__file__))
 
 
 ################################################### Function ########################################################
+def split_string_last(input_string,substring):
+    return input_string[0 : input_string.rfind(substring)]
+
+
 def search(roottemp,filename):
     # search the database for each file
     cmds = ''
     cmds += "#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n"
     # using blastp
     if args.s == 1:
-        if args.u != 'None':
+        if args.u != 'None' or args.hs != 'None' or args.dm != 'None':
             # two-step search
-            Usearch=0
+            Usearch = 0
             for root, dirs, files in os.walk(args.r + '/usearch'):
                 try:
                     ftry = open(os.path.join(root, filename + '.usearch.txt.aa'), 'r')
                     searchfile = os.path.join(root, filename + '.usearch.txt.aa')
-                    Usearch=1
+                    Usearch = 1
                     break
                 except IOError:
                     pass
             if Usearch == 0:
-                if 'usearch' in args.u:
+                if args.u != 'None':
                     # Start search target genes by usearch
                     if args.dbf == 1:
                         cmds += args.u + " -ublast " + os.path.join(roottemp, filename) + \
@@ -125,23 +140,31 @@ def search(roottemp,filename):
                                 " -db " + args.db + ".udb -evalue 1e-2 -accel 0.5 -blast6out " \
                                 + os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt') + \
                                 " -threads " + str(int(i_max)) + " \n"
-                elif "diamond" in args.u:
-                    # Start search target genes by diamond!
-                    cmds += args.u.replace('-',' ') + " --query " + os.path.join(roottemp, filename) + \
+                    cmds += 'python ' + workingdir + '/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
+                        int(i / 10000)) + ' \n'
+                    searchfile = os.path.join(args.r + '/usearch/' + str(int(i / 10000)), filename + '.usearch.txt.aa')
+                elif args.dm != 'None' and args.dbf == 2:
+                    # Start search target genes by diamond
+                    cmds += split_string_last(args.dm, 'diamond') + "diamond blastx --query " + os.path.join(roottemp, filename) + \
                             " --db " + args.db + ".dmnd --out " + os.path.join(args.r + '/usearch/' + str(int(i/10000)),
                                                                           filename + '.usearch.txt') + \
                             " --outfmt 6 --max-target-seqs 1 --evalue " + str(args.e) + " --threads " + str(
                         int(i_max)) + " \n"
-                elif 'hs-blastn' in args.u:
+                    cmds += 'python ' + workingdir + '/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
+                        int(i / 10000)) + ' \n'
+                    searchfile = os.path.join(args.r + '/usearch/' + str(int(i / 10000)), filename + '.usearch.txt.aa')
+                elif args.hs != 'None' and args.dbf == 1:
                     # Start search target genes by hs-blastn
-                    if args.dbf == 1:
-                        cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n"\
-                        %(args.u,args.db,args.db, os.path.join(roottemp, filename) ,
-                          os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt'),
-                          str(args.e),str(min(int(i_max),40)))
-                cmds += 'python '+ workingdir +'/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
-                    int(i / 10000)) + ' \n'
-                searchfile = os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt.aa')
+                    cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n" \
+                            % (args.hs, args.db, args.db, os.path.join(roottemp, filename),
+                               os.path.join(args.r + '/usearch/' + str(int(i / 10000)), filename + '.usearch.txt'),
+                               str(args.e), str(min(int(i_max), 40)))
+                    cmds += 'python ' + workingdir + '/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
+                        int(i / 10000)) + ' \n'
+                    searchfile = os.path.join(args.r + '/usearch/' + str(int(i / 10000)), filename + '.usearch.txt.aa')
+                else:
+                    print('wrong search method for this database\nrun blat directly')
+                    searchfile = os.path.join(roottemp, filename)
         else:
             # one-step search
             searchfile = os.path.join(roottemp, filename)
@@ -158,9 +181,15 @@ def search(roottemp,filename):
                     pass
             if Blastsearch == 0:
                 # for short metagenomic reads
-                cmds += str(args.bp) +" -query " + str(searchfile) + " -db " + args.db + " -out " + args.r + '/search_output/'+str(int(i/10000))+ \
-                         "/"+filename+".blast.txt  -outfmt 6 -evalue "+str(args.e)+" -num_threads " + \
-                        str(min(int(i_max), 40)) + " \n"
+                if args.dbf == 1:
+                    cmds += split_string_last(args.bp, 'blast') + "blastn -query " + str(searchfile) + " -db " + args.db + " -out " + args.r + '/search_output/'+str(int(i/10000))+ \
+                             "/"+filename+".blast.txt  -outfmt 6 -evalue "+str(args.e)+" -num_threads " + \
+                            str(min(int(i_max), 40)) + " \n"
+                else:
+                    cmds += split_string_last(args.bp, 'blast') + "blastx -query " + str(
+                        searchfile) + " -db " + args.db + " -out " + args.r + '/search_output/' + str(int(i / 10000)) + \
+                            "/" + filename + ".blast.txt  -outfmt 6 -evalue " + str(args.e) + " -num_threads " + \
+                            str(min(int(i_max), 40)) + " \n"
                 # fiter blast result
             Blastsearchfilter = 0
             for root, dirs, files in os.walk(args.r + '/search_output'):
@@ -227,8 +256,6 @@ def search(roottemp,filename):
         'QUAL<20', tempbamoutput, tempbamoutput)
         cmds += '\nbcftools view -v snps --min-ac 1:minor %s.flt.vcf > %s.snp.flt.vcf \n' % (
             tempbamoutput, tempbamoutput)
-        #cmds += 'python ' + workingdir + '/VCF.reader.py -i %s.flt.vcf  -o %s.flt.vcf.out \n' % (
-            #tempbamoutput, tempbamoutput)
     # 16S extraction
     Search16s = 0
     for root, dirs, files in os.walk(args.r16):
@@ -240,27 +267,27 @@ def search(roottemp,filename):
             pass
     if Search16s == 0:
         # with usearch
-        if "usearch" in args.u:
+        if args.u != 'None':
             # Start search 16S
-            cmds += 'python '+ workingdir +'/undone.MG.py -i '+ os.path.join(roottemp.replace('_faa','_fasta'), filename+' \n')
-            cmds += args.u + " -usearch_global " + os.path.join(roottemp.replace('_faa', '_fasta'), filename) + \
+            cmds += 'python '+ workingdir +'/undone.MG.py -i '+ os.path.join(roottemp, filename) +' \n'
+            cmds += args.u + " -usearch_global " + os.path.join(roottemp, filename) + \
                     " -db " + workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
                     + os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt') + \
                     " -threads " + str(int(i_max)) + " \n"
-            cmds += 'python ' + workingdir + '/Extract.16S.MG.py -i ' + roottemp.replace('_faa', '_fasta') + ' -f ' + \
+            cmds += 'python ' + workingdir + '/Extract.16S.MG.py -i ' + roottemp + ' -f ' + \
                     filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
                 int(i / 10000)) + ' \n'
-        elif 'hs-blastn' in args.u:
+        elif args.hs != 'None':
             # with hs-blastn
             # Start search 16S
-            cmds += 'python '+ workingdir +'/undone.MG.py -i '+ os.path.join(roottemp.replace('_faa','_fasta'), filename+' \n')
+            cmds += 'python '+ workingdir +'/undone.MG.py -i '+ os.path.join(roottemp, filename) +' \n'
             cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n" \
-                    % (args.u, workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta",
+                    % (args.hs, workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta",
                     workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta",
                        os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt'),
                        os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt'),
                        str(args.e), str(min(int(i_max),40)))
-            cmds += 'python '+ workingdir +'/Extract.16S.MG.py -i ' + roottemp.replace('_faa','_fasta') + ' -f ' + \
+            cmds += 'python '+ workingdir +'/Extract.16S.MG.py -i ' + roottemp + ' -f ' + \
                     filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
                 int(i / 10000)) + ' \n'
     # cell number calculation
@@ -274,15 +301,11 @@ def search(roottemp,filename):
             pass
     if Search16s == 0:
         # with diamond
-        if "diamond" in args.u:
+        if args.dm != 'None':
             # Start search essential single copy genes
-            cmds += 'python ' + workingdir + '/undone.MG.py -i ' + os.path.join(roottemp.replace('_faa', '_fasta'),
-                                                                                filename + ' \n')
-            cmds += args.u + " -usearch_global " + os.path.join(roottemp.replace('_faa', '_fasta'), filename) + \
-                    " -db " + workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
-                    + os.path.join(args.r16 + '/' + str(int(i / 10000)), filename + '.16S.txt') + \
-                    " -threads " + str(int(i_max)) + " \n"
-            cmds += args.u + " blastx -q " + os.path.join(roottemp.replace('_faa', '_fasta'), filename) +\
+            cmds += 'python ' + workingdir + '/undone.MG.py -i ' + os.path.join(roottemp,
+                                                                                filename ) + ' \n'
+            cmds += split_string_last(args.dm, 'diamond') + "diamond blastx -q " + os.path.join(roottemp, filename) +\
                      " -d " + workingdir + "/../database/all_KO30.pro.fa.dmnd -o " + \
                     os.path.join(args.r16 + '/' + str(int(i / 10000)), filename + '.uscmg.blastx.txt') + \
                      " -f tab  -p 1 -e 3  --id 0.45 --max-target-seqs 1 --threads " + str(int(i_max)) + " \n"
@@ -298,7 +321,7 @@ Targetroot=dict()
 Targetlist=[]
 if args.l != 'None':
     for lines in open(args.l,'r'):
-        Targetlist.append(lines.split('\r')[0].split('\n')[0])
+        Targetlist.append(split_string_last(split_string_last(lines, '\r'),'\n'))
 
 for root,dirs,files in os.walk(in_dir):
     list_fasta1 = glob.glob(os.path.join(root, '*'+fasta_format))

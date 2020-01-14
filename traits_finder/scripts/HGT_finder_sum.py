@@ -24,11 +24,28 @@ parser.add_argument('--th',
                         help="Optional: set the thread number assigned for running XXX (default 1)",
                         metavar="1 or more", action='store', default=1, type=int)
 # requirement for software calling
-parser.add_argument('--u', '--usearch',
-                      help="Necessary: use usearch for 16s and gene clustering," +
-                           "if your gene fasta file is larger than 2GB, please also install hs-blastn",
-                      metavar="usearch",
-                      action='store', default='usearch', type=str)
+parser.add_argument('--u','--usearch',
+                        help="Optional: use two-step method for blast search,"+
+                             " \'None\' for using one step, \'usearch\' for using two-step \
+                             (complete path to usearch if not in PATH), (default: \'None\')",
+                        metavar="None or usearch",
+                        action='store', default='None', type=str)
+parser.add_argument('--dm', '--diamond',
+                      help="Optional: use two-step method for blast search," +
+                           " \'None\' for using one step, \'diamond\' for using two-step \
+                           (complete path to diamond if not in PATH), (default: \'None\')",
+                      metavar="None or diamond",
+                      action='store', default='None', type=str)
+parser.add_argument('--hs',
+                      help="Optional: use two-step method for blast search," +
+                           " \'None\' for using one step, \'hs-blastn\' for using two-step \
+                           (complete path to hs-blastn if not in PATH), (default: \'None\')",
+                      metavar="None or hs-blastn",
+                      action='store', default='None', type=str)
+parser.add_argument('--bp',
+                    help="Optional: complete path to blastp or blastn if not in PATH,",
+                    metavar="/usr/local/bin/blast",
+                    action='store', default='blast', type=str)
 parser.add_argument('--mf', '--mafft',
                       help="Optional: complete path to mafft if not in PATH,",
                       metavar="/usr/local/bin/mafft",
@@ -128,6 +145,10 @@ class HGT_function:
 
 
 ################################################### Function ########################################################
+def split_string_last(input_string,substring):
+    return input_string[0 : input_string.rfind(substring)]
+
+
 def checkfile(filename,i):
     try:
         f1 = open(filename,'r')
@@ -356,16 +377,17 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
             print('%s deduplicate %s' % (datetime.now(), input_fasta))
             deduplicate(input_fasta,Function_Set,type_fasta)
         input_fasta = input_fasta + '.unique'
-    try:
-        f1 = open("%s.sorted" % (input_fasta), 'r')
-    except IOError:
-        os.system('%s -sortbylength %s -fastaout %s.sorted' % (args.u, input_fasta, input_fasta))
-    input_fasta = input_fasta + '.sorted'
+    if args.u != None:
+        try:
+            f1 = open("%s.sorted" % (input_fasta), 'r')
+        except IOError:
+            os.system('%s -sortbylength %s -fastaout %s.sorted' % (args.u, input_fasta, input_fasta))
+        input_fasta = input_fasta + '.sorted'
     try:
         f1 = open("%s.%s.usearch.txt" % (input_fasta, cutoff2), 'r')
     except IOError:
         print('%s Running usearch for %s' % (datetime.now(), input_fasta))
-        if int(os.path.getsize(input_fasta)) <= 1E+8:
+        if int(os.path.getsize(input_fasta)) <= 1E+8 and args.u != 'None':
             # smaller than 100Mb
             try:
                 f1 = open("%s.udb" % (input_fasta), 'r')
@@ -375,33 +397,33 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
             os.system(
                 "%s  -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
                 % (args.u, input_fasta, input_fasta, cutoff2, input_fasta, cutoff2, str(args.th)))
-        elif type_fasta =='dna':
+        elif type_fasta == 'dna' and args.hs != 'None':
             print('%s Using hs-blastn instead of usearch because the input file is larger than 2GB\n'%(datetime.now()))
             try:
                 f1 = open("%s.counts.obinary" % (input_fasta), 'r')
             except IOError:
-                os.system('makeblastdb -in %s -input_type fasta -dbtype nucl' %
-                          (input_fasta))
+                os.system('%s -in %s -input_type fasta -dbtype nucl' %
+                          (os.path.join(os.path.split(args.bp)[0], 'makeblastdb'),input_fasta))
                 os.system('windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
                           (input_fasta, input_fasta))
                 os.system('windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
                           (input_fasta, input_fasta))
-                os.system('%s index %s' % ('hs-blastn', input_fasta))
+                os.system('%s index %s' % (args.hs, input_fasta))
             os.system(
                 "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s.%s.usearch.txt -outfmt 6 -evalue 1 -perc_identity %s -num_threads %s\n" \
-                % ('hs-blastn', input_fasta,
+                % (args.hs, input_fasta,
                    input_fasta, input_fasta, input_fasta, cutoff2,
                    cutoff2, str(min(int(args.th),40))))
-        else:
+        elif args.dm != 'None' and type_fasta == 'aa':
             print('%s Using diamond instead of usearch because the input file is larger than 2GB\n'%(datetime.now()))
             try:
                 f1 = open("%s.dmnd" % (input_fasta), 'r')
             except IOError:
-                os.system('diamond makedb --in %s -d %s.dmnd' %
-                          (input_fasta,input_fasta))
+                os.system('%sdiamond makedb --in %s -d %s.dmnd' %
+                          (split_string_last(args.dm, 'diamond') ,input_fasta,input_fasta))
             os.system(
                 "%s  --query  %s  --db  %s.dmnd --out %s.%s.usearch.txt --outfmt 6 --id %s --evalue 1 --max-target-seqs 0 --threads %s\n" \
-                % ('diamond blastp', input_fasta,
+                % (split_string_last(args.dm, 'diamond') + "diamond blastp", input_fasta,
                    input_fasta, input_fasta, cutoff2,
                    cutoff2, str(min(int(args.th), 40))))
     if clustering == 'T':
@@ -410,7 +432,7 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
         except IOError:
             print('%s Running usearch cluster for %s' % (datetime.now(),input_fasta))
             # smaller than 2G
-            if int(os.path.getsize(input_fasta)) <= 2 * 1E+9:
+            if int(os.path.getsize(input_fasta)) <= 2 * 1E+9 and args.u != 'None':
                 os.system('%s -sort length -cluster_fast %s -id %s -centroids %s.cluster.aa -uc %s.uc -threads %s'
                           % (args.u, input_fasta, cutoff1, input_fasta, input_fasta, args.th))
             else:

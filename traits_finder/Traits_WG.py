@@ -62,21 +62,32 @@ parser.add_argument('--e',
                     default=1e-2, action='store', type=float, metavar='1e-5',
                     help='Optional: set the evalue cutoff for blast or hmm (default is 1e-5)')
 # requirement for software calling
-parser.add_argument('--u',
-                    help="Optional: use two-step method for blast search,"+
-                         " \'None\' for using one step, \'usearch\' or \'diamond\' for using two-step \
-                         (complete path to usearch or diamond if not in PATH, \
-                         please make sure the search tools can be directly called), (default: \'None\')",
-                    metavar="None or usearch",
-                    action='store', default='None', type=str)
+parser.add_argument('--u','--usearch',
+                        help="Optional: use two-step method for blast search,"+
+                             " \'None\' for using one step, \'usearch\' for using two-step \
+                             (complete path to usearch if not in PATH), (default: \'None\')",
+                        metavar="None or usearch",
+                        action='store', default='None', type=str)
+parser.add_argument('--dm', '--diamond',
+                      help="Optional: use two-step method for blast search," +
+                           " \'None\' for using one step, \'diamond\' for using two-step \
+                           (complete path to diamond if not in PATH), (default: \'None\')",
+                      metavar="None or diamond",
+                      action='store', default='None', type=str)
+parser.add_argument('--hs',
+                      help="Optional: use two-step method for blast search," +
+                           " \'None\' for using one step, \'hs-blastn\' for using two-step \
+                           (complete path to hs-blastn if not in PATH), (default: \'None\')",
+                      metavar="None or hs-blastn",
+                      action='store', default='None', type=str)
 parser.add_argument('--hmm',
                     help="Optional: complete path to hmmscan if not in PATH,",
                     metavar="/usr/local/bin/hmmscan",
                     action='store', default='hmmscan', type=str)
 parser.add_argument('--bp',
-                    help="Optional: complete path to blastp or blastn if not in PATH, \'None\' for no blast search",
-                    metavar="/usr/local/bin/blastp",
-                    action='store', default='blastp', type=str)
+                    help="Optional: complete path to blast if not in PATH, \'None\' for no blast search",
+                    metavar="/usr/local/bin/blast",
+                    action='store', default='blast', type=str)
 parser.add_argument('--bwa',
                     help="Optional: complete path to bwa if not in PATH,",
                     metavar="/usr/local/bin/bwa",
@@ -95,86 +106,10 @@ except OSError:
 workingdir=os.path.abspath(os.path.dirname(__file__))
 
 ################################################### Programme #######################################################
-# set the search for database type
-diamond_set = args.u
-if args.dbf == 1:
-    blast_set=args.bp.replace('blastp','blastn')
-    if 'diamond' in args.u:
-        print('Diamond cannot use dna database\nDirect use blast!')
-        diamond_set = 'None'
-else:
-    blast_set=args.bp.replace('blastn','blastp')
-    diamond_set=args.u.replace('diamond','diamond-blastp')
-
-
-# make all database
-if args.s == 1:
-    if args.bwa != 'None':
-        if 'bwa' in args.bwa:
-            try:
-                ftest=open(args.db+'.bwt','r')
-            except IOError:
-                f1.write('bwa index %s \n' % (args.db))
-    if args.dbf == 1:
-        try:
-            ftest = open(args.db + '.nin', 'r')
-        except IOError:
-            f1.write(os.path.join(os.path.split(args.bp)[0], 'makeblastdb -in %s -dbtype nucl\n' % (args.db)))
-            if args.u != 'None':
-                if 'usearch' in args.u:
-                    f1.write(os.path.join(os.path.split(args.u)[0], 'usearch -makeudb_usearch %s -output %s.udb\n' % (args.db,args.db)))
-                elif 'hs-blastn' in args.u:
-                    f1.write(os.path.join(os.path.split(args.u)[0],
-                                          'windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts\n' % (args.db, args.db)))
-                    f1.write(os.path.join(os.path.split(args.u)[0],
-                                          'windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert\n' % (
-                                          args.db, args.db)))
-                    f1.write(os.path.join(os.path.split(args.u)[0],
-                                          'hs-blastn index %s\n' % (
-                                          args.db)))
-    else:
-        try:
-            ftest = open(args.db + '.pin', 'r')
-        except IOError:
-            f1.write(os.path.join(os.path.split(args.bp)[0],'makeblastdb -in %s -dbtype prot\n' % (args.db)))
-            if args.u != 'None':
-                if 'usearch' in args.u:
-                    f1.write(os.path.join(os.path.split(args.u)[0], 'usearch -makeudb_usearch %s -output %s.udb\n' % (args.db,args.db)))
-                elif 'diamond' in args.u:
-                    f1.write(os.path.join(os.path.split(args.u)[0],
-                                          'diamond makedb --in %s -d %s.dmnd\n' % (args.db, args.db)))
-# makedb for 16S
-try:
-    ftest = open(workingdir +'/database/85_otus.fasta.udb', 'r')
-except IOError:
-    if args.u != 'None':
-        if 'usearch' in args.u:
-            f1.write(os.path.join(os.path.split(args.u)[0],
-                                  'usearch -makeudb_usearch %s -output %s.udb\n' % (workingdir +'/database/85_otus.fasta', workingdir +'/database/85_otus.fasta')))
-try:
-    ftest = open(workingdir +'/database/85_otus.fasta.counts', 'r')
-except IOError:
-    if args.u != 'None':
-            if 'hs-blastn' in args.u:
-                try:
-                    ftest = open(workingdir +'/database/85_otus.fasta.nin', 'r')
-                except IOError:
-                    f1.write(os.path.join(os.path.split(args.bp)[0], 'makeblastdb -in %s -dbtype nucl\n' %
-                                          workingdir +'/database/85_otus.fasta'))
-                f1.write(os.path.join(os.path.split(args.u)[0],
-                                      'windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts\n' % (
-                                          workingdir +'/database/85_otus.fasta', workingdir +'/database/85_otus.fasta')))
-                f1.write(os.path.join(os.path.split(args.u)[0],
-                                      'windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert\n' % (
-                                          workingdir +'/database/85_otus.fasta', workingdir +'/database/85_otus.fasta')))
-                f1.write(os.path.join(os.path.split(args.u)[0],
-                                      ' index %s\n' % (
-                                          workingdir +'/database/85_otus.fasta')))
-
 # search the database in all genomes
 cmds = 'python '+ workingdir +'/scripts/Search.WG.py -i ' + args.i  +\
                 ' -db ' + args.db + ' -dbf ' + str(args.dbf) + ' -s ' + str(args.s) + ' --r ' + str(args.r) + ' --t ' + str(args.t) + \
-                ' --u ' + str(diamond_set) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(blast_set) + \
+                ' --dm ' + str(args.dm) + ' --u ' + str(args.u) + ' --hs ' + str(args.hs) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(blast_set) + \
                 ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + ' --fa ' + str(args.fa) + \
                 ' --e ' + str(args.e) + ' --orf ' + str(args.orf) + ' --r16 ' + str(args.r16)+\
         ' --bwa ' + str(args.bwa) + ' \n'
