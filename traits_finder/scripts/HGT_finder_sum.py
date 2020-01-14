@@ -20,6 +20,9 @@ parser.add_argument("--s",
                     help="input directory or folder of your previous results by traits summary",
                     type=str, default='None',metavar='summary')
 # optional search parameters
+parser.add_argument('--g',
+                        help="Optional: gene-level HGT finding; --g T (default: function-level; --g F)",
+                        metavar=['T', 'F'], action='store', default='F', type=str)
 parser.add_argument('--th',
                         help="Optional: set the thread number assigned for running XXX (default 1)",
                         metavar="1 or more", action='store', default=1, type=int)
@@ -83,6 +86,7 @@ except OSError:
 
 workingdir=os.path.abspath(os.path.dirname(__file__))
 try:
+    os.system('rm -rf HGT_subscripts')
     os.mkdir('HGT_subscripts')
 except OSError:
     pass
@@ -262,8 +266,11 @@ def function_load(input_file,type_fasta):
         if type_fasta == 'dna':
             for lines in open(input_file,'r'):
                     line_set = lines.split('\t',maxsplit=3)
-                    function = line_set[0].replace("(","").replace(")","").replace(".","_").replace(" ","_")
                     gene = line_set[1]
+                    if args.g == 'F':
+                        function = line_set[0].replace("(","").replace(")","").replace(".","_").replace(" ","_").replace("-","_")
+                    else:
+                        function = line_set[2]
                     loci_new = loci_seq(gene)
                     gene = gene[0:gene.rfind('_', 0, (gene.rfind('_') - 1))]
                     # query gene
@@ -387,8 +394,9 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
         f1 = open("%s.%s.usearch.txt" % (input_fasta, cutoff2), 'r')
     except IOError:
         print('%s Running usearch for %s' % (datetime.now(), input_fasta))
-        if int(os.path.getsize(input_fasta)) <= 1E+8 and args.u != 'None':
-            # smaller than 100Mb
+        filesize = int(os.path.getsize(input_fasta))
+        if filesize <= 2E+7 and args.u != 'None':
+            # smaller than 20Mb
             try:
                 f1 = open("%s.udb" % (input_fasta), 'r')
             except IOError:
@@ -420,19 +428,26 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
                 f1 = open("%s.dmnd" % (input_fasta), 'r')
             except IOError:
                 os.system('%sdiamond makedb --in %s -d %s.dmnd' %
-                          (split_string_last(args.dm, 'diamond') ,input_fasta,input_fasta))
+                          (split_string_last(args.dm, 'diamond'),input_fasta,input_fasta))
             os.system(
-                "%s  --query  %s  --db  %s.dmnd --out %s.%s.usearch.txt --outfmt 6 --id %s --evalue 1 --max-target-seqs 0 --threads %s\n" \
-                % (split_string_last(args.dm, 'diamond') + "diamond blastp", input_fasta,
+                "%sdiamond blastp  --query  %s  --db  %s.dmnd --out %s.%s.usearch.txt --outfmt 6 --id %s --evalue 1 --max-target-seqs 0 --threads %s\n" \
+                % (split_string_last(args.dm, 'diamond'), input_fasta,
                    input_fasta, input_fasta, cutoff2,
                    cutoff2, str(min(int(args.th), 40))))
+        else:
+            if type_fasta == 'aa':
+                print('input file %s is too large for usearch %s, please provide diamond --dm' % (
+                    input_fasta, filesize))
+            else:
+                print('input file %s is too large for usearch %s, please provide hs-blastn --hs' % (
+                input_fasta, filesize))
     if clustering == 'T':
         try:
             f1 = open("%s.uc" % (input_fasta),'r')
         except IOError:
             print('%s Running usearch cluster for %s' % (datetime.now(),input_fasta))
-            # smaller than 2G
-            if int(os.path.getsize(input_fasta)) <= 2 * 1E+9 and args.u != 'None':
+            # smaller than 1G
+            if int(os.path.getsize(input_fasta)) <= 1E+9 and args.u != 'None':
                 os.system('%s -sort length -cluster_fast %s -id %s -centroids %s.cluster.aa -uc %s.uc -threads %s'
                           % (args.u, input_fasta, cutoff1, input_fasta, input_fasta, args.th))
             else:
@@ -486,8 +501,8 @@ def compare_16S(Genome1, Genome2, cutoff):
 
 
 def function_pair(Genome1,Genome2):
-    function1 = Genome1[0:Genome1.rfind('-')]
-    function2 = Genome2[0:Genome1.rfind('-')]
+    function1 = split_string_last(Genome1,'-')
+    function2 = split_string_last(Genome2,'-')
     return function_com(function1, function2)
 
 

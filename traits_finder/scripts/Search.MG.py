@@ -132,12 +132,12 @@ def search(roottemp,filename):
                     # Start search target genes by usearch
                     if args.dbf == 1:
                         cmds += args.u + " -ublast " + os.path.join(roottemp, filename) + \
-                                " -db " + args.db + ".udb -strand both -evalue 1e-2 -accel 0.5 -blast6out " \
+                                " -db " + split_string_last(args.db, '.udb') + ".udb -strand both -evalue 1e-2 -accel 0.5 -blast6out " \
                                 + os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt') + \
                                 " -threads " + str(int(i_max)) + " \n"
                     else:
                         cmds += args.u + " -ublast " + os.path.join(roottemp, filename) + \
-                                " -db " + args.db + ".udb -evalue 1e-2 -accel 0.5 -blast6out " \
+                                " -db " + split_string_last(args.db, '.udb') + ".udb -evalue 1e-2 -accel 0.5 -blast6out " \
                                 + os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt') + \
                                 " -threads " + str(int(i_max)) + " \n"
                     cmds += 'python ' + workingdir + '/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
@@ -146,7 +146,7 @@ def search(roottemp,filename):
                 elif args.dm != 'None' and args.dbf == 2:
                     # Start search target genes by diamond
                     cmds += split_string_last(args.dm, 'diamond') + "diamond blastx --query " + os.path.join(roottemp, filename) + \
-                            " --db " + args.db + ".dmnd --out " + os.path.join(args.r + '/usearch/' + str(int(i/10000)),
+                            " --db " + split_string_last(args.db, '.dmnd') + ".dmnd --out " + os.path.join(args.r + '/usearch/' + str(int(i/10000)),
                                                                           filename + '.usearch.txt') + \
                             " --outfmt 6 --max-target-seqs 1 --evalue " + str(args.e) + " --threads " + str(
                         int(i_max)) + " \n"
@@ -226,7 +226,7 @@ def search(roottemp,filename):
         if Blastsearch == 0:
             cmds = args.hmm + ' --tblout ' + os.path.join(args.r + '/search_output/'+str(int(i/10000)), str(
                 filename) + '.hmm') +  ' --cpu ' + str(int(i_max)) + ' -E ' \
-                  + str(args.e) + ' ' +args.db + ' '+ os.path.join(roottemp, filename) + ' \n'
+                  + str(args.e) + ' ' +split_string_last(args.db, '.hmm') + '.hmm '+ os.path.join(roottemp, filename) + ' \n'
             cmds += 'python '+ workingdir +'/Format.MG.py -i ' + args.r + '/search_output/'+str(int(i/10000)) + ' -f ' + str(
                     filename) + '.hmm \n'
     #bowtie alignment

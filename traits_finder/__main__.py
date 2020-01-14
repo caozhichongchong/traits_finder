@@ -85,6 +85,9 @@ def main():
     optional.add_argument("--l",
                           help="input list of a subset of metagenomes", type=str,
                           default='None', metavar='list.txt')
+    optional.add_argument("--g",
+                        help="Optional: gene-level HGT finding; --g T (default: function-level; --g F)",
+                        metavar=['T', 'F'], action='store', default='F', type=str)
     # optional output setup
     optional.add_argument("--r",
                         help="output directory or folder of your results",
@@ -285,11 +288,11 @@ def main():
         os.system(cmd)
     elif args.command == 'HGT':
         if args.u == 'None' and args.hs == 'None':
-            print('please install usearch or hs-blastn')
+            print('please install usearch and/or hs-blastn and/or diamond')
         else:
-            cmd = ('python ' + workingdir + '/scripts/HGT_finder_sum.py -t %s -m %s --r %s --s %s --u %s --dm %s --hs %s --mf %s --ft %s --th %s --bp %s\n'
+            cmd = ('python ' + workingdir + '/scripts/HGT_finder_sum.py -t %s -m %s --r %s --s %s --u %s --dm %s --hs %s --mf %s --ft %s --th %s --bp %s --g %s\n'
             %(str(os.path.split(args.db)[1]),str(args.m),str(args.r[0]),
-              str(os.path.join(args.r[0],'summary')),str(args.u),str(args.dm),str(args.hs),str(args.mf),str(args.ft),str(thread),str(args.bp)))
+              str(os.path.join(args.r[0],'summary')),str(args.u),str(args.dm),str(args.hs),str(args.mf),str(args.ft),str(thread),str(args.bp),str(args.g)))
             f1.write(cmd)
             os.system(cmd)
 
