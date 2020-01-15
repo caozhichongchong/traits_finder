@@ -29,10 +29,10 @@ parser.add_argument('-m',
                     action='store', default=1, type=int)
 parser.add_argument('-s',
                     help="set the method to search the your database \
-                    (1: blast; 2: hmm), \
+                    (1: blast; 2: hmm; 3: alignment), \
                     (default \'1\' for blast search)",
                     metavar="1 or 2",
-                    choices=[1, 2],
+                    choices=[1, 2, 3],
                     action='store', default=1, type=int)
 # optional parameters
 parser.add_argument("--fa",

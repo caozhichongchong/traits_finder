@@ -89,7 +89,7 @@ except OSError:
     pass
 workingdir=os.path.abspath(os.path.dirname(__file__))
 try:
-    #os.system('rm -rf HGT_subscripts')
+    os.system('rm -rf HGT_subscripts')
     os.mkdir('HGT_subscripts')
 except OSError:
     pass
@@ -752,8 +752,8 @@ def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,script_i,output_f
             diff_same_ratio = 0
         # output
         Result = [Function, type_fasta, "%.2f" % (cutoff),
-                  range16S_diff, hit_pair_diff, total_pair_diff, "%.3f" % percentage_diff_pair, HGT_function_temp.range16S_same,
-                  hit_pair_same, total_pair_same, "%.3f" % percentage_same_pair, diff_same_ratio,
+                  range16S_diff, "%.1f" % (hit_pair_diff), total_pair_diff, "%.3f" % percentage_diff_pair, HGT_function_temp.range16S_same,
+                  "%.1f" % (hit_pair_same), total_pair_same, "%.3f" % percentage_same_pair, diff_same_ratio,
                   (HGT_function_temp.mge_to_genome), (HGT_function_temp.mge_to_mge)]
         for i in range(0, len(Result)):
             Result[i] = str(Result[i])

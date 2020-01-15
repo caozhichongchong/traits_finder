@@ -69,10 +69,10 @@ def main():
                         type=str, default='.fa', metavar='.fasta, .fna, .fastq or .fa')
     optional.add_argument('-s',
                         help="set the method to search the your database \
-                        (1: blast; 2: hmm), \
+                        (1: blast; 2: hmm; 3: alignment), \
                         (default \'1\' for blast search)",
                         metavar="1 or 2",
-                        choices=[1, 2],
+                        choices=[1, 2, 3],
                         action='store', default=1, type=int)
     # optional parameters
     optional.add_argument("--meta",
@@ -256,29 +256,33 @@ def main():
 
     # run traits finding
     if args.command in ['genome','mge'] :
-        cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s\n'
-        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r[0]),str(args.r16),str(thread),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa)))
+        cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s --mf %s\n'
+        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r[0]),str(args.r16),str(thread),
+           str(args.id),str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa),str(args.mf)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'meta':
         cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s\n'
-        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r[0]),str(args.r16),str(thread),str(args.id),str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa)))
+        % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r[0]),str(args.r16),str(thread),str(args.id),
+           str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_genome':
         cmd = ('python '+workingdir+'/scripts/Traits_summary_WG.py -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s -dbf %s \n'
-        %(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r[0]),str(args.r16),str(os.path.join(args.r[0],'summary')),str(args.id),str(args.dbf)))
+        %(str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r[0]),
+          str(args.r16),str(os.path.join(args.r[0],'summary')),str(args.id),str(args.dbf)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_mge':
         cmd = ('python '+workingdir+'/scripts/Traits_summary_WG.py --mge %s -t %s -db %s --fa %s --orf %s -i %s -m %s --r %s --r16 %s --s %s -c %s -dbf %s \n'
-        %("2",str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r[0]),str(args.r16),str(os.path.join(args.r[0],'summary')),str(args.id),str(args.dbf)))
+        %("2",str(os.path.split(args.db)[1]),str(args.db),str(args.fa),str(args.orf),str(args.i),str(args.m),str(args.r[0]),
+          str(args.r16),str(os.path.join(args.r[0],'summary')),str(args.id),str(args.dbf)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_meta':
         cmd = ('python ' + workingdir + '/scripts/Traits_summary_MG.py -db %s -dbf %s -t %s -s %s -fa %s -m %s --r %s --r16 %s --meta %s\n'
-                    % (str(args.db), str(args.dbf),str(os.path.split(args.db)[1]), str(args.s), str(args.fa), str(args.m), str(args.r[0]),
-                       str(args.r16), str(args.meta)))
+                    % (str(args.db), str(args.dbf),str(os.path.split(args.db)[1]), str(args.s), str(args.fa), str(args.m),
+                       str(args.r[0]),str(args.r16), str(args.meta)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'merge':

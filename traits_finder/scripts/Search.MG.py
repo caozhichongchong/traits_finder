@@ -30,10 +30,10 @@ parser.add_argument('-m',
                     action='store', default=1, type=int)
 parser.add_argument('-s',
                     help="set the method to search the your database \
-                    (1: blast; 2: hmm), \
+                    (1: blast; 2: hmm; 3: alignment), \
                     (default \'1\' for blast search)",
                     metavar="1 or 2",
-                    choices=[1, 2],
+                    choices=[1, 2, 3],
                     action='store', default=1, type=int)
 # optional parameters
 parser.add_argument("--fa",
@@ -213,7 +213,37 @@ def search(roottemp,filename):
                         ' --e ' + str(args.e) + ' \n'
                 cmds += 'python '+ workingdir +'/Extract.MG.py -p 1  -ni .usearch.txt.aa -i ' +\
                         os.path.split(searchfile)[0] + ' -f ' + os.path.split(searchfile)[1] + ' -n .blast.txt.filter -r ' + tempbamoutput_filter +' \n'
-    else:
+        # bowtie alignment
+        if args.bwa != 'None':
+            tempinput = os.path.join(args.r + '/search_output/' + str(int(i / 10000)),
+                                     filename + '.blast.txt.filter.aa')
+            tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
+                filename) + '.blast.txt.filter.aa')
+            try:
+                f1 = open('%s.sorted.bam' % (tempbamoutput))
+            except IOError:
+                cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
+                    args.db, tempinput,
+                    tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
+                cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf' % (
+                    args.db, tempbamoutput, tempbamoutput)
+                cmds += '\nbcftools filter -s LowQual -e \'%s || DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
+                    'QUAL<20', tempbamoutput, tempbamoutput)
+                cmds += 'python ' + workingdir + '/Format.WG.py -i %s.flt.vcf  -o %s.flt.vcf.out \n' % (
+                    tempbamoutput, tempbamoutput)
+                tempinput = tempinput.replace('_1' + fasta_format, '_2' + fasta_format)
+                tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
+                    filename.replace('_1' + fasta_format, '_2' + fasta_format)) + '.blast.txt.filter.aa')
+                cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\nsamtools index %s.sorted.bam\n' % (
+                    args.db, tempinput,
+                    tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
+                cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf' % (
+                    args.db, tempbamoutput, tempbamoutput)
+                cmds += '\nbcftools filter -s LowQual -e \'%s || DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
+                    'QUAL<20', tempbamoutput, tempbamoutput)
+                cmds += '\nbcftools view -v snps --min-ac 1:minor %s.flt.vcf > %s.snp.flt.vcf \n' % (
+                    tempbamoutput, tempbamoutput)
+    elif args.s == 2:
         # hmmsearch
         Blastsearch = 0
         for root, dirs, files in os.walk(args.r + '/search_output'):
@@ -229,33 +259,58 @@ def search(roottemp,filename):
                   + str(args.e) + ' ' +split_string_last(args.db, '.hmm') + '.hmm '+ os.path.join(roottemp, filename) + ' \n'
             cmds += 'python '+ workingdir +'/Format.MG.py -i ' + args.r + '/search_output/'+str(int(i/10000)) + ' -f ' + str(
                     filename) + '.hmm \n'
-    #bowtie alignment
-    if args.bwa != 'None':
-        tempinput = os.path.join(args.r + '/search_output/'+str(int(i/10000)),
-                                  filename + '.blast.txt.filter.aa')
-        tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
-                filename) + '.blast.txt.filter.aa')
-        cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
-            args.db, tempinput,
-            tempbamoutput, tempbamoutput, tempbamoutput,tempbamoutput)
-        cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf' % (
-            args.db, tempbamoutput, tempbamoutput)
-        cmds += '\nbcftools filter -s LowQual -e \'%s || DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
-            'QUAL<20', tempbamoutput, tempbamoutput)
-        cmds += 'python ' + workingdir + '/Format.WG.py -i %s.flt.vcf  -o %s.flt.vcf.out \n' % (
-        tempbamoutput, tempbamoutput)
-        tempinput = tempinput.replace('_1' + fasta_format, '_2' + fasta_format)
-        tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
-            filename.replace('_1' + fasta_format, '_2' + fasta_format)) + '.blast.txt.filter.aa')
-        cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\nsamtools index %s.sorted.bam\n' % (
-            args.db, tempinput,
-            tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
-        cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf' % (
-        args.db, tempbamoutput, tempbamoutput)
-        cmds += '\nbcftools filter -s LowQual -e \'%s || DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
-        'QUAL<20', tempbamoutput, tempbamoutput)
-        cmds += '\nbcftools view -v snps --min-ac 1:minor %s.flt.vcf > %s.snp.flt.vcf \n' % (
-            tempbamoutput, tempbamoutput)
+    elif args.s == 3 and args.bwa != 'None':
+            tempinput = os.path.join(roottemp, filename)
+            tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(filename))
+            try:
+                f1 = open('%s.sorted.bam' % (tempbamoutput))
+            except IOError:
+                # _1 file
+                cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
+                    args.db, tempinput,
+                    tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
+                cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf' % (
+                    args.db, tempbamoutput, tempbamoutput)
+                cmds += '\nbcftools filter -s LowQual -e \'%s || DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
+                    'QUAL<20', tempbamoutput, tempbamoutput)
+                cmds += '\nbcftools view -v snps --min-ac 1:minor %s.flt.vcf > %s.snp.flt.vcf \n' % (
+                    tempbamoutput, tempbamoutput)
+                cmds += 'python ' + workingdir + '/Format.WG.py -i %s.flt.vcf  -o %s.flt.vcf.out \n' % (
+                    tempbamoutput, tempbamoutput)
+                #cmds += 'bedtools genomecov -ibam %s.sorted.bam -g %s  -bg | awk \'$4 > 9\' -> %s.sorted.bam.cov\n' % (
+                #    tempbamoutput, args.db,tempbamoutput)
+                cmds += 'samtools depth -Q 10 %s.sorted.bam > %s.sorted.bam.cov\n' % (
+                    tempbamoutput, tempbamoutput)
+                cmds += 'cat %s.sorted.bam.cov grep -P \'^@SQ\' | cut -f 3 -d \':\' | awk \'{sum+=$1} END {print sum}\'\n' % (
+                    tempbamoutput)
+                # _2 file
+                tempinput = tempinput.replace('_1' + fasta_format, '_2' + fasta_format)
+                tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
+                    filename.replace('_1' + fasta_format, '_2' + fasta_format)))
+                cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\nsamtools index %s.sorted.bam\n' % (
+                    args.db, tempinput,
+                    tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
+                cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf' % (
+                    args.db, tempbamoutput, tempbamoutput)
+                cmds += '\nbcftools filter -s LowQual -e \'%s || DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
+                    'QUAL<20', tempbamoutput, tempbamoutput)
+                cmds += '\nbcftools view -v snps --min-ac 1:minor %s.flt.vcf > %s.snp.flt.vcf \n' % (
+                    tempbamoutput, tempbamoutput)
+                cmds += 'python ' + workingdir + '/Format.WG.py -i %s.flt.vcf  -o %s.flt.vcf.out \n' % (
+                    tempbamoutput, tempbamoutput)
+                # cmds += 'bedtools genomecov -ibam %s.sorted.bam -g %s  -bg | awk \'$4 > 9\' -> %s.sorted.bam.cov\n' % (
+                #    tempbamoutput, args.db,tempbamoutput)
+                cmds += 'samtools depth -Q 10 %s.sorted.bam > %s.sorted.bam.cov\n' % (
+                    tempbamoutput, tempbamoutput)
+                cmds += 'cat %s.sorted.bam.cov grep -P \'^@SQ\' | cut -f 3 -d \':\' | awk \'{sum+=$1} END {print sum}\'\n' % (
+                    tempbamoutput)
+                # _1 and _2
+                cmds += 'samtools depth %s.sorted.bam %s.sorted.bam > %s.sorted.bam.pairedcov\n' % (
+                    tempbamoutput, tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format),tempbamoutput)
+                cmds += 'cat %s.sorted.bam.pairedcov grep -P \'^@SQ\' | cut -f 3 -d \':\' | awk \'{sum+=$1} END {print sum}\'\n' % (
+                    tempbamoutput)
+    else:
+        print('please provide --bwa for alignment (--s 3)')
     # 16S extraction
     Search16s = 0
     for root, dirs, files in os.walk(args.r16):
