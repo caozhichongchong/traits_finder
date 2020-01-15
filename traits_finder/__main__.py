@@ -248,10 +248,10 @@ def main():
             makedatabase(args.hs, args.db, args.dbf)
             makedatabase(args.hs, workingdir + "/database/85_otus.fasta", 1)
             makedatabase(args.hs, workingdir + "/database/85_otus.fasta.all.V4_V5.fasta", 1)
-    else:
+    elif args.s == 2:
         makedatabase(args.hmm, args.db, args.dbf)
     if args.bwa != 'None':
-        makedatabase(args.u, args.db, args.dbf)
+        makedatabase(args.bwa, args.db, args.dbf)
 
 
     # run traits finding

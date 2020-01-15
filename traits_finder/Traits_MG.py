@@ -111,7 +111,7 @@ workingdir=os.path.abspath(os.path.dirname(__file__))
 # search the database in all genomes
 cmds = 'python '+ workingdir +'/scripts/Search.MG.py -i ' + args.i  +\
                 ' -db ' + args.db + ' -dbf ' + str(args.dbf) + ' -s ' + str(args.s) + ' --r ' + str(args.r) + ' --t ' + str(args.t) + \
-                ' --dm ' + str(args.dm) + ' --u ' + str(args.u) + ' --hs ' + str(args.hs) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(blast_set) + \
+                ' --dm ' + str(args.dm) + ' --u ' + str(args.u) + ' --hs ' + str(args.hs) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(args.bp) + \
                 ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + ' --fa ' + str(args.fa) + \
                 ' --e ' + str(args.e) + ' -l ' + str(args.l) + ' --r16 ' + str(args.r16)\
        + ' --bwa ' + str(args.bwa) + ' \n'
