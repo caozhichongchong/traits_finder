@@ -387,7 +387,9 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
             print('%s deduplicate %s' % (datetime.now(), input_fasta))
             deduplicate(input_fasta,Function_Set,type_fasta)
         input_fasta = input_fasta + '.unique'
-    if args.u != None:
+    filesize = int(os.path.getsize(input_fasta))
+    if filesize <= 1E+9 and args.u != 'None':
+        # smaller than 1000Mb
         try:
             f1 = open("%s.sorted" % (input_fasta), 'r')
         except IOError:
@@ -397,7 +399,6 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
         f1 = open("%s.%s.usearch.txt" % (input_fasta, cutoff2), 'r')
     except IOError:
         print('%s Running usearch for %s' % (datetime.now(), input_fasta))
-        filesize = int(os.path.getsize(input_fasta))
         if filesize <= 3E+7 and args.u != 'None':
             # smaller than 30Mb
             try:
