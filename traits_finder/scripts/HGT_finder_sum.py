@@ -775,8 +775,6 @@ def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,cutoff_hit_length
         output_file1.write('\t'.join(Result) + '\n')
         HGT_function_temp.writeoutput()
     # merge all sub_fun_summary
-    os.path.join(result_dir, 'sub_fun_summary/%s.%s.%.2f.identity.summary.txt'
-                 % (Function, type_fasta, cutoff))
     os.system('cat %s > %s' % (
         os.path.join(result_dir, 'sub_fun_summary/*.identity.summary.txt'),
         os.path.join(result_dir, 'all.identity.summary.txt')
@@ -873,7 +871,7 @@ list_of_files = glob.glob('HGT_subscripts/HGTalign.*.sh')
 f1 = open("HGTalign.sh", 'w')
 f1.write("#!/bin/bash\nsource ~/.bashrc\n")
 for file_name in list_of_files:
-    f1.write("jobmit %s HGTalign big\n" % (file_name))
+    f1.write("jobmit %s HGTalign\n" % (file_name))
 f1.close()
 
 # output mapping file
