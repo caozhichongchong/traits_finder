@@ -208,7 +208,7 @@ def search(roottemp,filename):
                     # blast completed
                     tempbamoutput_filter = os.path.split(ftry_blast_file)[0]
             if Blastsearchfilter == 0:
-                cmds += 'python '+ workingdir +'/Filter.MG.py -i ' + tempbamoutput_filter +' -f ' + filename + '.blast.txt ' +\
+                cmds += 'python '+ workingdir +'/Filter.MG.py --g T -i ' + tempbamoutput_filter +' -f ' + filename + '.blast.txt ' +\
                         '-db ' + args.db + ' -dbf ' + str(args.dbf) + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
                         ' --e ' + str(args.e) + ' \n'
                 cmds += 'python '+ workingdir +'/Extract.MG.py -p 1  -ni .usearch.txt.aa -i ' +\

@@ -294,8 +294,8 @@ def main():
         if args.u == 'None' and args.hs == 'None':
             print('please install usearch and/or hs-blastn and/or diamond')
         else:
-            cmd = ('python ' + workingdir + '/scripts/HGT_finder_sum.py -t %s -m %s --r %s --s %s --u %s --dm %s --hs %s --mf %s --ft %s --th %s --bp %s --g %s\n'
-            %(str(os.path.split(args.db)[1]),str(args.m),str(args.r[0]),
+            cmd = ('python ' + workingdir + '/scripts/HGT_finder_sum.py -db %s -dbf %s -t %s -m %s --r %s --s %s --u %s --dm %s --hs %s --mf %s --ft %s --th %s --bp %s --g %s\n'
+            %(str(args.db), str(args.dbf), str(os.path.split(args.db)[1]),str(args.m),str(args.r[0]),
               str(os.path.join(args.r[0],'summary')),str(args.u),str(args.dm),str(args.hs),str(args.mf),str(args.ft),str(thread),str(args.bp),str(args.g)))
             f1.write(cmd)
             os.system(cmd)

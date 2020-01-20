@@ -27,6 +27,12 @@ parser.add_argument('-s',
                     choices=[1, 2],
                     action='store', default=1, type=int)
 # optional parameters
+parser.add_argument('--g',
+                    help="input genomes (T) or metagenomes (F) \
+                    (default \'F\' for metagenomes)",
+                    metavar="1 or 2",
+                    choices=['T', 'F'],
+                    action='store', default='F', type=str)
 # optional search parameters
 parser.add_argument('--id',
                     default=80.0, action='store', type=float, metavar='60.0',
@@ -92,7 +98,12 @@ def blast_list(file, Cutoff_identity,Cutoff_hitlength):
     for line in open(file, 'r'):
         if float(str(line).split('\t')[2]) >= Cutoff_identity:
             try:
-                if float(str(line).split('\t')[3]) >= Cutoff_hitlength * 100.0/ratio/100.0:
+                if args.g == 'T':
+                    length_cut = float(str(line).split('\t')[3]) >= Cutoff_hitlength * float(
+                        DB_length.get(str(line).split('\t')[1],0.0)) / 100
+                else:
+                    length_cut = float(str(line).split('\t')[3]) >= Cutoff_hitlength * 100.0/ratio/100.0
+                if length_cut:
                     if str(line).split('\t')[0] not in All_hit:
                         All_hit.setdefault(str(line).split('\t')[0],
                         [line])
