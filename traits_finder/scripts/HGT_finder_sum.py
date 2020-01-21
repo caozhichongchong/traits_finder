@@ -176,10 +176,12 @@ def Calculate_length(file_name):
                 len(record.seq)) + '\n')
             DB_length.add(len(str(record.seq)))
         f.close()
+    DB_length_min = min(DB_length)
     if args.dbf == 1:
-        return [min(DB_length), min(DB_length)/3.0]
+        DB_length_out = [DB_length_min, DB_length_min/3.0]
     else:
-        return [min(DB_length)*3.0, min(DB_length)]
+        DB_length_out = [DB_length_min*3.0, DB_length_min]
+    return DB_length_out
 
 
 def split_string_last(input_string,substring):
