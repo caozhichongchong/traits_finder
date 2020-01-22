@@ -167,8 +167,23 @@ if args.s == 1:
     for lines in open(args.db + '.length', 'r'):
         Mapping.setdefault(lines.split('\t')[0],
                            float(lines.split('\t')[1].split('\r')[0].split('\n')[0]))
-else:
+elif args.s == 2:
     searchfiles = glob.glob(os.path.join(os.path.join(args.r, 'search_output'), '*/*.hmm2.txt'))
+else:
+    searchfiles = glob.glob(os.path.join(os.path.join(args.r, 'bwa'), '*/*..sorted.bam.avgcov'))
+    Mapping = dict()
+    try:
+        for lines in open(args.db + '.length', 'r'):
+            Mapping.setdefault(lines.split('\t')[0],
+                               float(lines.split('\t')[1].split('\r')[0].split('\n')[0]))
+    except IOError:
+        Fasta_name = open(args.db, 'r')
+        f = open(args.db + '.length', 'w')
+        for record in SeqIO.parse(Fasta_name, 'fasta'):
+            f.write(str(record.id) + '\t' + str(
+                len(record.seq)) + '\n')
+            Mapping.setdefault(str(record.id), len(str(record.seq)))
+        f.close()
 
 
 # load traits function

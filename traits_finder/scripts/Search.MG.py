@@ -262,9 +262,25 @@ def search(roottemp,filename):
     elif args.s == 3 and args.bwa != 'None':
             tempinput = os.path.join(roottemp, filename)
             tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(filename))
+            Bamfile = 0
+            Covfile = 0
+            Avgcovfile = 0
             try:
                 f1 = open('%s.sorted.bam' % (tempbamoutput))
+                Bamfile = 1
             except IOError:
+                pass
+            try:
+                f1 = open('%s.sorted.bam.cov' % (tempbamoutput))
+                Covfile = 1
+            except IOError:
+                pass
+            try:
+                f1 = open('%s.sorted.bam.avgcov' % (tempbamoutput))
+                Avgcovfile = 1
+            except IOError:
+                pass
+            if Bamfile == 0:
                 # _1 file
                 cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                     args.db, tempinput,
@@ -279,14 +295,21 @@ def search(roottemp,filename):
                     tempbamoutput, tempbamoutput)
                 #cmds += 'bedtools genomecov -ibam %s.sorted.bam -g %s  -bg | awk \'$4 > 9\' -> %s.sorted.bam.cov\n' % (
                 #    tempbamoutput, args.db,tempbamoutput)
+            if Covfile == 0:
                 cmds += 'samtools depth -Q 10 %s.sorted.bam > %s.sorted.bam.cov\n' % (
                     tempbamoutput, tempbamoutput)
-                cmds += 'samtools view -H %s.sorted.bam | grep -P \'^@SQ\' | cut -f 2,3 > %s.sorted.bam.avg.cov\n' % (
-                    tempbamoutput,tempbamoutput)
+            if Avgcovfile == 0:
+                #cmds += 'samtools view -H %s.sorted.bam | grep -P \'^@SQ\' | cut -f 2,3 > %s.ref.length\n' % (
+                #        tempbamoutput,args.db)
+                #cmds += 'samtools mpileup %s.sorted.bam | awk -v X="%s" \'$4>=X\' | cut -f 1 | uniq -c > %s.sorted.bam.avg.breadth\n' % (
+                #    tempbamoutput, MIN_COVERAGE_DEPTH, tempbamoutput)
+                cmds += 'samtools depth %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { { print "Ref_ID\tCov_length\tAverage\tStdev"} for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' > %s.sorted.bam.avgcov\n' % (
+                    tempbamoutput, tempbamoutput)
                 # _2 file
-                tempinput = tempinput.replace('_1' + fasta_format, '_2' + fasta_format)
-                tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
+            tempinput = tempinput.replace('_1' + fasta_format, '_2' + fasta_format)
+            tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
                     filename.replace('_1' + fasta_format, '_2' + fasta_format)))
+            if Bamfile == 0:
                 cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\nsamtools index %s.sorted.bam\n' % (
                     args.db, tempinput,
                     tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
@@ -300,15 +323,26 @@ def search(roottemp,filename):
                     tempbamoutput, tempbamoutput)
                 # cmds += 'bedtools genomecov -ibam %s.sorted.bam -g %s  -bg | awk \'$4 > 9\' -> %s.sorted.bam.cov\n' % (
                 #    tempbamoutput, args.db,tempbamoutput)
+            if Covfile == 0:
                 cmds += 'samtools depth -Q 10 %s.sorted.bam > %s.sorted.bam.cov\n' % (
                     tempbamoutput, tempbamoutput)
-                cmds += 'samtools view -H %s.sorted.bam | grep -P \'^@SQ\' | cut -f 2,3 > %s.sorted.bam.avg.cov\n' % (
-                    tempbamoutput,tempbamoutput)
                 # _1 and _2
                 cmds += 'samtools depth %s.sorted.bam %s.sorted.bam > %s.sorted.bam.pairedcov\n' % (
-                    tempbamoutput, tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format),tempbamoutput)
-                cmds += 'samtools view -H %s.sorted.bam %s.sorted.bam | grep -P \'^@SQ\' | cut -f 2,3 > %s.sorted.bam.avg.pairedcov\n' % (
-                    tempbamoutput, tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format),tempbamoutput)
+                    tempbamoutput, tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format), tempbamoutput)
+            if Avgcovfile == 0:
+                #cmds += 'samtools view -H %s.sorted.bam | grep -P \'^@SQ\' | cut -f 2,3 > %s.sorted.bam.avgcov\n' % (
+                #    tempbamoutput,tempbamoutput)
+                #cmds += 'samtools mpileup %s.sorted.bam | awk -v X="%s" \'$4>=X\' | cut -f 1 | uniq -c > %s.sorted.bam.avg.breadth\n' % (
+                #    tempbamoutput, MIN_COVERAGE_DEPTH, tempbamoutput)
+                cmds += 'samtools depth %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { { print "Ref_ID\tCov_length\tAverage\tStdev"} for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' > %s.sorted.bam.avgcov\n' % (
+                    tempbamoutput, tempbamoutput)
+                # _1 and _2
+                #cmds += 'samtools view -H %s.sorted.bam %s.sorted.bam | grep -P \'^@SQ\' | cut -f 2,3 > %s.sorted.bam.avg.pairedcov\n' % (
+                #    tempbamoutput, tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format),tempbamoutput)
+                #cmds += 'samtools mpileup %s.sorted.bam %s.sorted.bam | awk -v X="%s" \'$4>=X\'  | cut -f 1 | uniq -c  > %s.sorted.bam.avg.pairedbreadth\n' % (
+                #    tempbamoutput, tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format), MIN_COVERAGE_DEPTH, tempbamoutput)
+                cmds += 'samtools depth %s.sorted.bam %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { { print "Ref_ID\tCov_length\tAverage\tStdev"} for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' > %s.sorted.bam.avgpairedcov\n' % (
+                    tempbamoutput,tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format), tempbamoutput)
     else:
         print('please provide --bwa for alignment (--s 3)')
     # 16S extraction
@@ -384,6 +418,10 @@ for root,dirs,files in os.walk(in_dir):
         for files in list_fasta1:
             if args.l == 'None' or any(targets in files for targets in Targetlist):
                 Targetroot.setdefault(files, fasta_format)
+
+
+# set up min coverage depth
+MIN_COVERAGE_DEPTH=2
 
 
 # search the database in all genomes

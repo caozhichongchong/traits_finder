@@ -440,9 +440,14 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
             except IOError:
                 os.system("%s -makeudb_usearch %s -output %s.udb\n"
                           % (args.u, input_fasta, input_fasta))
-            os.system(
-                "%s  -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
-                % (args.u, input_fasta, input_fasta, cutoff2, input_fasta, cutoff2, str(args.th)))
+            if type_fasta == 'aa':
+                os.system(
+                    "%s  -usearch_global %s -db %s.udb  -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
+                    % (args.u, input_fasta, input_fasta, cutoff2, input_fasta, cutoff2, str(args.th)))
+            else:
+                os.system(
+                    "%s  -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
+                    % (args.u, input_fasta, input_fasta, cutoff2, input_fasta, cutoff2, str(args.th)))
         elif type_fasta == 'dna' and args.hs != 'None':
             print('%s Using hs-blastn instead of usearch because the input file is larger than 2GB\n'%(datetime.now()))
             try:
