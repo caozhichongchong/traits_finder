@@ -112,8 +112,7 @@ def split_string_last(input_string,substring):
 
 def search(roottemp,filename):
     # search the database for each file
-    cmds = ''
-    cmds += "#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n"
+    cmds = "#!/bin/bash \nmodule add c3ddb/blast+/2.7.1 \n"
     # using blastp
     if args.s == 1:
         if args.u != 'None' or args.hs != 'None' or args.dm != 'None':
@@ -260,7 +259,8 @@ def search(roottemp,filename):
             cmds += 'python '+ workingdir +'/Format.MG.py -i ' + args.r + '/search_output/'+str(int(i/10000)) + ' -f ' + str(
                     filename) + '.hmm \n'
     elif args.s == 3 and args.bwa != 'None':
-            tempinput = os.path.join(roottemp, filename)
+        tempinput = os.path.join(roottemp, filename)
+        if '_2' + fasta_format not in tempinput:
             tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(filename))
             Bamfile = 0
             Covfile = 0
@@ -303,7 +303,8 @@ def search(roottemp,filename):
                 #        tempbamoutput,args.db)
                 #cmds += 'samtools mpileup %s.sorted.bam | awk -v X="%s" \'$4>=X\' | cut -f 1 | uniq -c > %s.sorted.bam.avg.breadth\n' % (
                 #    tempbamoutput, MIN_COVERAGE_DEPTH, tempbamoutput)
-                cmds += 'samtools depth %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { { print "Ref_ID\tCov_length\tAverage\tStdev"} for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' > %s.sorted.bam.avgcov\n' % (
+                cmds += 'echo -e "Ref_ID\\tCov_length\\tAverage\\tStdev" > %s.sorted.bam.avgcov\n' % (tempbamoutput)
+                cmds += 'samtools depth %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' >> %s.sorted.bam.avgcov\n' % (
                     tempbamoutput, tempbamoutput)
                 # _2 file
             tempinput = tempinput.replace('_1' + fasta_format, '_2' + fasta_format)
@@ -334,14 +335,16 @@ def search(roottemp,filename):
                 #    tempbamoutput,tempbamoutput)
                 #cmds += 'samtools mpileup %s.sorted.bam | awk -v X="%s" \'$4>=X\' | cut -f 1 | uniq -c > %s.sorted.bam.avg.breadth\n' % (
                 #    tempbamoutput, MIN_COVERAGE_DEPTH, tempbamoutput)
-                cmds += 'samtools depth %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { { print "Ref_ID\tCov_length\tAverage\tStdev"} for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' > %s.sorted.bam.avgcov\n' % (
+                cmds += 'echo -e "Ref_ID\\tCov_length\\tAverage\\tStdev" > %s.sorted.bam.avgcov\n' %(tempbamoutput)
+                cmds += 'samtools depth %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' >> %s.sorted.bam.avgcov\n' % (
                     tempbamoutput, tempbamoutput)
                 # _1 and _2
                 #cmds += 'samtools view -H %s.sorted.bam %s.sorted.bam | grep -P \'^@SQ\' | cut -f 2,3 > %s.sorted.bam.avg.pairedcov\n' % (
                 #    tempbamoutput, tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format),tempbamoutput)
                 #cmds += 'samtools mpileup %s.sorted.bam %s.sorted.bam | awk -v X="%s" \'$4>=X\'  | cut -f 1 | uniq -c  > %s.sorted.bam.avg.pairedbreadth\n' % (
                 #    tempbamoutput, tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format), MIN_COVERAGE_DEPTH, tempbamoutput)
-                cmds += 'samtools depth %s.sorted.bam %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { { print "Ref_ID\tCov_length\tAverage\tStdev"} for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' > %s.sorted.bam.avgpairedcov\n' % (
+                cmds += 'echo -e "Ref_ID\\tCov_length\\tAverage\\tStdev" > %s.sorted.bam.pairedavgcov\n' % (tempbamoutput)
+                cmds += 'samtools depth %s.sorted.bam %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' >> %s.sorted.bam.pairedavgcov\n' % (
                     tempbamoutput,tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format), tempbamoutput)
     else:
         print('please provide --bwa for alignment (--s 3)')
