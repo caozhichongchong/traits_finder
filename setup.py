@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="traits_finder",
     packages=['traits_finder'],
-    version="1.4",
+    version="1.5",
     description="search and summarize traits in genomes and metagenomes",
     author='Anni Zhang',
     author_email='anniz44@mit.edu',
