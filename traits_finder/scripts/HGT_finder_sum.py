@@ -126,7 +126,7 @@ class HGT_function:
         self.outputfile = outputfile
         self.outputfile_list = []
         output_file = open(outputfile,'w')
-        output_file.write('function\tgenome_pair\tid_gene\tid_16S\n')
+        output_file.write('function\ttype_cutoff\tgenome_pair\tid_gene\tid_16S\n')
         output_file.close()
         self.Same_genome_set = set()
         self.Diff_genome_set = set()
@@ -185,7 +185,11 @@ def Calculate_length(file_name):
 
 
 def split_string_last(input_string,substring):
-    return input_string[0 : input_string.rfind(substring)]
+    last_loci = input_string.rfind(substring)
+    if last_loci > -1:
+        return input_string[0 : last_loci]
+    else:
+        return input_string
 
 
 def checkfile(filename,i):
@@ -721,8 +725,9 @@ def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,cutoff_hit_length
                                                                 if Genome_pair in ID_16S:
                                                                     lowest_id = ID_16S[Genome_pair]
                                                                 HGT_function_temp.setDiff_16S_min(lowest_id)
-                                                                HGT_function_temp.addoutput('%s\t%s\t%.3f\t%.3f\n'
-                                                                                            % (Function, Genome_pair, ID, lowest_id))
+                                                                HGT_function_temp.addoutput('%s\t%s_%s\t%s\t%.3f\t%.3f\n'
+                                                                                            % (Function, type_fasta, cutoff,
+                                                                                               Genome_pair, ID, lowest_id))
                                                             else:
                                                                 # same 16S cluster
                                                                 # output blast results into same.cluster

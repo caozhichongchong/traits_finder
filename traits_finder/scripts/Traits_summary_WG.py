@@ -121,34 +121,36 @@ outputfile_summary_fun,file_subfix,i):
         for lines in open(blastout, 'r'):
             if inputfile.split(file_subfix)[0] not in lines:
                 lines = inputfile.split(file_subfix)[0] + '_' + lines
+            if args.mge == 2:
+                # MGEs
+                lines = 'mge_' + lines
             lines_set = str(lines).split('\t')
             traits_gene=lines_set[1]
             # output blast results
             if Function != dict():
-                if args.mge == 2:
-                    # MGEs
-                    outputfile_blast.write(Function.get(traits_gene,'None')+'\tmge_'+str(lines))
-                else:
-                    # genomes
-                    outputfile_blast.write(Function.get(traits_gene,'None')+'\t'+str(lines))
+                loci1 = min(int(lines_set[6]), int(lines_set[7].split('\r')[0].split('\n')[0]))
+                loci2 = max(int(lines_set[6]), int(lines_set[7].split('\r')[0].split('\n')[0]))
                 if outputfile_aa_500 == 'None':
                     # amino acid search results
                     Functionset.setdefault(lines_set[0],
                                            Function.get(traits_gene,'None'))
+                    outputfile_blast.write('%s\t%s' % (Function.get(traits_gene, 'None'),lines))
                 else:
                     # dna search results
-                    loci1=min(int(lines_set[6]),int(lines_set[7].split('\r')[0].split('\n')[0]))
-                    loci2=max(int(lines_set[6]),int(lines_set[7].split('\r')[0].split('\n')[0]))
                     Functionset.setdefault('%s_%s_%s' %(lines_set[0],
                     str(loci1-1),str(loci2)), Function.get(traits_gene,'None'))
+                    outputfile_blast.write('%s\t%s_%s_%s\t%s' % (Function.get(traits_gene, 'None'), lines_set[0],
+                                                                     str(loci1 - 1), str(loci2),
+                                                                     ('\t').join(lines_set[1:])))
             else:
                 # direct traits output
-                if args.mge == 2:
-                    # MGEs
-                    outputfile_blast.write('mge_'+str(lines))
+                if outputfile_aa_500 == 'None':
+                # amino acid search results
+                    outputfile_blast.write(lines)
                 else:
-                    # genomes
-                    outputfile_blast.write(str(lines))
+                    outputfile_blast.write('%s_%s_%s\t%s' % (lines_set[0],
+                                                                     str(loci1 - 1), str(loci2),
+                                                                     ('\t').join(lines_set[1:])))
             # calculate copy number of each gene and each function
             if float(lines.split('\t')[2]) >= args.c:
                 try:
@@ -168,8 +170,9 @@ outputfile_summary_fun,file_subfix,i):
         aaout500 = blastout + '.extra*.aa'
         # merge traits fasta into functions
         for record in SeqIO.parse(aaout, 'fasta'):
-                if inputfile.split(file_subfix)[0] in str(record.id):
-                    if str(record.id) in Functionset:
+                if inputfile.split(file_subfix)[0] not in str(record.id):
+                    record.id = inputfile.split(file_subfix)[0] + '_' + str(record.id)
+                if str(record.id) in Functionset:
                         # output according to its function
                         outputfile_aa_file = open(outputfile_aa.replace('fasta',Functionset[str(record.id)]+'.fasta'),'a')
                         if args.mge == 2:
@@ -183,47 +186,16 @@ outputfile_summary_fun,file_subfix,i):
                                 str(record.id),
                                 str(record.seq)))
                         outputfile_aa_file.close()
-                    else:
-                        print('%s not found in blast output'%(str(record.id)))
                 else:
-                    if inputfile.split(file_subfix)[0] + '_'+ str(record.id) in Functionset:
-                        # output according to its function
-                        function_name = Functionset[inputfile.split(file_subfix)[0] +
-                                                                                    '_' + str(record.id)]
-                        outputfile_aa_file = open(outputfile_aa.replace('fasta',function_name
-                                                                        +'.fasta'),'a')
-                        if args.mge == 2:
-                            # MGEs
-                            outputfile_aa_file.write('>mge_%s_%s\n%s\n'%(
-                                inputfile.split(file_subfix)[0],
-                                str(record.id),
-                                str(record.seq)))
-                        else:
-                            # genomes
-                            outputfile_aa_file.write('>%s_%s\n%s\n'%(
-                                inputfile.split(file_subfix)[0],
-                                str(record.id),
-                                str(record.seq)))
-                        outputfile_aa_file.close()
-                    else:
-                        print('%s not found in blast output'%(inputfile.split(file_subfix)[0] + '_'+ str(record.id)))
+                    print('%s not found in blast output'%(str(record.id)))
         # merge traits extend 500 fasta
         if outputfile_aa_500 != 'None':
             for record in SeqIO.parse(glob.glob(aaout500)[0], 'fasta'):
-                if args.mge == 2:
-                    # MGEs
-                    if inputfile.split(file_subfix)[0] in str(record.id):
-                        outputfile_aa_500.write('>mge_'+str(record.id)+'\n'+str(record.seq)+'\n')
-                    else:
-                        outputfile_aa_500.write('>mge_'+inputfile.split(file_subfix)[0] + '_'+ str(record.id)+
-                        '\n'+str(record.seq)+'\n')
-                else:
-                    # genomes
-                    if inputfile.split(file_subfix)[0] in str(record.id):
-                        outputfile_aa_500.write('>'+str(record.id)+'\n'+str(record.seq)+'\n')
-                    else:
-                        outputfile_aa_500.write('>'+inputfile.split(file_subfix)[0] + '_'+ str(record.id)+
-                        '\n'+str(record.seq)+'\n')
+                if inputfile.split(file_subfix)[0] not in str(record.id):
+                    record.id = inputfile.split(file_subfix)[0] + '_' + str(record.id)
+                if  args.mge == 2:
+                    record.id = 'mge_' + record.id
+                outputfile_aa_500.write('>' + str(record.id) + '\n' + str(record.seq) + '\n')
     else:
         outputfile_summary.write(inputfile.split(file_subfix)[0] + '\tNo_hit\n')
         outputfile_summary_fun.write(inputfile.split(file_subfix)[0] + '\tNo_hit\n')

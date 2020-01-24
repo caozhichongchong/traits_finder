@@ -107,7 +107,11 @@ workingdir=os.path.abspath(os.path.dirname(__file__))
 
 ################################################### Function ########################################################
 def split_string_last(input_string,substring):
-    return input_string[0 : input_string.rfind(substring)]
+    last_loci = input_string.rfind(substring)
+    if last_loci > -1:
+        return input_string[0 : last_loci]
+    else:
+        return input_string
 
 
 def search(roottemp,filename):
@@ -127,22 +131,7 @@ def search(roottemp,filename):
                 except IOError:
                     pass
             if Usearch == 0:
-                if args.u != 'None':
-                    # Start search target genes by usearch
-                    if args.dbf == 1:
-                        cmds += args.u + " -ublast " + os.path.join(roottemp, filename) + \
-                                " -db " + split_string_last(args.db, '.udb') + ".udb -strand both -evalue 1e-2 -accel 0.5 -blast6out " \
-                                + os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt') + \
-                                " -threads " + str(int(i_max)) + " \n"
-                    else:
-                        cmds += args.u + " -ublast " + os.path.join(roottemp, filename) + \
-                                " -db " + split_string_last(args.db, '.udb') + ".udb -evalue 1e-2 -accel 0.5 -blast6out " \
-                                + os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt') + \
-                                " -threads " + str(int(i_max)) + " \n"
-                    cmds += 'python ' + workingdir + '/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
-                        int(i / 10000)) + ' \n'
-                    searchfile = os.path.join(args.r + '/usearch/' + str(int(i / 10000)), filename + '.usearch.txt.aa')
-                elif args.dm != 'None' and args.dbf == 2:
+                if args.dm != 'None' and args.dbf == 2:
                     # Start search target genes by diamond
                     cmds += split_string_last(args.dm, 'diamond') + "diamond blastx --query " + os.path.join(roottemp, filename) + \
                             " --db " + split_string_last(args.db, '.dmnd') + ".dmnd --out " + os.path.join(args.r + '/usearch/' + str(int(i/10000)),
@@ -158,6 +147,21 @@ def search(roottemp,filename):
                             % (args.hs, args.db, args.db, os.path.join(roottemp, filename),
                                os.path.join(args.r + '/usearch/' + str(int(i / 10000)), filename + '.usearch.txt'),
                                str(args.e), str(min(int(i_max), 40)))
+                    cmds += 'python ' + workingdir + '/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
+                        int(i / 10000)) + ' \n'
+                    searchfile = os.path.join(args.r + '/usearch/' + str(int(i / 10000)), filename + '.usearch.txt.aa')
+                elif args.u != 'None':
+                    # Start search target genes by usearch
+                    if args.dbf == 1:
+                        cmds += args.u + " -ublast " + os.path.join(roottemp, filename) + \
+                                " -db " + split_string_last(args.db, '.udb') + ".udb -strand both -evalue 1e-2 -accel 0.5 -blast6out " \
+                                + os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt') + \
+                                " -threads " + str(int(i_max)) + " \n"
+                    else:
+                        cmds += args.u + " -ublast " + os.path.join(roottemp, filename) + \
+                                " -db " + split_string_last(args.db, '.udb') + ".udb -evalue 1e-2 -accel 0.5 -blast6out " \
+                                + os.path.join(args.r + '/usearch/' + str(int(i/10000)), filename + '.usearch.txt') + \
+                                " -threads " + str(int(i_max)) + " \n"
                     cmds += 'python ' + workingdir + '/Extract.MG.py -p 1 -i ' + roottemp + ' -f ' + filename + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                         int(i / 10000)) + ' \n'
                     searchfile = os.path.join(args.r + '/usearch/' + str(int(i / 10000)), filename + '.usearch.txt.aa')
@@ -358,18 +362,7 @@ def search(roottemp,filename):
         except IOError:
             pass
     if Search16s == 0:
-        # with usearch
-        if args.u != 'None':
-            # Start search 16S
-            cmds += 'python '+ workingdir +'/undone.MG.py -i '+ os.path.join(roottemp, filename) +' \n'
-            cmds += args.u + " -usearch_global " + os.path.join(roottemp, filename) + \
-                    " -db " + workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
-                    + os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt') + \
-                    " -threads " + str(int(i_max)) + " \n"
-            cmds += 'python ' + workingdir + '/Extract.16S.MG.py -i ' + roottemp + ' -f ' + \
-                    filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
-                int(i / 10000)) + ' \n'
-        elif args.hs != 'None':
+        if args.hs != 'None':
             # with hs-blastn
             # Start search 16S
             cmds += 'python '+ workingdir +'/undone.MG.py -i '+ os.path.join(roottemp, filename) +' \n'
@@ -382,6 +375,17 @@ def search(roottemp,filename):
             cmds += 'python '+ workingdir +'/Extract.16S.MG.py -i ' + roottemp + ' -f ' + \
                     filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
                 int(i / 10000)) + ' \n'
+            # with usearch
+        elif args.u != 'None':
+                # Start search 16S
+                cmds += 'python ' + workingdir + '/undone.MG.py -i ' + os.path.join(roottemp, filename) + ' \n'
+                cmds += args.u + " -usearch_global " + os.path.join(roottemp, filename) + \
+                        " -db " + workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta.udb -strand plus -id 0.7 -evalue 1e-1 -blast6out " \
+                        + os.path.join(args.r16 + '/' + str(int(i / 10000)), filename + '.16S.txt') + \
+                        " -threads " + str(int(i_max)) + " \n"
+                cmds += 'python ' + workingdir + '/Extract.16S.MG.py -i ' + roottemp + ' -f ' + \
+                        filename + ' -n .16S.txt -r ' + args.r16 + '/' + str(
+                    int(i / 10000)) + ' \n'
     # cell number calculation
     Search16s = 0
     for root, dirs, files in os.walk(args.r16):

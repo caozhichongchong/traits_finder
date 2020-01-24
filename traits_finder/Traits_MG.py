@@ -93,6 +93,11 @@ parser.add_argument('--bwa',
                     help="Optional: complete path to bwa if not in PATH,",
                     metavar="/usr/local/bin/bwa",
                     action='store', default='None', type=str)
+parser.add_argument('--mf','--mafft',
+                          help="Optional: complete path to mafft if not in PATH,",
+                          metavar="/usr/local/bin/mafft",
+                          action='store', default='None', type=str)
+
 
 ################################################## Definition ########################################################
 args = parser.parse_args()

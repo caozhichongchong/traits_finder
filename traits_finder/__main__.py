@@ -80,8 +80,8 @@ def main():
                         default='None',
                         metavar='metadata.metagenomes.txt')
     optional.add_argument("--orf",
-                        help="input format of genomes orfs", type=str,
-                          default='.genes.faa',metavar='.faa')
+                        help="input format of genomes orfs, set prodigal to predict ORF if needed (--pro prodigal)", type=str,
+                          default='.faa',metavar='.faa')
     optional.add_argument("--l",
                           help="input list of a subset of metagenomes", type=str,
                           default='None', metavar='list.txt')
@@ -149,6 +149,10 @@ def main():
                           help="Optional: complete path to fasttree if not in PATH,",
                           metavar="/usr/local/bin/fasttree",
                           action='store', default='None', type=str)
+    optional.add_argument('--pro','--prodigal',
+                        help="Optional: complete path to prodigal if not in PATH, None for no prodigal (default)",
+                        metavar="/usr/local/bin/prodigal",
+                        action='store', default='None', type=str)
     ################################################## Definition ########################################################
     args = parser.parse_args()
     workingdir=os.path.abspath(os.path.dirname(__file__))
@@ -256,9 +260,9 @@ def main():
 
     # run traits finding
     if args.command in ['genome','mge'] :
-        cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s --mf %s\n'
+        cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s --mf %s --pro %s\n'
         % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r[0]),str(args.r16),str(thread),
-           str(args.id),str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa),str(args.mf)))
+           str(args.id),str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa),str(args.mf),str(args.pro)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'meta':
