@@ -101,6 +101,7 @@ def check_traits(inputfile,outputfile_aa,outputfile_aa_500,outputfile_blast,outp
 outputfile_summary_fun,file_subfix,i):
     blastout = check_file(glob.glob(args.r + '/search_output/*/'+ inputfile + '.blast.txt.filter'))
     Hastraits = 0
+    short_filename = inputfile.split(file_subfix)[0]
     if blastout != None:
         for lines in open(blastout,'r'):
             if str(lines)!='':
@@ -119,8 +120,8 @@ outputfile_summary_fun,file_subfix,i):
         for functions in allfunction:
             allfunction[functions]=0
         for lines in open(blastout, 'r'):
-            if inputfile.split(file_subfix)[0] not in lines:
-                lines = inputfile.split(file_subfix)[0] + '_' + lines
+            if short_filename not in lines:
+                lines = short_filename + '_' + lines
             if args.mge == 2:
                 # MGEs
                 lines = 'mge_' + lines
@@ -160,8 +161,8 @@ outputfile_summary_fun,file_subfix,i):
                     pass
         for copy_number in totaltraits:
             temp.append(str(copy_number))
-        outputfile_summary.write(inputfile.split(file_subfix)[0]+'\t'+'\t'.join(temp)+'\n')
-        outputfile_summary_fun.write(inputfile.split(file_subfix)[0])
+        outputfile_summary.write(short_filename+'\t'+'\t'.join(temp)+'\n')
+        outputfile_summary_fun.write(short_filename)
         for functions in allfunction:
             outputfile_summary_fun.write('\t'+str(allfunction[functions]))
         outputfile_summary_fun.write('\n')
@@ -170,35 +171,30 @@ outputfile_summary_fun,file_subfix,i):
         aaout500 = blastout + '.extra*.aa'
         # merge traits fasta into functions
         for record in SeqIO.parse(aaout, 'fasta'):
-                if inputfile.split(file_subfix)[0] not in str(record.id):
-                    record.id = inputfile.split(file_subfix)[0] + '_' + str(record.id)
+                if short_filename not in str(record.id):
+                    record.id = short_filename + '_' + str(record.id)
+                if args.mge == 2:
+                    record.id = "mge_" + record.id
                 if str(record.id) in Functionset:
                         # output according to its function
                         outputfile_aa_file = open(outputfile_aa.replace('fasta',Functionset[str(record.id)]+'.fasta'),'a')
-                        if args.mge == 2:
-                            # MGEs
-                            outputfile_aa_file.write('>mge_%s\n%s\n'%(
-                                str(record.id),
-                                str(record.seq)))
-                        else:
-                            # genomes
-                            outputfile_aa_file.write('>%s\n%s\n'%(
-                                str(record.id),
-                                str(record.seq)))
+                        outputfile_aa_file.write('>%s\n%s\n' % (
+                            str(record.id),
+                            str(record.seq)))
                         outputfile_aa_file.close()
                 else:
                     print('%s not found in blast output'%(str(record.id)))
         # merge traits extend 500 fasta
         if outputfile_aa_500 != 'None':
             for record in SeqIO.parse(glob.glob(aaout500)[0], 'fasta'):
-                if inputfile.split(file_subfix)[0] not in str(record.id):
-                    record.id = inputfile.split(file_subfix)[0] + '_' + str(record.id)
+                if short_filename not in str(record.id):
+                    record.id = short_filename + '_' + str(record.id)
                 if  args.mge == 2:
                     record.id = 'mge_' + record.id
                 outputfile_aa_500.write('>' + str(record.id) + '\n' + str(record.seq) + '\n')
     else:
-        outputfile_summary.write(inputfile.split(file_subfix)[0] + '\tNo_hit\n')
-        outputfile_summary_fun.write(inputfile.split(file_subfix)[0] + '\tNo_hit\n')
+        outputfile_summary.write(short_filename + '\tNo_hit\n')
+        outputfile_summary_fun.write(short_filename + '\tNo_hit\n')
 
 
 ################################################### Programme #######################################################
