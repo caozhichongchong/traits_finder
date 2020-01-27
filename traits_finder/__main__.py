@@ -175,7 +175,7 @@ def main():
                 try:
                     f1 = open("%s.nhr" % (db_file), 'r')
                 except IOError:
-                    os.system('%s -in %s -input_type fasta -dbtype nucl' %
+                    os.system('%s -in %s -dbtype nucl' %
                               (os.path.join(os.path.split(search_method)[0], 'makeblastdb'), db_file))
             if 'hs-blastn' in search_method:
                 try:
@@ -199,7 +199,7 @@ def main():
                 try:
                     f1 = open("%s.phr" % (db_file), 'r')
                 except IOError:
-                    os.system('%s -in %s -input_type fasta -dbtype prot' %
+                    os.system('%s -in %s -dbtype prot' %
                               (os.path.join(os.path.split(search_method)[0], 'makeblastdb'), db_file))
             if 'diamond' in search_method:
                 if '.dmnd' not in db_file:
