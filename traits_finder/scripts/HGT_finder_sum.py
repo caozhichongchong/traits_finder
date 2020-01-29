@@ -168,7 +168,7 @@ def Calculate_length(file_name):
     try:
         for lines in open(file_name + '.length', 'r'):
             DB_length.add(float(str(lines.split('\t')[-1]).replace('\n','')))
-    except (IOError):
+    except (IOError,FileNotFoundError):
         Fasta_name = open(file_name, 'r')
         f = open(file_name + '.length', 'w')
         for record in SeqIO.parse(Fasta_name, 'fasta'):
@@ -205,7 +205,7 @@ def checkfile(filename,i):
                 break
         else:
             return 'empty'
-    except IOError:
+    except (IOError,FileNotFoundError):
         return 'non-existed'
 
 
@@ -340,12 +340,13 @@ def function_find(Function_Set, Genome, type_fasta):
         if type_fasta == 'aa':
             return Function_Set.get(Genome)
         else:
-            loci_last_2 = Genome.rfind('_',0,(Genome.rfind('_')-1))
-            loci_last_3 = Genome.rfind('_', 0, loci_last_2)
-            loci_last_4 = Genome.rfind('_', 0, loci_last_3)
-            loci_new = [int(Genome[loci_last_4 + 1:loci_last_3]),
-                    int(Genome[loci_last_3 + 1:loci_last_2])]
-            Genome_name = Genome[0:loci_last_4]
+            loci_last_1 = Genome.rfind('_')
+            loci_last_2 = Genome.rfind('_',0,loci_last_1)
+            #loci_last_3 = Genome.rfind('_', 0, loci_last_2)
+            #loci_last_4 = Genome.rfind('_', 0, loci_last_3)
+            loci_new = [int(Genome[loci_last_2 + 1:loci_last_1]),
+                    int(Genome[loci_last_1 + 1:])]
+            Genome_name = Genome[0:loci_last_2]
             for functions in Function_Set.get(Genome_name)[0]:
                     if type_fasta == 'dna':
                         if loci_new == functions[-1]:
@@ -421,7 +422,7 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
     if clustering != 'T':
         try:
             f1 = open("%s.unique_length" % (input_fasta), 'r')
-        except IOError:
+        except (IOError,FileNotFoundError):
             print('%s deduplicate %s' % (datetime.now(), input_fasta))
             deduplicate(input_fasta,Function_Set,type_fasta)
         input_fasta = input_fasta + '.unique'
@@ -430,18 +431,18 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
         # smaller than 1000Mb
         try:
             f1 = open("%s.sorted" % (input_fasta), 'r')
-        except IOError:
+        except (IOError,FileNotFoundError):
             os.system('%s -sortbylength %s -fastaout %s.sorted' % (args.u, input_fasta, input_fasta))
         input_fasta = input_fasta + '.sorted'
     try:
         f1 = open("%s.%s.usearch.txt" % (input_fasta, cutoff2), 'r')
-    except IOError:
+    except (IOError,FileNotFoundError):
         print('%s Running usearch for %s' % (datetime.now(), input_fasta))
         if filesize <= 3E+7 and args.u != 'None':
             # smaller than 30Mb
             try:
                 f1 = open("%s.udb" % (input_fasta), 'r')
-            except IOError:
+            except (IOError,FileNotFoundError):
                 os.system("%s -makeudb_usearch %s -output %s.udb\n"
                           % (args.u, input_fasta, input_fasta))
             if type_fasta == 'aa':
@@ -452,11 +453,11 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
                 os.system(
                     "%s  -usearch_global %s -db %s.udb  -strand both -id %s -maxaccepts 0 -maxrejects 0 -blast6out %s.%s.usearch.txt  -threads %s\n"
                     % (args.u, input_fasta, input_fasta, cutoff2, input_fasta, cutoff2, str(args.th)))
-        elif type_fasta == 'dna' and args.hs != 'None':
+        elif type_fasta != 'aa' and args.hs != 'None':
             print('%s Using hs-blastn instead of usearch because the input file is larger than 2GB\n'%(datetime.now()))
             try:
                 f1 = open("%s.counts.obinary" % (input_fasta), 'r')
-            except IOError:
+            except (IOError,FileNotFoundError):
                 os.system('%s -in %s -input_type fasta -dbtype nucl' %
                           (os.path.join(os.path.split(args.bp)[0], 'makeblastdb'),input_fasta))
                 os.system('windowmasker -in %s -infmt blastdb -mk_counts -out %s.counts' %
@@ -473,7 +474,7 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
             print('%s Using diamond instead of usearch because the input file is larger than 2GB\n'%(datetime.now()))
             try:
                 f1 = open("%s.dmnd" % (input_fasta), 'r')
-            except IOError:
+            except (IOError,FileNotFoundError):
                 os.system('%sdiamond makedb --in %s -d %s.dmnd' %
                           (split_string_last(args.dm, 'diamond'),input_fasta,input_fasta))
             os.system(
@@ -491,7 +492,7 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
     if clustering == 'T':
         try:
             f1 = open("%s.uc" % (input_fasta),'r')
-        except IOError:
+        except (IOError,FileNotFoundError):
             print('%s Running usearch cluster for %s' % (datetime.now(),input_fasta))
             # smaller than 1G
             if int(os.path.getsize(input_fasta)) <= 1E+9 and args.u != 'None':
@@ -563,7 +564,7 @@ def extract_dna(dna_file,gene_list,output_fasta,type_fasta,script_i):
     if args.mf != 'None':
         try:
             f1 = open("%s.align.nwk" % (output_fasta), 'r')
-        except IOError:
+        except (IOError,FileNotFoundError):
             f1 = open("%s.align.nwk" % (output_fasta), 'w')
             output_script_file = open(('HGT_subscripts/HGTalign.%s.sh')%(int(script_i % script_i_max)), 'a')
             script_i += 1
@@ -859,7 +860,7 @@ run_compare(fdna, Function_Set_dna,Cutoff_HGT,Cutoff_HGT,'dna','F')
 print('%s comparing and clustering DNA extended' % (datetime.now()))
 run_compare(faa, Function_Set_aa, Cutoff_aa,Cutoff_aa,'aa','F')
 print('%s comparing and clustering AA' % (datetime.now()))
-run_compare(fdna_500, Function_Set_dna, Cutoff_extended,Cutoff_extended,'dna','F')
+run_compare(fdna_500, Function_Set_dna, Cutoff_extended,Cutoff_extended,'dna_extended','F')
 
 # load pre-mapping
 print('%s loading pre-mapping file' % (datetime.now()))
@@ -870,7 +871,7 @@ try:
     for lines in open(mapping_file,'r'):
         lines_set = lines.split('\t',maxsplit=3)
         mapping.setdefault(lines_set[0],lines_set[1]) # gene_ID, 16S_ID
-except IOError:
+except (IOError,FileNotFoundError):
     mapping_file_output = 1
 
 # calculate index for HGT

@@ -50,7 +50,7 @@ def Calculate_length(file_name):
     try:
         for lines in open(file_name + '.length', 'r'):
             DB_length.setdefault(str(lines.split('\t')[0]), float(str(lines.split('\t')[-1]).replace('\n','')))
-    except (IOError):
+    except (IOError,FileNotFoundError):
         Fasta_name = open(file_name, 'r')
         f = open(file_name + '.length', 'w')
         for record in SeqIO.parse(Fasta_name, 'fasta'):

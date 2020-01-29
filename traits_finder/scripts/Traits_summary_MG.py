@@ -176,7 +176,7 @@ else:
         for lines in open(args.db + '.length', 'r'):
             Mapping.setdefault(lines.split('\t')[0],
                                float(lines.split('\t')[1].split('\r')[0].split('\n')[0]))
-    except IOError:
+    except (IOError,FileNotFoundError):
         Fasta_name = open(args.db, 'r')
         f = open(args.db + '.length', 'w')
         for record in SeqIO.parse(Fasta_name, 'fasta'):

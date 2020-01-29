@@ -43,10 +43,10 @@ def Extractaa(root, searchfile, orffile, resultdir):
                 except KeyError:
                     print ('AA not found for ' + AA)
                     flog.write('AA not found for ' + AA + '\n')
-        except IOError:
+        except (IOError,FileNotFoundError):
             pass
         f1.close()
-    except (IOError):
+    except (IOError,FileNotFoundError):
         print ('Files were missing: ' + orffile)
 
 

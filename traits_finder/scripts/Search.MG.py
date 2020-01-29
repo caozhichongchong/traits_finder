@@ -128,7 +128,7 @@ def search(roottemp,filename):
                     searchfile = os.path.join(root, filename + '.usearch.txt.aa')
                     Usearch = 1
                     break
-                except IOError:
+                except (IOError,FileNotFoundError):
                     pass
             if Usearch == 0:
                 if args.dm != 'None' and args.dbf == 2:
@@ -180,7 +180,7 @@ def search(roottemp,filename):
                     ftry_blast_file = os.path.join(root, filename + '.blast.txt')
                     Blastsearch = 1
                     break
-                except IOError:
+                except (IOError,FileNotFoundError):
                     pass
             if Blastsearch == 0:
                 # for short metagenomic reads
@@ -200,7 +200,7 @@ def search(roottemp,filename):
                     ftry = open(os.path.join(root, filename + '.blast.txt.filter'), 'r')
                     Blastsearchfilter = 1
                     break
-                except IOError:
+                except (IOError,FileNotFoundError):
                     pass
             if Blastsearchfilter == 0:
                 if Blastsearch == 0:
@@ -224,7 +224,7 @@ def search(roottemp,filename):
                 filename) + '.blast.txt.filter.aa')
             try:
                 f1 = open('%s.sorted.bam' % (tempbamoutput))
-            except IOError:
+            except (IOError,FileNotFoundError):
                 cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                     args.db, tempinput,
                     tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
@@ -254,7 +254,7 @@ def search(roottemp,filename):
                 ftry = open(os.path.join(root, filename + '.hmm'), 'r')
                 Blastsearch = 1
                 break
-            except IOError:
+            except (IOError,FileNotFoundError):
                 pass
         if Blastsearch == 0:
             cmds = args.hmm + ' --tblout ' + os.path.join(args.r + '/search_output/'+str(int(i/10000)), str(
@@ -272,17 +272,17 @@ def search(roottemp,filename):
             try:
                 f1 = open('%s.sorted.bam' % (tempbamoutput))
                 Bamfile = 1
-            except IOError:
+            except (IOError,FileNotFoundError):
                 pass
             try:
                 f1 = open('%s.sorted.bam.cov' % (tempbamoutput))
                 Covfile = 1
-            except IOError:
+            except (IOError,FileNotFoundError):
                 pass
             try:
                 f1 = open('%s.sorted.bam.avgcov' % (tempbamoutput))
                 Avgcovfile = 1
-            except IOError:
+            except (IOError,FileNotFoundError):
                 pass
             if Bamfile == 0:
                 # _1 file
@@ -359,7 +359,7 @@ def search(roottemp,filename):
             ftry = open(os.path.join(root, filename + '.16S.txt'), 'r')
             Search16s = 1
             break
-        except IOError:
+        except (IOError,FileNotFoundError):
             pass
     if Search16s == 0:
         if args.hs != 'None':
@@ -393,7 +393,7 @@ def search(roottemp,filename):
             ftry = open(os.path.join(root, filename + '.uscmg.blastx.txt'), 'r')
             Search16s = 1
             break
-        except IOError:
+        except (IOError,FileNotFoundError):
             pass
     if Search16s == 0:
         # with diamond

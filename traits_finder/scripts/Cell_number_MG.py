@@ -55,7 +55,7 @@ def check_16S(inputfile):
         for lines in open(os.path.join(args.r16,inputfile.replace('.uscmg.blastx.txt','.16S.txt'))):
             coverage += float(lines.split('\t')[3])/1500.0
         return coverage
-    except IOError:
+    except (IOError,FileNotFoundError):
         return 0
 
 
@@ -65,14 +65,14 @@ Cell_out = 0
 try:
     ftry = open(os.path.join(os.path.join(args.r,'summary'),'cell.copynum.all.txt'), 'r')
     Cell_out = 1
-except IOError:
+except (IOError,FileNotFoundError):
     pass
 
 Cell16S_out = 0
 try:
     ftry = open(os.path.join(os.path.join(args.r,'summary'),'16S.copynum.all.txt'), 'r')
     Cell16S_out = 1
-except IOError:
+except (IOError,FileNotFoundError):
     pass
 
 if Cell_out == 0 or Cell16S_out == 0:

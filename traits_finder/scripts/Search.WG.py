@@ -145,7 +145,7 @@ def search(roottemp,genome_output,orf_output):
                                                   orf_output + '.usearch.txt.aa')
                     Usearch=1
                     break
-                except IOError:
+                except (IOError,FileNotFoundError):
                     pass
             if Usearch == 0:
                 searchfile_orf = os.path.join(args.r + '/usearch/' + str(folder_id),
@@ -228,7 +228,7 @@ def search(roottemp,genome_output,orf_output):
                     ftry_blast = open(ftry_blast_file, 'r')
                     Blastsearch = 1
                     break
-                except IOError:
+                except (IOError,FileNotFoundError):
                     pass
             if Blastsearch == 0:
                 if args.dbf == 2:
@@ -258,7 +258,7 @@ def search(roottemp,genome_output,orf_output):
                     ftry = open(os.path.join(root, genome_output + '.blast.txt.filter'), 'r')
                     Blastsearchfilter = 1
                     break
-                except IOError:
+                except (IOError,FileNotFoundError):
                     pass
             if Blastsearchfilter == 0:
                 if Blastsearch == 0:
@@ -300,7 +300,7 @@ def search(roottemp,genome_output,orf_output):
                     genome_output) + '.blast.txt.filter.aa')
                 try:
                     f1 = open('%s.sorted.bam' % (tempbamoutput))
-                except IOError:
+                except (IOError,FileNotFoundError):
                     if args.bwa != 'None':
                         cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                             args.db, tempinput,
@@ -324,7 +324,7 @@ def search(roottemp,genome_output,orf_output):
                 ftry = open(os.path.join(root, orf_file + '.hmm'), 'r')
                 Blastsearch = 1
                 break
-            except IOError:
+            except (IOError,FileNotFoundError):
                 pass
         if Blastsearch == 0:
             cmds = args.hmm + ' --tblout ' + os.path.join(args.r + '/search_output/'+str(folder_id), str(
@@ -340,7 +340,7 @@ def search(roottemp,genome_output,orf_output):
             genome_output))
         try:
             f1 = open('%s.sorted.bam' % (tempbamoutput))
-        except IOError:
+        except (IOError,FileNotFoundError):
             if args.bwa != 'None':
                     cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                         args.db, tempinput,
@@ -363,7 +363,7 @@ def search(roottemp,genome_output,orf_output):
             ftry = open(os.path.join(root, genome_output + '.16S.txt'), 'r')
             Search16s = 1
             break
-        except IOError:
+        except (IOError,FileNotFoundError):
             pass
     if Search16s == 0:
         if args.hs != 'None':
@@ -476,7 +476,7 @@ for root,dirs,files in os.walk(in_dir):
                 orffilename = split_string_last(genomefilename, fasta_format) + orfs_format
                 try:
                     ftry_orf = open(orffile, 'r')
-                except IOError:
+                except (IOError,FileNotFoundError):
                     if args.pro != 'None':
                         # predict AA
                         os.system('%s -q -a %s -i %s' % (args.pro, orffile, genomefile))
@@ -485,7 +485,7 @@ for root,dirs,files in os.walk(in_dir):
                     try:
                         # already added filename to orf
                         ftry = open(orffile + ".add", 'r')
-                    except IOError:
+                    except (IOError,FileNotFoundError):
                         # add filename to orf
                         addname(orffile)
                     orffile = orffile + ".add"

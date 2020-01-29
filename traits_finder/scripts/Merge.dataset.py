@@ -66,7 +66,7 @@ for result_dir in args.r:
             else:
                 files_to_merge[file_name].append(
                 os.path.join(result_dir, file_name))
-        except IOError:
+        except (IOError,FileNotFoundError):
             pass
 
 

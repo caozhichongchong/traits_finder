@@ -95,10 +95,10 @@ def Extractaa(root, searchfile, orffile, resultdir):
                                          min(loci1+args.d,total_length)])) + '\n')
                     # finish extracting AA
                     AA_seq[AA]=''
-        except IOError:
+        except (IOError,FileNotFoundError):
             pass
         f1.close()
-    except (IOError):
+    except (IOError,FileNotFoundError):
         print ('Files were missing: ' + orffile)
 
 

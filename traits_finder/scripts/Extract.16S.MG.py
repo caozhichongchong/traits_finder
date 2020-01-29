@@ -55,7 +55,7 @@ def Extract16S(root, searchfile, seqfile, resultdir):
                 #else:
                 #    flog.write(seqfile + '\ttoo_short\n')
         f1.close()
-    except (IOError):
+    except (IOError,FileNotFoundError):
         flog.write(seqfile + '\tfile_missing\n')
 
 
