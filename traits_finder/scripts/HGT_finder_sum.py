@@ -22,6 +22,12 @@ parser.add_argument("-dbf",
                     metavar="1 or 2",
                     choices=[1, 2],
                     action='store', default=1, type=int)
+parser.add_argument("-i",
+                        help="input folder of genomes", type=str,
+                        default='.',metavar='current dir (.)')
+parser.add_argument("-fa",
+                        help="input format of genome sequence",
+                        type=str, default='.fa', metavar='.fasta, .fna, .fastq or .fa')
 # optional input setup
 parser.add_argument("--r",
                     help="input directory or folder of your previous results by Traits_WGD.py",
@@ -31,7 +37,7 @@ parser.add_argument("--s",
                     type=str, default='None',metavar='summary')
 # optional search parameters
 parser.add_argument('--g',
-                        help="Optional: gene-level HGT finding; --g T (default: function-level; --g F)",
+                        help="Optional: gene-level HGT finding; --g F (default function-level); --g T for gene-level",
                         metavar=['T', 'F'], action='store', default='F', type=str)
 parser.add_argument('--th',
                         help="Optional: set the thread number assigned for running XXX (default 1)",
@@ -67,6 +73,10 @@ parser.add_argument('--ft', '--fasttree',
                       help="Optional: complete path to fasttree if not in PATH,",
                       metavar="/usr/local/bin/fasttree",
                       action='store', default='None', type=str)
+parser.add_argument('--ani', '--fastani',
+                      help="Optional: complete path to fastANI if not in PATH,",
+                      metavar="/usr/local/bin/fastANI",
+                      action='store', default='None', type=str)
 
 ################################################## Definition ########################################################
 args = parser.parse_args()
@@ -85,7 +95,6 @@ if args.s == 'None':
 else:
     input_dir = args.s
     result_dir = os.path.join(args.s, '../HGT')
-
 try:
     os.mkdir(result_dir)
 except OSError:
@@ -98,6 +107,11 @@ try:
     os.mkdir(result_dir + '/sub_fun')
 except OSError:
     pass
+if args.ani != 'None':
+    try:
+        os.mkdir(result_dir + '../fastANI')
+    except OSError:
+        pass
 workingdir=os.path.abspath(os.path.dirname(__file__))
 try:
     os.system('rm -rf HGT_subscripts')
@@ -393,14 +407,26 @@ def deduplicate(input_fasta,Function_Set,type_fasta):
         record_id = unique_set[record_seq][0]
         record_len = unique_set[record_seq][1]
         if not record_id.startswith('reference'):
-            fout1_list.append('>%s\n%s\n'%(record_id,record_seq))
-            fout3_list.append('%s\t%s\t\n' % (record_id, record_len))
+            OUtput = 1
+            if args.db == '/scratch/users/anniz44/scripts/database/AHR.aa.db':
+                # select function
+                if not any(subfun in record_id for subfun in ['pksN','pksL','pksM','fldH','porB','fldB','acdA']):
+                    OUtput = 0
+            if OUtput == 1:
+                fout1_list.append('>%s\n%s\n'%(record_id,record_seq))
+                fout3_list.append('%s\t%s\t\n' % (record_id, record_len))
     fout1.write(''.join(fout1_list))
     fout3.write(''.join(fout3_list))
     for newrecord in record_list:
         if not newrecord.startswith('reference'):
-            for oldrecord in record_list[newrecord]:
-                fout2_list.append('%s\t%s\t\n'%(newrecord,oldrecord))
+            OUtput = 1
+            if args.db == '/scratch/users/anniz44/scripts/database/AHR.aa.db':
+                # select function
+                if not any(subfun in newrecord for subfun in ['pksN', 'pksL', 'pksM', 'fldH', 'porB', 'fldB', 'acdA']):
+                    OUtput = 0
+            if OUtput == 1:
+                for oldrecord in record_list[newrecord]:
+                    fout2_list.append('%s\t%s\t\n'%(newrecord,oldrecord))
     fout2.write(''.join(fout2_list))
     fout1.close()
     fout2.close()
@@ -415,8 +441,123 @@ def function_com(function1, function2):
     else:
         return function2 + '-' + function1
 
+def cluster_fastani_pair(ID):
+    if ID >= 0.96:
+        return 'same'
+    elif ID <= 0.92:
+        return 'diff'
+    else:
+        return 'mix'
 
-# merge HGT_finder here (cutoff_set)
+def cluster_fastani(fastani_out):
+    Checkoutput = checkfile(fastani_out, 2)
+    os.system('sed -i \"s/%s//g\" %s' % (args.fa, fastani_out))
+    if Checkoutput == 'not empty':
+        for lines in open(fastani_out, 'r'):
+            line_set = lines.split('\t', maxsplit=3)
+            genome_16S = genome_com(os.path.split(lines_set[0])[1], os.path.split(lines_set[1])[1])
+            if genome_16S not in ['same', 'skip']:
+                ID_16S.setdefault(genome_16S, float(lines_set[2]) / 100.0)
+    else:
+        print('file %s is %s' % (fastani_out, Checkoutput))
+    # read cluster results
+    Clusters = dict()
+    Clusters_seqs = dict()
+    Max_ID_len = 0
+    Min_ID_len = 0
+    Checkoutput = checkfile(fastani_out + '.cluster', 1)
+    if Checkoutput != 'not empty':
+        print('%s start cluster for %s' % (datetime.now(), fastani_out))
+        cluster = 0
+        for genome_16S in ID_16S:
+            Genome1, Genome2 = genome_16S.split('-')
+            cluster1 = Clusters_seqs.get(Genome1,'None')
+            cluster2 = Clusters_seqs.get(Genome1, 'None')
+            compare_pair = cluster_fastani_pair(ID_16S[genome_16S])
+            length1 = len(Genome1)
+            length2 = len(Genome2)
+            Max_ID_len = max(Max_ID_len, length1, length2)
+            if Min_ID_len == 0:
+                Min_ID_len = min(length1, length2)
+            Min_ID_len = min(Min_ID_len, length1, length2)
+            if cluster1 != 'None' or cluster2 != 'None':
+                if compare_pair == 'same':
+                    if cluster1 == 'None':
+                        Clusters_seqs[Genome1] = cluster2
+                    elif cluster2 == 'None':
+                        Clusters_seqs[Genome2] = cluster1
+                    else:
+                        cluster_new = min(cluster1, cluster2)
+                        Clusters_seqs[Genome1] = cluster_new
+                        Clusters_seqs[Genome2] = cluster_new
+                else:
+                    cluster += 1
+                    if cluster1 == 'None':
+                        Clusters_seqs[Genome1] = cluster
+                    elif cluster2 == 'None':
+                        Clusters_seqs[Genome2] = cluster
+                    elif cluster1 == cluster2:
+                        print('wrong cluster for %s and %s' % (Genome1,Genome2))
+            else:
+                cluster += 1
+                Clusters_seqs.setdefault(Genome1, str(cluster))
+                Clusters.setdefault(cluster, [])
+                Clusters[cluster].append(Genome1)
+                if compare_pair!= 'same':
+                    cluster += 1
+                Clusters_seqs.setdefault(Genome2, str(cluster))
+        cluster_list = []
+        for genome in Clusters_seqs:
+            cluster = Clusters_seqs[genome]
+            Clusters.setdefault(cluster, [])
+            Clusters[cluster].append(genome)
+            cluster_list.append('%s\t%s\t\t\n'%(genome,cluster))
+        fout = open(fastani_out + '.cluster','w')
+        fout.write(''.join(cluster_list))
+        fout.close()
+    else:
+        print('%s load cluster for %s' % (datetime.now(), fastani_out + '.cluster'))
+        for lines in open(fastani_out + '.cluster', 'r'):
+            line_set = lines.split('\t')
+            cluster = line_set[1]
+            record_name = line_set[0]
+            Clusters.setdefault(cluster, [])
+            Clusters[cluster].append(record_name)
+            length = len(record_name)
+            Max_ID_len = max(Max_ID_len, length)
+            if Min_ID_len == 0:
+                Min_ID_len = length
+            Min_ID_len = min(Min_ID_len, length)
+            Clusters_seqs.setdefault(record_name, str(cluster))
+    return [Clusters_seqs, Clusters, Max_ID_len, Min_ID_len]
+
+
+def run_fastani(fastani_out,input_dir,input_format):
+    Checkoutput = checkfile(fastani_out, 2)
+    if Checkoutput == 'non-existed':
+        Genome_list = 'Filelist.txt'
+        try:
+            flist = open(Genome_list, 'r')
+        except (IOError, FileNotFoundError):
+            print('%s generate genome list %s' % (datetime.now(), Genome_list))
+            flist_list = []
+            for root, dirs, files in os.walk(input_dir):
+                if input_format != 'None':
+                    list_fasta1 = glob.glob(os.path.join(root, '*' + input_format))
+                    if list_fasta1 != []:
+                        for genomefile in list_fasta1:
+                            flist_list.append(str(genomefile))
+            flist = open(Genome_list, 'w')
+            flist.write('\n'.join(flist_list))
+            flist.close()
+        print('%s run fastANI for genome list %s' % (datetime.now(), Genome_list))
+        os.system('%s --ql %s --rl %s -o %s' % (args.ani, Genome_list, Genome_list, fastani_out))
+    # load 16S usearch result
+    if ID_16S == dict():
+        print('%s cluster fastani output %s' % (datetime.now(), fastani_out))
+        result = cluster_fastani(fastani_out)
+        return result
+
 def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clustering='F'):
     # deduplicate input_fasta
     if clustering != 'T':
@@ -513,21 +654,19 @@ def run_compare(input_fasta, Function_Set, cutoff1, cutoff2,type_fasta,clusterin
         Min_ID_len = 0
         if Checkoutput == 'not empty':
             for lines in open(input_fasta + '.uc', 'r'):
-                    line_set = lines.split('\t')
-                    cluster = line_set[1]
-                    record_name = line_set[-2].split(' ',maxsplit=2)[0]
-                    Clusters.setdefault(cluster, [])
-                    Clusters[cluster].append(record_name)
-                    length = len(record_name)
-                    Max_ID_len = max(Max_ID_len,length)
-                    if Min_ID_len == 0:
-                        Min_ID_len = length
-                    Min_ID_len = min(Min_ID_len,length)
+                line_set = lines.split('\t')
+                cluster = line_set[1]
+                record_name = line_set[-2].split(' ', maxsplit=2)[0]
+                Clusters.setdefault(cluster, [])
+                Clusters[cluster].append(record_name)
+                length = len(record_name)
+                Max_ID_len = max(Max_ID_len, length)
+                if Min_ID_len == 0:
+                    Min_ID_len = length
+                Min_ID_len = min(Min_ID_len, length)
+                Clusters_seqs.setdefault(record_name, str(cluster))
         else:
             print('file %s is %s' % (input_fasta + '.uc', Checkoutput))
-        for cluster in Clusters:
-            for record_name in Clusters[cluster]:
-                Clusters_seqs.setdefault(record_name, str(cluster))
         return [Clusters_seqs,Clusters,Max_ID_len,Min_ID_len]
 
 
@@ -637,7 +776,19 @@ def unique_list_load(input_fasta):
     return [unique_list,unique_length]
 
 
-def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,cutoff_hit_length,script_i,output_file1,input_fasta,DB_length_min):
+def com_extended(HGT_dna_extended,HGT_dna):
+    HGT_dna_extended.diffCluster_16S_Set = list(
+        set(HGT_dna_extended.diffCluster_16S_Set).intersection(HGT_dna.diffCluster_16S_Set))
+    HGT_dna_extended.Diff_16S_min = max(HGT_dna_extended.Diff_16S_min, HGT_dna.Diff_16S_min)
+    HGT_dna_extended.Diff_genome_set = list(
+        set(HGT_dna_extended.Diff_genome_set).intersection(HGT_dna.Diff_genome_set))
+    HGT_dna_extended.sameCluster_16S_Set = list(
+        set(HGT_dna_extended.sameCluster_16S_Set).intersection(HGT_dna.sameCluster_16S_Set))
+    HGT_dna_extended.Same_genome_set = list(
+        set(HGT_dna_extended.Same_genome_set).intersection(HGT_dna.Same_genome_set))
+
+def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,cutoff_hit_length,
+                   script_i,output_file1,input_fasta,DB_length_min):
     # Setup function list
     Function_list = dict()
     # load record id mapping
@@ -774,6 +925,15 @@ def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,cutoff_hit_length
     print('%s output HGT results' % (datetime.now()))
     for Function in Function_list:
         HGT_function_temp = Function_list[Function]
+        if DNA_function_list != dict() and type_fasta == 'dna_extended':
+            # screen out dna_extended pairs that are 99% as dna pairs
+            print('%s curating %s dna_extended results' % (datetime.now(),Function))
+            HGT_function_temp_dna = DNA_function_list.get(Function,'None')
+            if HGT_function_temp_dna != 'None':
+                com_extended(HGT_function_temp,HGT_function_temp_dna)
+            else:
+                pass
+                #print('%s dna extended has HGT output but dna has no HGT output' % (Function))
         # summarize diff
         total_combination = []
         for clusters in HGT_function_temp.diffCluster_16S_Set:
@@ -833,7 +993,10 @@ def HGT_finder_sum(type_fasta,input_folder,input_prefix,cutoff,cutoff_hit_length
                                                     "%s.%s.%s.diff.cluster.fasta" %
                                                     (Function, args.t, type_fasta)),
                                        type_fasta, script_i)
-    return script_i
+    if type_fasta == 'dna':
+        return [script_i,Function_list]
+    else:
+        return script_i
 
 
 ################################################### Programme #######################################################
@@ -853,7 +1016,12 @@ DB_length=Calculate_length(args.db)
 
 # comparing genes
 print('%s comparing and clustering 16S' % (datetime.now()))
-cluster_16S = run_compare(f16s,Function_Set_dna, Cutoff_16S,0.6,'dna','T')
+if args.ani == 'None':
+    # use 16S
+    cluster_16S = run_compare(f16s,Function_Set_dna, Cutoff_16S,0.6,'dna','T')
+else:
+    # use fastANI results
+    cluster_16S = run_fastani(result_dir + '../fastANI/all.fastani.out',args.i,args.fa)
 print ('the range of length of 16S ID is %s to %s' %(cluster_16S[-1],cluster_16S[-2]))
 print('%s comparing and clustering DNA' % (datetime.now()))
 run_compare(fdna, Function_Set_dna,Cutoff_HGT,Cutoff_HGT,'dna','F')
@@ -883,13 +1051,17 @@ all_output.write('function_name\ttype\tcutoff\trange16S_diff\thit_pair_diff\ttot
                       'diff_same_ratio\tmge_to_genome\tmge_to_mge\n')
 all_output.close()
 # summarize potential HGT
+DNA_function_list = dict()
 if glob.glob(os.path.join(result_dir + '/sub_fun', "*.%s.%s.*.cluster" %
                                                                (args.t,'dna'))) == []:
     print('%s summarize potential HGT of %s trait with cutoff of %s' % (datetime.now(), 'dna',  Cutoff_HGT))
     all_output = open(all_output_file, 'a')
-    script_i = HGT_finder_sum('dna', args.s,
+    Result = HGT_finder_sum('dna', args.s,
                                   os.path.split(fdna)[-1] + '*.unique*.usearch.txt', Cutoff_HGT, Hit_length,script_i,
                    all_output,fdna,DB_length[0])
+    script_i = Result[0]
+    DNA_function_list = Result[1]
+    Result = []
     all_output.close()
 if glob.glob(os.path.join(result_dir + '/sub_fun', "*.%s.%s.*.cluster" %
                                                        (args.t, 'aa'))) == []:

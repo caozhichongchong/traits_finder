@@ -153,6 +153,10 @@ def main():
                         help="Optional: complete path to prodigal if not in PATH, None for no prodigal (default)",
                         metavar="/usr/local/bin/prodigal",
                         action='store', default='None', type=str)
+    optional.add_argument('--ani', '--fastani',
+                        help="Optional: complete path to fastANI if not in PATH,",
+                        metavar="/usr/local/bin/fastANI",
+                        action='store', default='None', type=str)
     ################################################## Definition ########################################################
     args = parser.parse_args()
     workingdir=os.path.abspath(os.path.dirname(__file__))
@@ -298,9 +302,9 @@ def main():
         if args.u == 'None' and args.hs == 'None':
             print('please install usearch and/or hs-blastn and/or diamond')
         else:
-            cmd = ('python ' + workingdir + '/scripts/HGT_finder_sum.py -db %s -dbf %s -t %s -m %s --r %s --s %s --u %s --dm %s --hs %s --mf %s --ft %s --th %s --bp %s --g %s\n'
+            cmd = ('python ' + workingdir + '/scripts/HGT_finder_sum.py -db %s -dbf %s -t %s -m %s --r %s --s %s --u %s --dm %s --hs %s --mf %s --ft %s --th %s --bp %s --g %s --ani %s -i %s -fa %s\n'
             %(str(args.db), str(args.dbf), str(os.path.split(args.db)[1]),str(args.m),str(args.r[0]),
-              str(os.path.join(args.r[0],'summary')),str(args.u),str(args.dm),str(args.hs),str(args.mf),str(args.ft),str(thread),str(args.bp),str(args.g)))
+              str(os.path.join(args.r[0],'summary')),str(args.u),str(args.dm),str(args.hs),str(args.mf),str(args.ft),str(thread),str(args.bp),str(args.g),str(args.ani),str(args.i),str(args.fa)))
             f1.write(cmd)
             os.system(cmd)
 

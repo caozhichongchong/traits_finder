@@ -136,31 +136,30 @@ def search(roottemp,genome_output,orf_output):
     if args.s == 1:
         if args.u != 'None' or args.hs != 'None' or args.dm != 'None':
             # two-step search
-            Usearch=0
-            for root, dirs, files in os.walk(args.r + '/usearch'):
+            Usearch_genome = 0
+            Usearch_protein = 0
+            root_set = glob.glob(args.r + '/usearch/*')
+            for root in root_set:
                 try:
                     ftry = open(os.path.join(root, genome_output + '.usearch.txt.aa'), 'r')
                     searchfile_genome = os.path.join(root, genome_output + '.usearch.txt.aa')
-                    searchfile_orf = os.path.join(args.r + '/usearch/' + str(folder_id),
-                                                  orf_output + '.usearch.txt.aa')
-                    Usearch=1
+                    Usearch_genome = 1
                     break
                 except (IOError,FileNotFoundError):
                     pass
-            if Usearch == 0:
-                searchfile_orf = os.path.join(args.r + '/usearch/' + str(folder_id),
-                                              orf_output + '.usearch.txt.aa')
+            for root in root_set:
+                try:
+                    ftry = open(os.path.join(root, orf_output + '.usearch.txt.aa'), 'r')
+                    searchfile_orf = os.path.join(root, orf_output + '.usearch.txt.aa')
+                    Usearch_protein = 1
+                    break
+                except (IOError,FileNotFoundError):
+                    pass
+            if Usearch_genome == 0:
                 searchfile_genome = os.path.join(args.r + '/usearch/' + str(folder_id),
                                                  genome_output + '.usearch.txt.aa')
                 if args.dm != 'None' and args.dbf == 2:
                     # Start search target genes by diamond
-                    # AA file
-                    cmds += split_string_last(args.dm, 'diamond') + "diamond blastp --query " + orf_file + \
-                            " --db " + split_string_last(args.db, '.dmnd') + ".dmnd --out " + os.path.join(
-                        args.r + '/usearch/' + str(folder_id),
-                        orf_output + '.usearch.txt') + \
-                            " --outfmt 6 --max-target-seqs 1 --evalue " + str(args.e) + " --threads " + str(
-                        int(i_max)) + " \n"
                     # genome file
                     cmds += split_string_last(args.dm, 'diamond') + "diamond blastx --query " + genome_file + \
                             " --db " + split_string_last(args.db, '.dmnd') + ".dmnd --out " + os.path.join(
@@ -168,17 +167,12 @@ def search(roottemp,genome_output,orf_output):
                         genome_output + '.usearch.txt') + \
                             " --outfmt 6 --max-target-seqs 1 --evalue " + str(args.e) + " --threads " + str(
                         int(i_max)) + " \n"
-                    # AA file
-                    cmds += 'python ' + workingdir + '/Extract.WG.py -i ' \
-                            + roottemp + ' -f ' + orf_output + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
-                        folder_id) + ' \n'
                     # genome file
                     cmds += 'python ' + workingdir + '/Extract.MG.py  -p 1 -i ' + roottemp + ' -f ' + \
                             genome_output + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                         folder_id) + ' \n'
                 elif args.hs != 'None' and args.dbf == 1:
-                    # Start search target genes by hs-blastn
-                    if args.dbf == 1:
+                        # Start search target genes by hs-blastn
                         # genome file
                         cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n"\
                         %(args.hs, args.db, args.db, genome_file, os.path.join(
@@ -199,6 +193,34 @@ def search(roottemp,genome_output,orf_output):
                             + os.path.join(args.r + '/usearch/' + str(folder_id),
                                            genome_output + '.usearch.txt') + \
                             " -threads " + str(int(i_max)) + " \n"
+                    # genome file
+                    cmds += 'python ' + workingdir + '/Extract.MG.py  -p 1 -i ' + roottemp + ' -f ' + \
+                            genome_output + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
+                        folder_id) + ' \n'
+                else:
+                    print('wrong search method for this database\nrun blast directly')
+                    searchfile_genome = genome_file
+            if Usearch_protein == 0:
+                searchfile_orf = os.path.join(args.r + '/usearch/' + str(folder_id),
+                                              orf_output + '.usearch.txt.aa')
+                if args.dm != 'None' and args.dbf == 2:
+                    # Start search target genes by diamond
+                    # AA file
+                    cmds += split_string_last(args.dm, 'diamond') + "diamond blastp --query " + orf_file + \
+                            " --db " + split_string_last(args.db, '.dmnd') + ".dmnd --out " + os.path.join(
+                        args.r + '/usearch/' + str(folder_id),
+                        orf_output + '.usearch.txt') + \
+                            " --outfmt 6 --max-target-seqs 1 --evalue " + str(args.e) + " --threads " + str(
+                        int(i_max)) + " \n"
+                    # AA file
+                    cmds += 'python ' + workingdir + '/Extract.WG.py -i ' \
+                            + roottemp + ' -f ' + orf_output + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
+                        folder_id) + ' \n'
+                elif args.u != 'None':
+                    # Start search target genes by usearch
+                    usearch_cmd = ".udb  -evalue 1e-2 -accel 0.5 -blast6out "
+                    if args.dbf == 1:
+                        usearch_cmd += " -strand both "
                     # AA file
                     cmds += args.u + " -ublast " + orf_file + \
                             " -db " + split_string_last(args.db, '.udb') + usearch_cmd \
@@ -207,13 +229,8 @@ def search(roottemp,genome_output,orf_output):
                     # AA file
                     cmds += 'python ' + workingdir + '/Extract.WG.py -i ' + roottemp + ' -f ' + orf_output + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
                         folder_id) + ' \n'
-                    # genome file
-                    cmds += 'python ' + workingdir + '/Extract.MG.py  -p 1 -i ' + roottemp + ' -f ' + \
-                            genome_output + ' -n .usearch.txt -r ' + args.r + '/usearch/' + str(
-                        folder_id) + ' \n'
                 else:
                     print('wrong search method for this database\nrun blast directly')
-                    searchfile_genome = genome_file
                     searchfile_orf = orf_file
         else:
             # one-step search
@@ -221,21 +238,28 @@ def search(roottemp,genome_output,orf_output):
             searchfile_orf = orf_file
         # blast search
         if args.bp != 'None':
-            Blastsearch = 0
-            for root, dirs, files in os.walk(args.r + '/search_output'):
+            Blastsearch_genome = 0
+            Blastsearch_protein = 0
+            root_set = glob.glob(args.r + '/search_output/*')
+            for root in root_set:
                 try:
                     ftry_blast_file = os.path.join(root, genome_output + '.blast.txt')
                     ftry_blast = open(ftry_blast_file, 'r')
-                    Blastsearch = 1
+                    Blastsearch_genome = 1
                     break
                 except (IOError,FileNotFoundError):
                     pass
-            if Blastsearch == 0:
+            for root in root_set:
+                try:
+                    ftry_blast_file_pro = os.path.join(root, orf_output + '.blast.txt')
+                    ftry_blast_pro = open(ftry_blast_file_pro, 'r')
+                    Blastsearch_protein = 1
+                    break
+                except (IOError,FileNotFoundError):
+                    pass
+            if Blastsearch_genome == 0:
                 if args.dbf == 2:
                     # protein database
-                    cmds += split_string_last(args.bp, 'blast') + "blastp -query " + searchfile_orf + " -db " + args.db + " -out " + args.r + '/search_output/'+str(folder_id)+ \
-                             "/"+orf_output+".blast.txt  -outfmt 6  -evalue "+str(args.e)+" -num_threads " + \
-                            str(min(int(i_max),40)) + " \n"
                     cmds += split_string_last(args.bp, 'blast') + "blastx -query " + searchfile_genome  \
                             + " -db " + args.db + " -out " + args.r + '/search_output/' + str(folder_id) + \
                             "/" + genome_output \
@@ -243,25 +267,41 @@ def search(roottemp,genome_output,orf_output):
                             str(min(int(i_max), 40)) + " \n"
                 else:
                     # DNA database
-                    cmds += split_string_last(args.bp, 'blast') + "tblastn -query " + searchfile_orf + " -db " + args.db + " -out " + args.r + '/search_output/' + str(folder_id) + \
-                            "/" + orf_output + ".blast.txt  -outfmt 6  -evalue " + str(args.e) + " -num_threads " + \
-                            str(min(int(i_max), 40)) + " \n"
                     cmds += split_string_last(args.bp, 'blast') + "blastn -query " + searchfile_genome  \
                             + " -db " + args.db + " -out " + args.r + '/search_output/' + str(folder_id) + \
                             "/" + genome_output \
                             + ".blast.txt  -outfmt 6 -evalue " + str(args.e) + " -num_threads " + \
                             str(min(int(i_max), 40)) + " \n"
+            if Blastsearch_protein == 0:
+                if args.dbf == 2:
+                    # protein database
+                    cmds += split_string_last(args.bp, 'blast') + "blastp -query " + searchfile_orf + " -db " + args.db + " -out " + args.r + '/search_output/'+str(folder_id)+ \
+                             "/"+orf_output+".blast.txt  -outfmt 6  -evalue "+str(args.e)+" -num_threads " + \
+                            str(min(int(i_max),40)) + " \n"
+                else:
+                    # DNA database
+                    cmds += split_string_last(args.bp, 'blast') + "tblastn -query " + searchfile_orf + " -db " + args.db + " -out " + args.r + '/search_output/' + str(folder_id) + \
+                            "/" + orf_output + ".blast.txt  -outfmt 6  -evalue " + str(args.e) + " -num_threads " + \
+                            str(min(int(i_max), 40)) + " \n"
             # fiter blast result
-            Blastsearchfilter = 0
-            for root, dirs, files in os.walk(args.r + '/search_output'):
+            Blastsearchfilter_genome = 0
+            Blastsearchfilter_protein = 0
+            for root in root_set:
                 try:
                     ftry = open(os.path.join(root, genome_output + '.blast.txt.filter'), 'r')
-                    Blastsearchfilter = 1
+                    Blastsearchfilter_genome = 1
                     break
                 except (IOError,FileNotFoundError):
                     pass
-            if Blastsearchfilter == 0:
-                if Blastsearch == 0:
+            for root in root_set:
+                try:
+                    ftry = open(os.path.join(root, genome_output + '.blast.txt.filter'), 'r')
+                    Blastsearchfilter_protein = 1
+                    break
+                except (IOError,FileNotFoundError):
+                    pass
+            if Blastsearchfilter_genome == 0:
+                if Blastsearch_genome == 0:
                     # no blast result
                     tempbamoutput_filter = args.r + '/search_output/' + str(
                         folder_id)
@@ -278,12 +318,6 @@ def search(roottemp,genome_output,orf_output):
                             os.path.split(searchfile_genome)[1] + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
                 else:
                     # protein database
-                    # AA file
-                    cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + orf_output + '.blast.txt ' + \
-                            '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
-                            ' --e ' + str(args.e) + ' \n'
-                    cmds += 'python '+ workingdir +'/Extract.WG.py -ni .usearch.txt.aa -i ' + os.path.split(searchfile_orf)[0]  \
-                            + ' -f ' + os.path.split(searchfile_orf)[1] + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
                     # genome file
                     cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + genome_output + '.blast.txt ' + \
                             '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
@@ -291,9 +325,26 @@ def search(roottemp,genome_output,orf_output):
                     cmds += 'python '+ workingdir +'/Extract.MG.py  -p 2 -d 500 -ni .usearch.txt.aa  -i ' + os.path.split(searchfile_genome)[0] + ' -f ' + \
                             os.path.split(searchfile_genome)[1]\
                      + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
-                Blastsearchfilter = 1
+                Blastsearchfilter_genome = 1
+            if Blastsearchfilter_protein == 0:
+                if Blastsearch_protein == 0:
+                    # no blast result
+                    tempbamoutput_filter = args.r + '/search_output/' + str(
+                        folder_id)
+                else:
+                    # blast completed
+                    tempbamoutput_filter = os.path.split(ftry_blast_file_pro)[0]
+                if args.dbf != 1:
+                    # protein database
+                    # AA file
+                    cmds += 'python '+ workingdir +'/Filter.WG.py -i ' + tempbamoutput_filter + ' -f ' + orf_output + '.blast.txt ' + \
+                            '-db ' + args.db + ' -s ' + str(args.s) + ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + \
+                            ' --e ' + str(args.e) + ' \n'
+                    cmds += 'python '+ workingdir +'/Extract.WG.py -ni .usearch.txt.aa -i ' + os.path.split(searchfile_orf)[0]  \
+                            + ' -f ' + os.path.split(searchfile_orf)[1] + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
+                Blastsearchfilter_protein = 1
             # bowtie alignment
-            if args.bwa != 'None' or args.mf != 'None' and Blastsearchfilter == 1:
+            if args.bwa != 'None' or args.mf != 'None' and Blastsearchfilter_genome == 1:
                 tempinput = os.path.join(args.r + '/search_output/' + str(folder_id),
                                          genome_output + '.blast.txt.filter.aa')
                 tempbamoutput = os.path.join(args.r + '/bwa/' + str(folder_id), str(
@@ -319,7 +370,7 @@ def search(roottemp,genome_output,orf_output):
     elif args.s == 2:
         # hmmsearch
         Blastsearch = 0
-        for root, dirs, files in os.walk(args.r + '/search_output'):
+        for root in glob.glob(args.r + '/search_output/*'):
             try:
                 ftry = open(os.path.join(root, orf_file + '.hmm'), 'r')
                 Blastsearch = 1
@@ -358,7 +409,7 @@ def search(roottemp,genome_output,orf_output):
                 print('please provide --bwa or --mafft for alignment (--s 3)')
     # 16S extraction
     Search16s = 0
-    for root, dirs, files in os.walk(args.r16):
+    for root in glob.glob(args.r16 + '/*'):
         try:
             ftry = open(os.path.join(root, genome_output + '.16S.txt'), 'r')
             Search16s = 1
@@ -441,7 +492,8 @@ if args.bwa != 'None':
 flist=open('Filelist.txt','w')
 flist_list = []
 in_dir = args.i
-for root,dirs,files in os.walk(in_dir):
+
+for root in glob.glob(os.path.join(in_dir, '*')):
     if fasta_format != 'None':
         list_fasta1 = glob.glob(os.path.join(root, '*' + fasta_format))
         if list_fasta1!=[]:

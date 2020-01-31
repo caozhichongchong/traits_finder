@@ -122,7 +122,7 @@ def search(roottemp,filename):
         if args.u != 'None' or args.hs != 'None' or args.dm != 'None':
             # two-step search
             Usearch = 0
-            for root, dirs, files in os.walk(args.r + '/usearch'):
+            for root in glob.glob(os.path.join(args.r + '/usearch', '*')):
                 try:
                     ftry = open(os.path.join(root, filename + '.usearch.txt.aa'), 'r')
                     searchfile = os.path.join(root, filename + '.usearch.txt.aa')
@@ -174,7 +174,7 @@ def search(roottemp,filename):
         if args.bp != 'None':
             # blast search
             Blastsearch = 0
-            for root, dirs, files in os.walk(args.r + '/search_output'):
+            for root in glob.glob(os.path.join(args.r + '/search_output', '*')):
                 try:
                     ftry_blast = open(os.path.join(root, filename + '.blast.txt'), 'r')
                     ftry_blast_file = os.path.join(root, filename + '.blast.txt')
@@ -195,7 +195,7 @@ def search(roottemp,filename):
                             str(min(int(i_max), 40)) + " \n"
                 # fiter blast result
             Blastsearchfilter = 0
-            for root, dirs, files in os.walk(args.r + '/search_output'):
+            for root in glob.glob(os.path.join(args.r + '/search_output', '*')):
                 try:
                     ftry = open(os.path.join(root, filename + '.blast.txt.filter'), 'r')
                     Blastsearchfilter = 1
@@ -249,7 +249,7 @@ def search(roottemp,filename):
     elif args.s == 2:
         # hmmsearch
         Blastsearch = 0
-        for root, dirs, files in os.walk(args.r + '/search_output'):
+        for root in glob.glob(os.path.join(args.r + '/search_output', '*')):
             try:
                 ftry = open(os.path.join(root, filename + '.hmm'), 'r')
                 Blastsearch = 1
@@ -354,7 +354,7 @@ def search(roottemp,filename):
         print('please provide --bwa for alignment (--s 3)')
     # 16S extraction
     Search16s = 0
-    for root, dirs, files in os.walk(args.r16):
+    for root in glob.glob(os.path.join(args.r16, '*')):
         try:
             ftry = open(os.path.join(root, filename + '.16S.txt'), 'r')
             Search16s = 1
@@ -388,7 +388,7 @@ def search(roottemp,filename):
                     int(i / 10000)) + ' \n'
     # cell number calculation
     Search16s = 0
-    for root, dirs, files in os.walk(args.r16):
+    for root in glob.glob(os.path.join(args.r16, '*')):
         try:
             ftry = open(os.path.join(root, filename + '.uscmg.blastx.txt'), 'r')
             Search16s = 1
@@ -419,7 +419,7 @@ if args.l != 'None':
     for lines in open(args.l,'r'):
         Targetlist.append(split_string_last(split_string_last(lines, '\r'),'\n'))
 
-for root,dirs,files in os.walk(in_dir):
+for root in glob.glob(os.path.join(in_dir, '*')):
     list_fasta1 = glob.glob(os.path.join(root, '*'+fasta_format))
     if list_fasta1!=[]:
         for files in list_fasta1:
