@@ -201,7 +201,7 @@ outputfile_summary_fun,file_subfix,i):
 # load all files
 in_dir=args.i
 Targetroot=dict()
-for root,dirs,files in os.walk(in_dir):
+for root in glob.glob(os.path.join(in_dir, '*'))+glob.glob(in_dir):
     list_fasta1 = glob.glob(os.path.join(root, '*'+orfs_format))
     if list_fasta1!=[]:
         for files in list_fasta1:

@@ -419,7 +419,7 @@ if args.l != 'None':
     for lines in open(args.l,'r'):
         Targetlist.append(split_string_last(split_string_last(lines, '\r'),'\n'))
 
-for root in glob.glob(os.path.join(in_dir, '*')):
+for root in glob.glob(os.path.join(in_dir, '*'))+glob.glob(in_dir):
     list_fasta1 = glob.glob(os.path.join(root, '*'+fasta_format))
     if list_fasta1!=[]:
         for files in list_fasta1:

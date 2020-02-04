@@ -295,7 +295,7 @@ def search(roottemp,genome_output,orf_output):
                     pass
             for root in root_set:
                 try:
-                    ftry = open(os.path.join(root, genome_output + '.blast.txt.filter'), 'r')
+                    ftry = open(os.path.join(root, orf_output + '.blast.txt.filter'), 'r')
                     Blastsearchfilter_protein = 1
                     break
                 except (IOError,FileNotFoundError):
@@ -493,7 +493,7 @@ flist=open('Filelist.txt','w')
 flist_list = []
 in_dir = args.i
 
-for root in glob.glob(os.path.join(in_dir, '*')):
+for root in glob.glob(os.path.join(in_dir, '*'))+glob.glob(in_dir):
     if fasta_format != 'None':
         list_fasta1 = glob.glob(os.path.join(root, '*' + fasta_format))
         if list_fasta1!=[]:
