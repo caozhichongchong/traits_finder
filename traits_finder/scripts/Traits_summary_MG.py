@@ -487,8 +487,12 @@ else:
         all_output.close()
     print('%s start calculate SNP dynamics into %s' % (datetime.now(),
                                                        os.path.join(args.r, 'summary/all.snp.dynamics.txt')))
-    foutput = open(os.path.join(args.r, 'summary/all.snp.dynamics.txt'), 'w')
-    foutput.write('reference\tsample_number\ttotal_snps\n')
-    SNP_dynamics(output_files, foutput)
-    foutput.close()
+    try:
+        foutput = open(os.path.join(args.r, 'summary/all.snp.dynamics.txt'), 'r')
+    except IOError:
+        foutput = open(os.path.join(args.r, 'summary/all.snp.dynamics.txt'), 'w')
+        foutput.write('reference\tsample_number\ttotal_snps\n')
+        output_files = glob.glob(os.path.join(args.r, 'bwa/0/*.flt.vcf'))
+        SNP_dynamics(output_files, foutput)
+        foutput.close()
 
