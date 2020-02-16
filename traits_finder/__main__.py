@@ -5,7 +5,9 @@ import glob
 import statistics
 import traits_finder
 import sys
-#from cyvcf2 import VCF
+import numpy as np
+from datetime import datetime
+import random
 
 
 ################################################### Decalration #######################################################
@@ -71,7 +73,7 @@ def main():
                         help="set the method to search the your database \
                         (1: blast; 2: hmm; 3: alignment), \
                         (default \'1\' for blast search)",
-                        metavar="1 or 2",
+                        metavar="1 or 2 or 3",
                         choices=[1, 2, 3],
                         action='store', default=1, type=int)
     # optional parameters
@@ -157,9 +159,36 @@ def main():
                         help="Optional: complete path to fastANI if not in PATH,",
                         metavar="/usr/local/bin/fastANI",
                         action='store', default='None', type=str)
+    optional.add_argument('--bcf',
+                        help="Optional: complete path to bcftools if not in PATH,",
+                        metavar="/usr/local/bin/bcftools",
+                        action='store', default='bcftools', type=str)
+    optional.add_argument('--sam',
+                        help="Optional: complete path to bwa if not in PATH,",
+                        metavar="/usr/local/bin/samtools",
+                        action='store', default='samtools', type=str)
+    optional.add_argument('--vcf',
+                        help="Optional: complete path to bwa if not in PATH,",
+                        metavar="/usr/local/bin/vcftools",
+                        action='store', default='vcftools', type=str)
+    optional.add_argument('--vcfstats',
+                        help="Optional: complete path to vcfstats if not in PATH,",
+                        metavar="/usr/local/bin/vcfstats",
+                        action='store', default='vcfstats', type=str)
+    optional.add_argument('--strainfinder',
+                        help="Optional: complete path to strainfinder",
+                        metavar="/scratch/users/anniz44/bin/miniconda3/bin/strainfinder",
+                        action='store',
+                        default='None',
+                        type=str)
+
     ################################################## Definition ########################################################
     args = parser.parse_args()
     workingdir=os.path.abspath(os.path.dirname(__file__))
+    # import strainfinder
+    if args.strainfinder != 'None':
+        sys.path.append(args.strainfinder)
+        from strainFinder import fitStrains, genomes_given_fracs
     ################################################### Function ########################################################
     def split_string_last(input_string, substring):
         return input_string[0: input_string.rfind(substring)]
@@ -270,9 +299,9 @@ def main():
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'meta':
-        cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s\n'
+        cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s --bcf %s --sam %s --vcf %s --vcfstats %s --strainfinder %s\n'
         % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r[0]),str(args.r16),str(thread),str(args.id),
-           str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa)))
+           str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa),str(args.bcf),str(args.sam),str(args.vcf),str(args.vcfstats),str(args.strainfinder)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_genome':
@@ -288,9 +317,9 @@ def main():
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_meta':
-        cmd = ('python ' + workingdir + '/scripts/Traits_summary_MG.py -db %s -dbf %s -t %s -s %s -fa %s -m %s --r %s --r16 %s --meta %s\n'
+        cmd = ('python ' + workingdir + '/scripts/Traits_summary_MG.py -db %s -dbf %s -t %s -s %s -fa %s -m %s --r %s --r16 %s --meta %s --bcf %s --sam %s --vcf %s --vcfstats %s --strainfinder %s\n'
                     % (str(args.db), str(args.dbf),str(os.path.split(args.db)[1]), str(args.s), str(args.fa), str(args.m),
-                       str(args.r[0]),str(args.r16), str(args.meta)))
+                       str(args.r[0]),str(args.r16), str(args.meta),str(args.bcf),str(args.sam),str(args.vcf),str(args.vcfstats),str(args.strainfinder)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'merge':

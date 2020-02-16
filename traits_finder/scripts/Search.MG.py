@@ -94,6 +94,30 @@ parser.add_argument('--bwa',
                     help="Optional: complete path to bwa if not in PATH,",
                     metavar="/usr/local/bin/bwa",
                     action='store', default='None', type=str)
+parser.add_argument('--bcf',
+                    help="Optional: complete path to bcftools if not in PATH,",
+                    metavar="/usr/local/bin/bcftools",
+                    action='store', default='bcftools', type=str)
+parser.add_argument('--sam',
+                    help="Optional: complete path to bwa if not in PATH,",
+                    metavar="/usr/local/bin/samtools",
+                    action='store', default='samtools', type=str)
+parser.add_argument('--vcf',
+                    help="Optional: complete path to bwa if not in PATH,",
+                    metavar="/usr/local/bin/vcftools",
+                    action='store', default='vcftools', type=str)
+parser.add_argument('--vcfstats',
+                    help="Optional: complete path to vcfstats if not in PATH,",
+                    metavar="/usr/local/bin/vcfstats",
+                    action='store', default='vcfstats', type=str)
+parser.add_argument('--strainfinder',
+                    help="Optional: complete path to strainfinder",
+                    metavar="/scratch/users/anniz44/bin/miniconda3/bin/strainfinder",
+                    action='store',
+                    default='/scratch/users/anniz44/bin/miniconda3/bin/strainfinder',
+                    type=str)
+
+
 ################################################## Definition ########################################################
 args = parser.parse_args()
 fasta_format = args.fa
@@ -112,6 +136,39 @@ def split_string_last(input_string,substring):
         return input_string[0 : last_loci]
     else:
         return input_string
+
+
+def bowtie(database, metagenomes, tempbamoutput):
+    # bowtie alignment
+    # run alignment
+    cmds = ''
+    try:
+        ftest = open('%s.sorted.bam' %(tempbamoutput),'r')
+    except IOError:
+        cmds += args.bwa + ' mem -t %s %s %s |%s view -@ %s -S -b -F 4 >%s.bam\n%s sort -@ %s %s.bam -o %s.sorted.bam\n%s index -@ %s %s.sorted.bam\n' % (
+            min(args.t,40), database, metagenomes, args.sam, min(args.t,40),
+            tempbamoutput, args.sam, min(args.t,40), tempbamoutput, tempbamoutput, args.sam, min(args.t,40), tempbamoutput)
+    try:
+        ftest = open('%s.flt.vcf' %(tempbamoutput),'r')
+    except IOError:
+        cmds += '%s mpileup --threads %s -q30 -B -Ou -d3000 -f %s %s.sorted.bam  | %s call --ploidy 1 --threads %s -mv > %s.raw.vcf' % (
+            args.bcf, min(args.t,40), database, tempbamoutput, args.bcf,min(args.t,40), tempbamoutput)
+        cmds += '\n%s filter --threads %s -s LowQual -e \'DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
+            args.bcf,min(args.t,40), tempbamoutput, tempbamoutput)
+        cmds += '\n%s view -v snps --min-ac 1:minor %s.flt.vcf > %s.flt.snp.vcf \n' % (
+            args.bcf, tempbamoutput, tempbamoutput)
+    # calculate coverage
+    try:
+        ftest = open('%s.sorted.bam.cov' % (tempbamoutput), 'r')
+    except IOError:
+        cmds += '%s depth -Q 10 %s.sorted.bam > %s.sorted.bam.cov\n' % (
+            args.sam, tempbamoutput, tempbamoutput)
+        cmds += 'echo -e "Ref_ID\\tCov_length\\tAverage\\tStdev" > %s.sorted.bam.avgcov\n' % (tempbamoutput)
+        cmds += '%s depth %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' >> %s.sorted.bam.avgcov\n' % (
+            args.sam, tempbamoutput, tempbamoutput)
+    # optional cleanup
+    cmds += 'rm -rf %s.bam\n' % (tempbamoutput)
+    return cmds
 
 
 def search(roottemp,filename):
@@ -225,27 +282,7 @@ def search(roottemp,filename):
             try:
                 f1 = open('%s.sorted.bam' % (tempbamoutput))
             except (IOError,FileNotFoundError):
-                cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
-                    args.db, tempinput,
-                    tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
-                cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf\n' % (
-                    args.db, tempbamoutput, tempbamoutput)
-                cmds += 'bcftools filter -s LowQual -e \'%s || DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
-                    'QUAL<20', tempbamoutput, tempbamoutput)
-                cmds += 'python ' + workingdir + '/Format.WG.py -i %s.flt.vcf  -o %s.flt.vcf.out \n' % (
-                    tempbamoutput, tempbamoutput)
-                tempinput = tempinput.replace('_1' + fasta_format, '_2' + fasta_format)
-                tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
-                    filename.replace('_1' + fasta_format, '_2' + fasta_format)) + '.blast.txt.filter.aa')
-                cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\nsamtools index %s.sorted.bam\n' % (
-                    args.db, tempinput,
-                    tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
-                cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf\n' % (
-                    args.db, tempbamoutput, tempbamoutput)
-                cmds += 'bcftools filter -s LowQual -e \'%s || DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
-                    'QUAL<20', tempbamoutput, tempbamoutput)
-                cmds += '\nbcftools view -v snps --min-ac 1:minor %s.flt.vcf > %s.snp.flt.vcf \n' % (
-                    tempbamoutput, tempbamoutput)
+                cmds += bowtie(args.db, tempinput, tempbamoutput)
     elif args.s == 2:
         # hmmsearch
         Blastsearch = 0
@@ -269,87 +306,13 @@ def search(roottemp,filename):
             Bamfile = 0
             Covfile = 0
             Avgcovfile = 0
-            try:
-                f1 = open('%s.sorted.bam' % (tempbamoutput))
-                Bamfile = 1
-            except (IOError,FileNotFoundError):
-                pass
-            try:
-                f1 = open('%s.sorted.bam.cov' % (tempbamoutput))
-                Covfile = 1
-            except (IOError,FileNotFoundError):
-                pass
-            try:
-                f1 = open('%s.sorted.bam.avgcov' % (tempbamoutput))
-                Avgcovfile = 1
-            except (IOError,FileNotFoundError):
-                pass
-            if Bamfile == 0:
-                # _1 file
-                cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
-                    args.db, tempinput,
-                    tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
-                cmds += '#bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf\n' % (
-                    args.db, tempbamoutput, tempbamoutput)
-                cmds += '#bcftools filter -s LowQual -e \'%s || DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
-                    'QUAL<20', tempbamoutput, tempbamoutput)
-                cmds += '#bcftools view -v snps --min-ac 1:minor %s.flt.vcf > %s.snp.flt.vcf \n' % (
-                    tempbamoutput, tempbamoutput)
-                cmds += '#python ' + workingdir + '/Format.WG.py -i %s.flt.vcf  -o %s.flt.vcf.out \n' % (
-                    tempbamoutput, tempbamoutput)
-                #cmds += 'bedtools genomecov -ibam %s.sorted.bam -g %s  -bg | awk \'$4 > 9\' -> %s.sorted.bam.cov\n' % (
-                #    tempbamoutput, args.db,tempbamoutput)
-            if Covfile == 0:
-                cmds += 'samtools depth -Q 10 %s.sorted.bam > %s.sorted.bam.cov\n' % (
-                    tempbamoutput, tempbamoutput)
-            if Avgcovfile == 0:
-                #cmds += 'samtools view -H %s.sorted.bam | grep -P \'^@SQ\' | cut -f 2,3 > %s.ref.length\n' % (
-                #        tempbamoutput,args.db)
-                #cmds += 'samtools mpileup %s.sorted.bam | awk -v X="%s" \'$4>=X\' | cut -f 1 | uniq -c > %s.sorted.bam.avg.breadth\n' % (
-                #    tempbamoutput, MIN_COVERAGE_DEPTH, tempbamoutput)
-                cmds += 'echo -e "Ref_ID\\tCov_length\\tAverage\\tStdev" > %s.sorted.bam.avgcov\n' % (tempbamoutput)
-                cmds += 'samtools depth %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' >> %s.sorted.bam.avgcov\n' % (
-                    tempbamoutput, tempbamoutput)
-                # _2 file
-            tempinput = tempinput.replace('_1' + fasta_format, '_2' + fasta_format)
-            tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
-                    filename.replace('_1' + fasta_format, '_2' + fasta_format)))
-            if Bamfile == 0:
-                cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\nsamtools index %s.sorted.bam\n' % (
-                    args.db, tempinput,
-                    tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
-                cmds += '#bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.raw.vcf\n' % (
-                    args.db, tempbamoutput, tempbamoutput)
-                cmds += '#bcftools filter -s LowQual -e \'%s || DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
-                    'QUAL<20', tempbamoutput, tempbamoutput)
-                cmds += '#bcftools view -v snps --min-ac 1:minor %s.flt.vcf > %s.snp.flt.vcf \n' % (
-                    tempbamoutput, tempbamoutput)
-                cmds += '#python ' + workingdir + '/Format.WG.py -i %s.flt.vcf  -o %s.flt.vcf.out \n' % (
-                    tempbamoutput, tempbamoutput)
-                # cmds += 'bedtools genomecov -ibam %s.sorted.bam -g %s  -bg | awk \'$4 > 9\' -> %s.sorted.bam.cov\n' % (
-                #    tempbamoutput, args.db,tempbamoutput)
-            if Covfile == 0:
-                cmds += 'samtools depth -Q 10 %s.sorted.bam > %s.sorted.bam.cov\n' % (
-                    tempbamoutput, tempbamoutput)
-                # _1 and _2
-                cmds += 'samtools depth %s.sorted.bam %s.sorted.bam > %s.sorted.bam.pairedcov\n' % (
-                    tempbamoutput, tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format), tempbamoutput)
-            if Avgcovfile == 0:
-                #cmds += 'samtools view -H %s.sorted.bam | grep -P \'^@SQ\' | cut -f 2,3 > %s.sorted.bam.avgcov\n' % (
-                #    tempbamoutput,tempbamoutput)
-                #cmds += 'samtools mpileup %s.sorted.bam | awk -v X="%s" \'$4>=X\' | cut -f 1 | uniq -c > %s.sorted.bam.avg.breadth\n' % (
-                #    tempbamoutput, MIN_COVERAGE_DEPTH, tempbamoutput)
-                cmds += 'echo -e "Ref_ID\\tCov_length\\tAverage\\tStdev" > %s.sorted.bam.avgcov\n' %(tempbamoutput)
-                cmds += 'samtools depth %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' >> %s.sorted.bam.avgcov\n' % (
-                    tempbamoutput, tempbamoutput)
-                # _1 and _2
-                #cmds += 'samtools view -H %s.sorted.bam %s.sorted.bam | grep -P \'^@SQ\' | cut -f 2,3 > %s.sorted.bam.avg.pairedcov\n' % (
-                #    tempbamoutput, tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format),tempbamoutput)
-                #cmds += 'samtools mpileup %s.sorted.bam %s.sorted.bam | awk -v X="%s" \'$4>=X\'  | cut -f 1 | uniq -c  > %s.sorted.bam.avg.pairedbreadth\n' % (
-                #    tempbamoutput, tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format), MIN_COVERAGE_DEPTH, tempbamoutput)
-                cmds += 'echo -e "Ref_ID\\tCov_length\\tAverage\\tStdev" > %s.sorted.bam.pairedavgcov\n' % (tempbamoutput)
-                cmds += 'samtools depth %s.sorted.bam %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' >> %s.sorted.bam.pairedavgcov\n' % (
-                    tempbamoutput,tempbamoutput.replace('_2' + fasta_format, '_1' + fasta_format), tempbamoutput)
+            tempinput2 = tempinput.replace('_1' + fasta_format, '_2' + fasta_format)
+            tempbamoutput2 = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
+                filename.replace('_1' + fasta_format, '_2' + fasta_format)))
+            if tempinput2 in Targetroot:
+                #tempinput = '%s %s' % (tempinput, tempinput2)
+                cmds += bowtie(args.db, tempinput2, tempbamoutput2)
+            cmds += bowtie(args.db, tempinput, tempbamoutput)
     else:
         print('please provide --bwa for alignment (--s 3)')
     # 16S extraction
@@ -419,7 +382,7 @@ if args.l != 'None':
     for lines in open(args.l,'r'):
         Targetlist.append(split_string_last(split_string_last(lines, '\r'),'\n'))
 
-for root in glob.glob(os.path.join(in_dir, '*'))+glob.glob(in_dir):
+for root in glob.glob(os.path.join(in_dir, '*')) + glob.glob(in_dir):
     list_fasta1 = glob.glob(os.path.join(root, '*'+fasta_format))
     if list_fasta1!=[]:
         for files in list_fasta1:
@@ -431,7 +394,7 @@ for root in glob.glob(os.path.join(in_dir, '*'))+glob.glob(in_dir):
 MIN_COVERAGE_DEPTH=2
 
 
-# search the database in all genomes
+# search the database in all metagenomes
 i=0
 try:
     os.mkdir('subscripts')

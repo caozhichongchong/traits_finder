@@ -31,7 +31,7 @@ parser.add_argument('-s',
                     help="set the method to search the your database \
                     (1: blast; 2: hmm; 3: alignment), \
                     (default \'1\' for blast search)",
-                    metavar="1 or 2",
+                    metavar="1 or 2 or 3",
                     choices=[1, 2, 3],
                     action='store', default=1, type=int)
 # optional parameters
@@ -97,6 +97,28 @@ parser.add_argument('--mf','--mafft',
                           help="Optional: complete path to mafft if not in PATH,",
                           metavar="/usr/local/bin/mafft",
                           action='store', default='None', type=str)
+parser.add_argument('--bcf',
+                    help="Optional: complete path to bcftools if not in PATH,",
+                    metavar="/usr/local/bin/bcftools",
+                    action='store', default='bcftools', type=str)
+parser.add_argument('--sam',
+                    help="Optional: complete path to bwa if not in PATH,",
+                    metavar="/usr/local/bin/samtools",
+                    action='store', default='samtools', type=str)
+parser.add_argument('--vcf',
+                    help="Optional: complete path to bwa if not in PATH,",
+                    metavar="/usr/local/bin/vcftools",
+                    action='store', default='vcftools', type=str)
+parser.add_argument('--vcfstats',
+                    help="Optional: complete path to vcfstats if not in PATH,",
+                    metavar="/usr/local/bin/vcfstats",
+                    action='store', default='vcfstats', type=str)
+parser.add_argument('--strainfinder',
+                    help="Optional: complete path to strainfinder",
+                    metavar="/scratch/users/anniz44/bin/miniconda3/bin/strainfinder",
+                    action='store',
+                    default='/scratch/users/anniz44/bin/miniconda3/bin/strainfinder',
+                    type=str)
 
 
 ################################################## Definition ########################################################

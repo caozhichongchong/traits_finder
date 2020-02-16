@@ -238,19 +238,22 @@ allfunction=dict()
 for lines in open(args.m,'r'):
     lines_set = str(lines).split('\t')
     gene = lines_set[0]
-    gene_fun = lines_set[1].split('\r')[0].split('\n')[0]
-    Function.setdefault(gene,
-    gene_fun)
-    if gene_fun not in allfunction:
-        allfunction.setdefault(gene_fun,0)
-    # reset output sequence files
-    outputfile_aa_file = open(faa.replace('fasta',gene_fun+'.fasta'),'w')
-    outputfile_aa_file.close()
-    outputfile_aa_file = open(fdna.replace('fasta',gene_fun+'.fasta'),'w')
-    outputfile_aa_file.close()
-    if gene not in Functionlist:
-        Functionlist.setdefault(gene,genenum)
-        genenum+=1
+    try:
+        gene_fun = lines_set[1].split('\r')[0].split('\n')[0]
+        Function.setdefault(gene,
+        gene_fun)
+        if gene_fun not in allfunction:
+            allfunction.setdefault(gene_fun,0)
+        # reset output sequence files
+        outputfile_aa_file = open(faa.replace('fasta',gene_fun+'.fasta'),'w')
+        outputfile_aa_file.close()
+        outputfile_aa_file = open(fdna.replace('fasta',gene_fun+'.fasta'),'w')
+        outputfile_aa_file.close()
+        if gene not in Functionlist:
+            Functionlist.setdefault(gene,genenum)
+            genenum+=1
+    except IndexError:
+        pass
 
 
 # merge reference sequences and output sequences (amino acid only)
