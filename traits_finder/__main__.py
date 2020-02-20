@@ -8,6 +8,8 @@ import sys
 import numpy as np
 from datetime import datetime
 import random
+#from Bio.codonalign.codonseq import _get_codon_list, CodonSeq, cal_dn_ds
+import operator
 
 
 ################################################### Decalration #######################################################
@@ -17,7 +19,7 @@ traits_finder searches and summarizes traits in genomes and metagenomes\n\
 input: reference database and folder of genomes/metagenomes\n\
 requirement: blast \n\n\
 optional: diamond, bwa, hs-blastn, usearch, mafft, fasttree \n\n\
-Copyright:An Ni Zhang, Prof. Eric Alm, MIT\n\n\
+Copyright: An-Ni Zhang, Prof. Eric Alm, MIT\n\n\
 Citation:\n\
 Contact anniz44@mit.edu\n\
 ------------------------------------------------------------------------\n\
@@ -143,6 +145,10 @@ def main():
                         help="Optional: complete path to bwa if not in PATH,",
                         metavar="/usr/local/bin/bwa",
                         action='store', default='None', type=str)
+    optional.add_argument('--mini',
+                          help="Optional: complete path to minimap2 if not in PATH,",
+                          metavar="/usr/local/bin/minimap2",
+                          action='store', default='None', type=str)
     optional.add_argument('--mf','--mafft',
                           help="Optional: complete path to mafft if not in PATH,",
                           metavar="/usr/local/bin/mafft",
@@ -195,10 +201,16 @@ def main():
 
 
     def makedatabase(search_method,db_file,db_type):
+        # for minimap2 database
+        if 'mini' in search_method:
+            try:
+                f1=open(db_file+'.mmi','r')
+            except IOError:
+                os.system('%s -d %s.mmi %s \n' % (search_method, db_file, db_file))
         # for bwa database
         if 'bwa' in search_method:
             try:
-                f1=open(db_file+'.bwt','r')
+                f1 = open(db_file + '.bwt', 'r')
             except IOError:
                 os.system('%s index %s \n' % (search_method, db_file))
         # for blast database
@@ -287,21 +299,23 @@ def main():
             makedatabase(args.hs, workingdir + "/database/85_otus.fasta.all.V4_V5.fasta", 1)
     elif args.s == 2:
         makedatabase(args.hmm, args.db, args.dbf)
-    if args.bwa != 'None':
+    elif args.bwa != 'None':
         makedatabase(args.bwa, args.db, args.dbf)
+    elif args.mini != 'None':
+        makedatabase(args.mini, args.db, args.dbf)
 
 
     # run traits finding
     if args.command in ['genome','mge'] :
-        cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s --mf %s --pro %s\n'
+        cmd = ('python '+workingdir+'/Traits_WG.py -db %s -dbf %s -i %s -s %s --fa %s --orf %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s --mf %s --pro %s --mini %s\n'
         % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.orf),str(args.r[0]),str(args.r16),str(thread),
-           str(args.id),str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa),str(args.mf),str(args.pro)))
+           str(args.id),str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa),str(args.mf),str(args.pro),str(args.mini)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'meta':
-        cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s --bcf %s --sam %s --vcf %s --vcfstats %s --strainfinder %s\n'
+        cmd = ('python '+workingdir+'/Traits_MG.py -db %s -dbf %s -i %s -s %s --fa %s -l %s --r %s --r16 %s --t %s --id %s --ht %s --e %s --u %s --dm %s --hs %s --hmm %s --bp %s --bwa %s --bcf %s --sam %s --vcf %s --vcfstats %s --strainfinder %s --mini %s\n'
         % (str(args.db),str(args.dbf),str(args.i),str(args.s),str(args.fa),str(args.l),str(args.r[0]),str(args.r16),str(thread),str(args.id),
-           str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa),str(args.bcf),str(args.sam),str(args.vcf),str(args.vcfstats),str(args.strainfinder)))
+           str(args.ht),str(args.e),str(args.u),str(args.dm),str(args.hs),str(args.hmm),str(args.bp),str(args.bwa),str(args.bcf),str(args.sam),str(args.vcf),str(args.vcfstats),str(args.strainfinder),str(args.mini)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_genome':
@@ -317,9 +331,9 @@ def main():
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_meta':
-        cmd = ('python ' + workingdir + '/scripts/Traits_summary_MG.py -db %s -dbf %s -t %s -s %s -fa %s -m %s --r %s --r16 %s --meta %s --bcf %s --sam %s --vcf %s --vcfstats %s --strainfinder %s\n'
+        cmd = ('python ' + workingdir + '/scripts/Traits_summary_MG.py -db %s -dbf %s -t %s -s %s -fa %s -m %s --r %s --r16 %s --meta %s --bcf %s --sam %s --vcf %s --vcfstats %s --strainfinder %s --th %s\n'
                     % (str(args.db), str(args.dbf),str(os.path.split(args.db)[1]), str(args.s), str(args.fa), str(args.m),
-                       str(args.r[0]),str(args.r16), str(args.meta),str(args.bcf),str(args.sam),str(args.vcf),str(args.vcfstats),str(args.strainfinder)))
+                       str(args.r[0]),str(args.r16), str(args.meta),str(args.bcf),str(args.sam),str(args.vcf),str(args.vcfstats),str(args.strainfinder),str(args.t)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'merge':

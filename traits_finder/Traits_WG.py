@@ -92,6 +92,10 @@ parser.add_argument('--bwa',
                     help="Optional: complete path to bwa if not in PATH,",
                     metavar="/usr/local/bin/bwa",
                     action='store', default='None', type=str)
+parser.add_argument('--mini',
+                          help="Optional: complete path to minimap2 if not in PATH,",
+                          metavar="/usr/local/bin/minimap2",
+                          action='store', default='None', type=str)
 parser.add_argument('--mf','--mafft',
                           help="Optional: complete path to mafft if not in PATH,",
                           metavar="/usr/local/bin/mafft",
@@ -121,7 +125,7 @@ cmds = 'python '+ workingdir +'/scripts/Search.WG.py -i ' + args.i  +\
                 ' --dm ' + str(args.dm) + ' --u ' + str(args.u) + ' --hs ' + str(args.hs) + ' --hmm ' + str(args.hmm) + ' --bp ' + str(args.bp) + \
                 ' --ht ' + str(args.ht) + ' --id ' + str(args.id) + ' --fa ' + str(args.fa) + \
                 ' --e ' + str(args.e) + ' --orf ' + str(args.orf) + ' --r16 ' + str(args.r16)+\
-        ' --bwa ' + str(args.bwa) + ' --mf ' + str(args.mf) + ' --pro ' + str(args.pro) + ' \n'
+        ' --bwa ' + str(args.bwa) + ' --mini ' + str(args.mini) + ' --mf ' + str(args.mf) + ' --pro ' + str(args.pro) + ' \n'
 #print(cmds)
 os.system(cmds)
 

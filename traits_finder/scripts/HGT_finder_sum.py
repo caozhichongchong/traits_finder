@@ -287,7 +287,7 @@ def checkfile(filename,i):
                 try:
                     lines.split('\t',maxsplit=i+1)[i]
                     return 'not empty'
-                except IndexError:
+                except (IOError, FileNotFoundError):
                     return 'wrong content by spliting %s \\t' % (str(i))
                 break
         else:
@@ -801,7 +801,7 @@ def run_fastani_genome(Total,Total_genome,fastani_out,flist_list,Ref_set,last='N
                         elif result_fastani[genome_run][0] == 'diff' or last == 'T':
                             try:
                                 fastani_out_list_temp.add(result_fastani[genome_run][1])
-                            except IndexError:
+                            except (IOError, FileNotFoundError):
                                 pass
                 if genome_num % 100 == 0:
                     print('%s run fastANI for %s pairs' % (datetime.now(), genome_num))

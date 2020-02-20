@@ -84,6 +84,10 @@ parser.add_argument('--bwa',
                     help="Optional: complete path to bwa if not in PATH,",
                     metavar="/usr/local/bin/bwa",
                     action='store', default='None', type=str)
+parser.add_argument('--mini',
+                          help="Optional: complete path to minimap2 if not in PATH,",
+                          metavar="/usr/local/bin/minimap2",
+                          action='store', default='None', type=str)
 parser.add_argument('--mf','--mafft',
                           help="Optional: complete path to mafft if not in PATH,",
                           metavar="/usr/local/bin/mafft",
@@ -344,7 +348,7 @@ def search(roottemp,genome_output,orf_output):
                             + ' -f ' + os.path.split(searchfile_orf)[1] + ' -n .blast.txt.filter -r ' + tempbamoutput_filter + ' \n'
                 Blastsearchfilter_protein = 1
             # bowtie alignment
-            if args.bwa != 'None' or args.mf != 'None' and Blastsearchfilter_genome == 1:
+            if args.bwa != 'None' or args.mini != 'None' or args.mf != 'None' and Blastsearchfilter_genome == 1:
                 tempinput = os.path.join(args.r + '/search_output/' + str(folder_id),
                                          genome_output + '.blast.txt.filter.aa')
                 tempbamoutput = os.path.join(args.r + '/bwa/' + str(folder_id), str(
@@ -353,14 +357,20 @@ def search(roottemp,genome_output,orf_output):
                     f1 = open('%s.sorted.bam' % (tempbamoutput))
                 except (IOError,FileNotFoundError):
                     if args.bwa != 'None':
-                        cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
+                        cmds += args.bwa + ' mem -ax intractg %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
+                            args.db, tempinput,
+                            tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
+                        cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
+                            args.db, tempbamoutput, tempbamoutput)
+                    elif args.mini != 'None':
+                        cmds += args.mini + ' -ax asm20 %s.mmi %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                             args.db, tempinput,
                             tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
                         cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
                             args.db, tempbamoutput, tempbamoutput)
                     elif args.mf != 'None':
                         # mafft for multiple alignment
-                        cmds += args.bwa + ' --nuc --adjustdirection --quiet --retree 2 --maxiterate 100 --thread %s %s > %s.align \n' % (
+                        cmds += args.mf + ' --nuc --adjustdirection --quiet --retree 2 --maxiterate 100 --thread %s %s > %s.align \n' % (
                             str(int(i_max)), tempinput, tempbamoutput)
                         # transfer multiple alignment to vcf
                         cmds += 'snp-sites -v -o %s.align %s.vcf \n' % (
@@ -393,7 +403,7 @@ def search(roottemp,genome_output,orf_output):
             f1 = open('%s.sorted.bam' % (tempbamoutput))
         except (IOError,FileNotFoundError):
             if args.bwa != 'None':
-                    cmds += args.bwa + ' mem %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
+                    cmds += args.bwa + ' mem -ax intractg %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                         args.db, tempinput,
                         tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
                     cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (

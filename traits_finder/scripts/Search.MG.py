@@ -94,6 +94,10 @@ parser.add_argument('--bwa',
                     help="Optional: complete path to bwa if not in PATH,",
                     metavar="/usr/local/bin/bwa",
                     action='store', default='None', type=str)
+parser.add_argument('--mini',
+                          help="Optional: complete path to minimap2 if not in PATH,",
+                          metavar="/usr/local/bin/minimap2",
+                          action='store', default='None', type=str)
 parser.add_argument('--bcf',
                     help="Optional: complete path to bcftools if not in PATH,",
                     metavar="/usr/local/bin/bcftools",
@@ -145,23 +149,29 @@ def bowtie(database, metagenomes, tempbamoutput):
     try:
         ftest = open('%s.sorted.bam' %(tempbamoutput),'r')
     except IOError:
-        cmds += args.bwa + ' mem -t %s %s %s |%s view -@ %s -S -b -F 4 >%s.bam\n%s sort -@ %s %s.bam -o %s.sorted.bam\n%s index -@ %s %s.sorted.bam\n' % (
-            min(args.t,40), database, metagenomes, args.sam, min(args.t,40),
-            tempbamoutput, args.sam, min(args.t,40), tempbamoutput, tempbamoutput, args.sam, min(args.t,40), tempbamoutput)
+        if args.bwa!='None':
+            cmds += args.bwa + ' mem -a -p -t %s %s %s |%s view -@ %s -S -b -F 4 >%s.bam\n%s sort -@ %s %s.bam -o %s.sorted.bam\n%s index -@ %s %s.sorted.bam\n' % (
+                min(args.t,40), database, metagenomes, args.sam, min(args.t,40),
+                tempbamoutput, args.sam, min(args.t,40), tempbamoutput, tempbamoutput, args.sam, min(args.t,40), tempbamoutput)
+        if args.mini !='None':
+            cmds += args.mini + ' -ax sr -t %s %s.mmi %s |%s view -@ %s -S -b -F 4 >%s.bam\n%s sort -@ %s %s.bam -o %s.sorted.bam\n%s index -@ %s %s.sorted.bam\n' % (
+                min(args.t, 40), database, metagenomes, args.sam, min(args.t, 40),
+                tempbamoutput, args.sam, min(args.t, 40), tempbamoutput, tempbamoutput, args.sam, min(args.t, 40),
+                tempbamoutput)
     try:
         ftest = open('%s.flt.vcf' %(tempbamoutput),'r')
     except IOError:
-        cmds += '%s mpileup --threads %s -q30 -B -Ou -d3000 -f %s %s.sorted.bam  | %s call --ploidy 1 --threads %s -mv > %s.raw.vcf' % (
-            args.bcf, min(args.t,40), database, tempbamoutput, args.bcf,min(args.t,40), tempbamoutput)
+        cmds += '%s mpileup --threads %s -a FMT/AD -q30 -B -Ou -d3000 -f %s %s.sorted.bam  | %s call --ploidy 1 -A --threads %s -m > %s.raw.vcf' % (
+            args.bcf, min(args.t, 40), database, tempbamoutput, args.bcf, min(args.t, 40), tempbamoutput)
         cmds += '\n%s filter --threads %s -s LowQual -e \'DP>100\' %s.raw.vcf > %s.flt.vcf \n' % (
             args.bcf,min(args.t,40), tempbamoutput, tempbamoutput)
-        cmds += '\n%s view -v snps --min-ac 1:minor %s.flt.vcf > %s.flt.snp.vcf \n' % (
+        cmds += '\n%s view -H -v snps %s.flt.vcf > %s.flt.snp.vcf \n' % (
             args.bcf, tempbamoutput, tempbamoutput)
     # calculate coverage
     try:
         ftest = open('%s.sorted.bam.cov' % (tempbamoutput), 'r')
     except IOError:
-        cmds += '%s depth -Q 10 %s.sorted.bam > %s.sorted.bam.cov\n' % (
+        cmds += '%s depth -a -Q 10 %s.sorted.bam > %s.sorted.bam.cov\n' % (
             args.sam, tempbamoutput, tempbamoutput)
         cmds += 'echo -e "Ref_ID\\tCov_length\\tAverage\\tStdev" > %s.sorted.bam.avgcov\n' % (tempbamoutput)
         cmds += '%s depth %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' >> %s.sorted.bam.avgcov\n' % (
@@ -274,7 +284,7 @@ def search(roottemp,filename):
                 cmds += 'python '+ workingdir +'/Extract.MG.py -p 1  -ni .usearch.txt.aa -i ' +\
                         os.path.split(searchfile)[0] + ' -f ' + os.path.split(searchfile)[1] + ' -n .blast.txt.filter -r ' + tempbamoutput_filter +' \n'
         # bowtie alignment
-        if args.bwa != 'None':
+        if args.bwa != 'None' or args.mini != 'None':
             tempinput = os.path.join(args.r + '/search_output/' + str(int(i / 10000)),
                                      filename + '.blast.txt.filter.aa')
             tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
@@ -299,7 +309,7 @@ def search(roottemp,filename):
                   + str(args.e) + ' ' +split_string_last(args.db, '.hmm') + '.hmm '+ os.path.join(roottemp, filename) + ' \n'
             cmds += 'python '+ workingdir +'/Format.MG.py -i ' + args.r + '/search_output/'+str(int(i/10000)) + ' -f ' + str(
                     filename) + '.hmm \n'
-    elif args.s == 3 and args.bwa != 'None':
+    elif args.s == 3 and (args.bwa != 'None' or args.mini != 'None'):
         tempinput = os.path.join(roottemp, filename)
         if '_2' + fasta_format not in tempinput:
             tempbamoutput = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(filename))
@@ -309,7 +319,7 @@ def search(roottemp,filename):
             tempinput2 = tempinput.replace('_1' + fasta_format, '_2' + fasta_format)
             tempbamoutput2 = os.path.join(args.r + '/bwa/' + str(int(i / 10000)), str(
                 filename.replace('_1' + fasta_format, '_2' + fasta_format)))
-            if tempinput2 in Targetroot:
+            if tempinput2 in Targetroot and tempinput2!=tempinput:
                 #tempinput = '%s %s' % (tempinput, tempinput2)
                 cmds += bowtie(args.db, tempinput2, tempbamoutput2)
             cmds += bowtie(args.db, tempinput, tempbamoutput)
@@ -412,7 +422,7 @@ try:
     os.mkdir(args.r16)
 except OSError:
     pass
-if args.bwa != 'None':
+if args.bwa != 'None' or args.mini !='None':
     try:
         os.mkdir(args.r + '/bwa/')
     except OSError:
@@ -436,7 +446,7 @@ for files in Targetroot:
             os.mkdir(args.r16+'/'+str(int(i/10000)))
         except OSError:
             pass
-        if args.bwa != 'None':
+        if args.bwa != 'None' or args.mini !='None':
             try:
                 os.mkdir(args.r + '/bwa/' + str(int(i / 10000)))
             except OSError:
