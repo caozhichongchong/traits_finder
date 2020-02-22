@@ -46,7 +46,11 @@ parser.add_argument('--th',
 parser.add_argument("--meta",
                         help="metadata  of metagenomes", type=str,
                         default='None',
-                        metavar='metadata.metagenomes.txt')
+                        metavar='/scratch/users/anniz44/scripts/1MG/metadata/all_MGD_GMD_metagenome.metadata.txt')
+parser.add_argument("--taxa",
+                      help="metadata  of genomes", type=str,
+                      default='None',
+                      metavar='/scratch/users/anniz44/scripts/1MG/metadata/GTDB_taxon_CG_GMC.brief.habitat.species.selected.all')
 parser.add_argument("--r",
                     help="output directory or folder of your results",
                     type=str, default='Result_traits',metavar='Result_traits')
@@ -135,11 +139,31 @@ class SNP_gene:
                          'G-A': 0}
         self.depth = []
         self.cov = 0
-        self.mutposition = []
+        self.mutposition = set()
         self.NSratio = [0,0]
+        self.protein = ''
 
     def addmutposition(self, position):
-        self.mutposition.append(position)
+        self.mutposition.add(position)
+
+    def addprotein(self, aa):
+        self.protein += aa
+
+    def mutpositioncal(self):
+        self.mutpositionsum1 = {0: 0,
+                         1: 0,
+                         2: 0}
+        self.mutpositionsum2 = {0: 0,
+                                1: 0,
+                                2: 0}
+        self.mutposition = list(self.mutposition)
+        self.mutposition.sort()
+        Total = len(self.mutposition)
+        if Total > 1:
+            for i in range(0,len(self.mutposition)-1):
+                self.mutpositionsum1[abs(self.mutposition[i+1] - self.mutposition[i]) % 3] += 1
+                self.mutpositionsum2[(self.mutposition[i]) % 3] += 1
+            self.mutpositionsum2[(self.mutposition[-1]) % 3] += 1
 
     def addposition(self, position,depth):
         self.position.append(position)
@@ -165,7 +189,8 @@ class SNP_gene:
     def dN_dS(self):
         self.expectNSratio = 'No_expect'
         expectNSratio = [0, 0]
-        refSNP_pair_sum = Ref_NSratio.get(self.gene, 'None')
+        refSNP_pair_sum_all = Ref_NSratio.get(self.gene, 'None')
+        refSNP_pair_sum = refSNP_pair_sum_all[0]
         if refSNP_pair_sum != 'None':
             for pair in refSNP_pair_sum:
                 expectNSratio[0] += refSNP_pair_sum[pair][0] * self.SNP_pair_freq[pair]
@@ -197,13 +222,40 @@ class SNP_gene:
 
 
 ################################################### Function ########################################################
+# load metadata
+def load_meta(metadata):
+    Meta = dict()
+    i = 0
+    Keytitles = {'species':0,
+            'habitat':0,
+                 'selected':0}
+    for lines in open(metadata,'r'):
+        lines = lines.replace('\n', '').replace('\r', '')
+        line_set = lines.split('\t')
+        if i == 0:
+            for j in range(1,len(line_set)):
+                title = lines.split('\t')[j].lower()
+                if title in Keytitles:
+                    Keytitles[title] = j
+        else:
+            sampleID = line_set[0]
+            Meta.setdefault(sampleID,[line_set[Keytitles['species']],
+                                      line_set[Keytitles['habitat']],
+                                      line_set[Keytitles['selected']]])
+        i+=1
+    return Meta
+
+
 # Set DNA translate to protein
 def translate(seq):
     seq = Seq(seq)
     try:
         return seq.translate()
     except ValueError:
-        return seq.translate(seq.complement())
+        try:
+            return seq.translate(seq.complement())
+        except ValueError:
+            return ['None']
 
 
 def dnORds(amino1, amino2):
@@ -253,17 +305,19 @@ def transitions(REF,ALT):
 
 
 def expectNSsub(record_name,record_seq,position=0):
-    Total = len(record_seq)
+    Total = int(len(record_seq)/3)
     temp_SNP_gene = SNP_gene()
     temp_SNP_gene.init(record_name)
-    for i in range(0, (int(Total / 3) - position)):
+    for i in range(0, (Total - position)):
         codon = record_seq[(i * 3 + position):((i + 1) * 3 + position)]
         codon_NSratio = codontable_NSratio[codon]
+        temp_SNP_gene.addprotein(codontable[codon])
         for pair in codon_NSratio.SNP_pair:
-            temp_SNP_gene.addSNP_pair(pair, 0, codon_NSratio.SNP_pair[pair][0], 1)
-            temp_SNP_gene.addSNP_pair(pair, 1, codon_NSratio.SNP_pair[pair][1], 1)
+            temp_SNP_gene.addSNP_pair(pair, 0, codon_NSratio.SNP_pair[pair][0], Total)
+            temp_SNP_gene.addSNP_pair(pair, 1, codon_NSratio.SNP_pair[pair][1], Total)
     temp_SNP_gene.sum_SNP_pair()
-    return temp_SNP_gene.SNP_pair_sum
+    return [temp_SNP_gene.SNP_pair_sum,temp_SNP_gene.protein,position]
+
 
 def expectNS(record_name,record_seq):
     try:
@@ -413,33 +467,24 @@ def strain_finder(SNP_file):
 def freq_call_sub(vcf_file_list, alloutput = True):
         SNP = dict()
         SNP_count = dict()
-        Position_diff = []
-        Chr = ''
-        Position = 0
         for vcf_file in vcf_file_list:
             for lines in open(vcf_file, 'r'):
                 if not lines.startswith("#"):
                     lines_set = lines.split('\t')
                     Depth = int(lines_set[7].split('DP=')[1].split(';')[0])
-                    Chr_new = lines_set[0]
-                    SNP_count.setdefault(Chr_new, 0)
+                    Chr = lines_set[0]
+                    SNP_count.setdefault(Chr, 0)
                     if alloutput:
-                        Position_new = int(lines_set[1])
-                        Chr_position = '%s--%s' % (Chr_new, Position_new)
+                        Position = int(lines_set[1])
+                        Chr_position = '%s--%s' % (Chr, Position)
                         Allels_frq = [0, 0, 0, 0]
                         SNP.setdefault(Chr_position, Allels_frq)
                         Allels_frq = SNP[Chr_position]
                     if "INDEL" not in lines_set[7] and (lines_set[6] != 'LowQual' or Depth >= 10):
                         #Depth >= 10 for genome or Depth >= 100 for metagenomes
                         # new SNPs on Chr
-                        SNP_count[Chr_new] += 1
+                        SNP_count[Chr] += 1
                         if alloutput:
-                            # calculate position apart
-                            if Chr_new == Chr:
-                                if Position_new != Position:
-                                    Position_diff.append(abs(Position_new - Position) % 3)
-                            Chr = Chr_new
-                            Position = Position_new
                             allels_set = [lines_set[3]]
                             if '.' not in lines_set[4]:
                                 allels_set += lines_set[4].split(',')
@@ -452,7 +497,7 @@ def freq_call_sub(vcf_file_list, alloutput = True):
                                 else:
                                     pass
                             SNP[Chr_position] = Allels_frq
-        return [SNP,Position_diff,SNP_count]
+        return [SNP,SNP_count]
 
 
 def dN_dS_ratio(seq1,seq2,method = 'ML'):
@@ -472,8 +517,8 @@ def freq_call(vcf_file,cov_file):
     Output3 = []
     all_SNP_gene_temp = dict()
     try:
-        SNP, Position_diff, SNP_count = freq_call_sub([vcf_file])
-        SNP_all, Position_diff_all, SNP_count_all = freq_call_sub([cov_file])
+        SNP, SNP_count = freq_call_sub([vcf_file])
+        SNP_all, SNP_count_all = freq_call_sub([cov_file])
         sample_name = os.path.split(cov_file)[1].split('.fasta')[0].split('.fastq')[0].split(args.fa)[0]
         #Depth = dict()
         for Chr_position in SNP_all:
@@ -498,35 +543,44 @@ def freq_call(vcf_file,cov_file):
                 Depth_position_snp = sum(SNP[Chr_position])
                 if Depth_position_snp > 0 and not any(Depth_position_snp == allels for allels in SNP[Chr_position]):
                     # a SNP
+                    SNP_gene_temp.addmutposition(position)
                     # calculate N or S
-                    codon_start = position - 1 - int(position%3)
-                    Ref_seq_chr = Ref_seq[Chr]
-                    SNP_seq_chr = Ref_seq_chr
+                    refSNP_pair_sum_all = Ref_NSratio.get(Chr, 'None')
+                    # calculate Allele frequency
                     Major_ALT, Minor_ALT = ALT_freq(SNP[Chr_position])
                     REF = Major_ALT[0]
                     Ref_frq = Major_ALT[1]
-                    Ref_seq_chr = causeSNP(Ref_seq_chr, position, REF)
-                    Ref_seq_codon = translate(Ref_seq_chr[codon_start:(codon_start + 3)])[0]
-                    for minor in Minor_ALT:
-                        ALT =  minor[0]
-                        ALT_frq =  minor[1]
-                        SNP_seq_chr = causeSNP(SNP_seq_chr, position,ALT)
-                        SNP_seq_codon = translate(SNP_seq_chr[codon_start:(codon_start + 3)])[0]
-                        temp_NorS = dnORds(Ref_seq_codon, SNP_seq_codon)
-                        SNP_pair = transitions(REF, ALT)
-                        SNP_gene_temp.addSNP_pair(SNP_pair,N_S_set[temp_NorS],
-                                                  ALT_frq,
-                                                  Depth_position_snp)
-                        SNP_gene_temp.addmutposition(position)
-                        #result = dN_dS_ratio(Ref_seq_chr, SNP_seq_chr)
-                        #try:
-                        #    N_S[Chr][-1].append('%.3f' % (result[0] / result[1]))
-                        #except ZeroDivisionError:
-                        #    N_S[Chr][-1].append('N_only')
-                        #lines += '\t%s:%s:%s\t%s:%s:%s\t%s\t%s:%s' % (REF, Ref_frq, Ref_seq_codon,
-                        #                                      ALT,ALT_frq, SNP_seq_codon, temp_NorS,result[0],result[1])
-                        lines += '\t%s:%s:%s\t%s:%s:%s\t%s' % (REF, Ref_frq, Ref_seq_codon,
-                                                                     ALT, ALT_frq, SNP_seq_codon, temp_NorS)
+                    if refSNP_pair_sum_all != 'None':
+                        #  expected NS ratio calculated
+                        refSNP_condon_start = refSNP_pair_sum_all[-1]
+                        codon_start = position - 1 - int((position - 1)%3) + refSNP_condon_start
+                        if codon_start <= position - 1:
+                            Ref_seq_chr = Ref_seq[Chr]
+                            SNP_seq_chr = Ref_seq_chr
+                            Ref_seq_chr = causeSNP(Ref_seq_chr, position, REF)
+                            Ref_seq_codon = Ref_seq_chr[codon_start:(codon_start + 3)]
+                            if len(Ref_seq_codon) == 3:
+                                Ref_seq_aa = translate(Ref_seq_codon)[0]
+                                for minor in Minor_ALT:
+                                    ALT = minor[0]
+                                    ALT_frq = minor[1]
+                                    SNP_seq_chr = causeSNP(SNP_seq_chr, position, ALT)
+                                    SNP_seq_codon = SNP_seq_chr[codon_start:(codon_start + 3)]
+                                    SNP_seq_aa = translate(SNP_seq_codon)[0]
+                                    temp_NorS = dnORds(Ref_seq_aa, SNP_seq_aa)
+                                    SNP_pair = transitions(REF, ALT)
+                                    SNP_gene_temp.addSNP_pair(SNP_pair, N_S_set[temp_NorS],
+                                                              ALT_frq,
+                                                              Depth_position_snp)
+                                    SNP_gene_temp.addmutposition(position)
+                                    lines += '\t%s:%s:%s\t%s:%s:%s\t%s' % (REF, Ref_frq, Ref_seq_aa,
+                                                                           ALT, ALT_frq, SNP_seq_aa, temp_NorS)
+                    else:
+                        for minor in Minor_ALT:
+                            ALT = minor[0]
+                            ALT_frq = minor[1]
+                            lines += '\t%s:%s:None\t%s:%s:None\tNone' % (REF, Ref_frq,
+                                                                   ALT, ALT_frq)
                     Output2.append(lines + '\n')
                     Output3.append('%s\t%s\t%s\t%s\n' % (SNP[Chr_position][0],
                                                          SNP[Chr_position][1],
@@ -550,14 +604,18 @@ def freq_call(vcf_file,cov_file):
                     temp_depth_filter.append(a)
                 else:
                     pass
-                    #Output.pop(Depth[Chr][2][position], None)
+                    # Output.pop(Depth[Chr][2][position], None)
                     # Output2.pop(Depth[Chr][2][position], None)
                     # Output3.pop(Depth[Chr][2][position], None)
             SNP_gene_temp.depth = statistics.mean(temp_depth_filter)
             SNP_gene_temp.cov = float(SNP_gene_temp.cov) / float(Gene_length)
-            new_line = '%s\t%s\t%s\t%s\t%s' % (sample_name, Chr,
+            SNP_gene_temp.mutpositioncal()
+            new_line = '%s\t%s\t%s\t%s\t%s\t%s:%s:%s\t%s:%s:%s' % (sample_name, Chr,
                                                        '%.3f' % (SNP_gene_temp.depth),
-                                                       '%.3f' % (SNP_gene_temp.cov), Gene_length)
+                                                       '%.3f' % (SNP_gene_temp.cov), Gene_length,
+                                               SNP_gene_temp.mutpositionsum1[0],SNP_gene_temp.mutpositionsum1[1],
+                                               SNP_gene_temp.mutpositionsum1[2],SNP_gene_temp.mutpositionsum2[0],
+                                            SNP_gene_temp.mutpositionsum2[1],SNP_gene_temp.mutpositionsum2[2])
             N_temp = SNP_gene_temp.NSratio[0]
             S_temp = SNP_gene_temp.NSratio[1]
             if N_temp + S_temp > 0:
@@ -580,9 +638,6 @@ def freq_call(vcf_file,cov_file):
             all_output_list.append(new_line)
         all_output.write(''.join(all_output_list))
         #os.system('rm -rf %s.sort' % cov_file)
-        Position_diff_new = []
-        for diff in Position_diff:
-            Position_diff_new.append(str(diff))
         Output = sorted(Output, key=operator.itemgetter(1))
         Output = sorted(Output, key=operator.itemgetter(0))
         Output2 = sorted(Output2, key=operator.itemgetter(1))
@@ -599,9 +654,9 @@ def freq_call(vcf_file,cov_file):
         foutput.write('#A\tT\tG\tC\n')
         foutput.write(''.join(Output3))
         foutput.close()
-        foutput = open(cov_file + '.frq.snp.position.diff', 'w')
-        foutput.write('\n'.join(Position_diff_new))
-        foutput.close()
+        #foutput = open(cov_file + '.frq.snp.position.diff', 'w')
+        #foutput.write('\n'.join(Position_diff_new))
+        #foutput.close()
     except (IOError, FileNotFoundError):
         pass
     if args.strainfinder!= 'None':
@@ -619,13 +674,13 @@ def SNP_dynamics(output_files, SNP_outputfile):
             temp_list = set()
             while len(temp_list) < i:
                 temp_list.add(random.choice(output_files))
-            SNP, Position_diff,SNP_count = freq_call_sub(temp_list,False)
+            SNP, SNP_count = freq_call_sub(temp_list,False)
             for Chr in SNP_count:
                 Chr_i = '%s\t%s'%(Chr,i)
                 SNP_dynamics_pair.setdefault(Chr_i,[])
                 SNP_dynamics_pair[Chr_i].append(SNP_count[Chr])
     i = Total
-    SNP, Position_diff, SNP_count = freq_call_sub(output_files,False)
+    SNP, SNP_count = freq_call_sub(output_files,False)
     for Chr in SNP_count:
         Chr_i = '%s\t%s' % (Chr, i)
         SNP_dynamics_pair.setdefault(Chr_i, [])
@@ -781,7 +836,13 @@ else:
         Ref_seq.setdefault(record_id,record_seq)
         Ref_NSratio.setdefault(record_id,
                                expectNS(record_id,record_seq))
+
     print(Ref_NSratio)
+    # load metadata
+    if args.meta != 'None':
+        Meta_meta = load_meta(args.meta)
+    if args.taxa != 'None':
+        Taxa_meta = load_meta(args.taxa)
     # all bam file call vcf
     tempbamoutput = glob.glob(os.path.join(args.r, 'summary/vcf/all.flt.vcf*'))
     if tempbamoutput == []:
@@ -823,7 +884,7 @@ else:
         all_output = open((os.path.join(args.r, 'summary/all.bam.cov.sum.snp.NS.ratio')), 'r')
     except (IOError,FileNotFoundError):
         all_output = open((os.path.join(args.r, 'summary/all.bam.cov.sum.snp.NS.ratio')), 'w')
-        all_output.write('metagenome\tgenome\tdepth\tcoverage\tgene_length\tN:S\tobserved_ratio\texpected_ratio\tdNdS\tA-T\tfreq\tN:S\tNSratio'+
+        all_output.write('metagenome\tgenome\tdepth\tcoverage\tgene_length\tSNP_dis_0:1:2\tSNP_codon_0:1:2\tN:S\tobserved_ratio\texpected_ratio\tdNdS\tA-T\tfreq\tN:S\tNSratio'+
                          '\tA-C\tfreq\tN:S\tNSratio\tG-C\tfreq\tN:S\tNSratio\tG-T\tfreq\tN:S\tNSratio\tA-G\tfreq\tN:S\tNSratio\tG-A\tfreq\tN:S\tNSratio\n')
         # calculate allel frequency
         output_files = glob.glob(os.path.join(args.r, 'bwa/0/*.flt.snp.vcf'))

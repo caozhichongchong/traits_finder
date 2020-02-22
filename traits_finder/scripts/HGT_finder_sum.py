@@ -39,6 +39,14 @@ parser.add_argument("--r",
 parser.add_argument("--s",
                     help="input directory or folder of your previous results by traits summary",
                     type=str, default='None',metavar='summary')
+parser.add_argument("--meta",
+                        help="metadata  of metagenomes", type=str,
+                        default='None',
+                        metavar='/scratch/users/anniz44/scripts/1MG/metadata/all_MGD_GMD_metagenome.metadata.txt')
+parser.add_argument("--taxa",
+                      help="metadata  of genomes", type=str,
+                      default='None',
+                      metavar='/scratch/users/anniz44/scripts/1MG/metadata/GTDB_taxon_CG_GMC.brief.habitat.species.selected.all')
 # optional search parameters
 parser.add_argument('--g',
                         help="Optional: gene-level HGT finding; --g F (default function-level); --g T for gene-level",

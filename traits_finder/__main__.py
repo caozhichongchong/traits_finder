@@ -82,7 +82,11 @@ def main():
     optional.add_argument("--meta",
                         help="metadata  of metagenomes", type=str,
                         default='None',
-                        metavar='metadata.metagenomes.txt')
+                        metavar='/scratch/users/anniz44/scripts/1MG/metadata/all_MGD_GMD_metagenome.metadata.txt')
+    optional.add_argument("--taxa",
+                          help="metadata  of genomes", type=str,
+                          default='None',
+                          metavar='/scratch/users/anniz44/scripts/1MG/metadata/GTDB_taxon_CG_GMC.brief.habitat.species.selected.all')
     optional.add_argument("--orf",
                         help="input format of genomes orfs, set prodigal to predict ORF if needed (--pro prodigal)", type=str,
                           default='.faa',metavar='.faa')
@@ -345,9 +349,9 @@ def main():
         if args.u == 'None' and args.hs == 'None':
             print('please install usearch and/or hs-blastn and/or diamond')
         else:
-            cmd = ('python ' + workingdir + '/scripts/HGT_finder_sum.py -db %s -dbf %s -t %s -m %s --r %s --s %s --u %s --dm %s --hs %s --mf %s --ft %s --th %s --bp %s --g %s --ani %s -i %s -fa %s\n'
+            cmd = ('python ' + workingdir + '/scripts/HGT_finder_sum.py -db %s -dbf %s -t %s -m %s --r %s --s %s --u %s --dm %s --hs %s --mf %s --ft %s --th %s --bp %s --g %s --ani %s -i %s -fa %s --meta %s --taxa %s\n'
             %(str(args.db), str(args.dbf), str(os.path.split(args.db)[1]),str(args.m),str(args.r[0]),
-              str(os.path.join(args.r[0],'summary')),str(args.u),str(args.dm),str(args.hs),str(args.mf),str(args.ft),str(thread),str(args.bp),str(args.g),str(args.ani),str(args.i),str(args.fa)))
+              str(os.path.join(args.r[0],'summary')),str(args.u),str(args.dm),str(args.hs),str(args.mf),str(args.ft),str(thread),str(args.bp),str(args.g),str(args.ani),str(args.i),str(args.fa),str(args.meta),str(args.taxa)))
             f1.write(cmd)
             os.system(cmd)
 
