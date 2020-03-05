@@ -86,5 +86,5 @@ def Extract16S(root, searchfile, seqfile, resultdir):
 
 ################################################### Programme #######################################################
 flog = open(os.path.join(args.r, '16S_output.log'), 'a')
-Extract16S( args.i, args.f+args.n, args.f, args.r)
+Extract16S(args.i, args.f+args.n, args.f, args.r)
 flog.close()

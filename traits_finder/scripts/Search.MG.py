@@ -1,4 +1,5 @@
 import os
+import os
 from Bio import SeqIO
 import argparse
 import glob
@@ -154,7 +155,7 @@ def bowtie(database, metagenomes, tempbamoutput):
                 min(args.t,40), database, metagenomes, args.sam, min(args.t,40),
                 tempbamoutput, args.sam, min(args.t,40), tempbamoutput, tempbamoutput, args.sam, min(args.t,40), tempbamoutput)
         if args.mini !='None':
-            cmds += args.mini + ' -ax sr -t %s %s.mmi %s |%s view -@ %s -S -b -F 4 >%s.bam\n%s sort -@ %s %s.bam -o %s.sorted.bam\n%s index -@ %s %s.sorted.bam\n' % (
+            cmds += args.mini + ' -ax sr -N 1000 -p 0.9 -t %s %s.mmi %s |%s view -@ %s -S -b -F 4 >%s.bam\n%s sort -@ %s %s.bam -o %s.sorted.bam\n%s index -@ %s %s.sorted.bam\n' % (
                 min(args.t, 40), database, metagenomes, args.sam, min(args.t, 40),
                 tempbamoutput, args.sam, min(args.t, 40), tempbamoutput, tempbamoutput, args.sam, min(args.t, 40),
                 tempbamoutput)

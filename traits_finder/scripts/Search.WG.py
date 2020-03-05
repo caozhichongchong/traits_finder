@@ -96,6 +96,28 @@ parser.add_argument('--pro','--prodigal',
                         help="Optional: complete path to prodigal if not in PATH,",
                         metavar="/usr/local/bin/prodigal",
                         action='store', default='None', type=str)
+parser.add_argument('--bcf',
+                    help="Optional: complete path to bcftools if not in PATH,",
+                    metavar="/usr/local/bin/bcftools",
+                    action='store', default='bcftools', type=str)
+parser.add_argument('--sam',
+                    help="Optional: complete path to bwa if not in PATH,",
+                    metavar="/usr/local/bin/samtools",
+                    action='store', default='samtools', type=str)
+parser.add_argument('--vcf',
+                    help="Optional: complete path to bwa if not in PATH,",
+                    metavar="/usr/local/bin/vcftools",
+                    action='store', default='vcftools', type=str)
+parser.add_argument('--vcfstats',
+                    help="Optional: complete path to vcfstats if not in PATH,",
+                    metavar="/usr/local/bin/vcfstats",
+                    action='store', default='vcfstats', type=str)
+parser.add_argument('--strainfinder',
+                    help="Optional: complete path to strainfinder",
+                    metavar="/scratch/users/anniz44/bin/miniconda3/bin/strainfinder",
+                    action='store',
+                    default='/scratch/users/anniz44/bin/miniconda3/bin/strainfinder',
+                    type=str)
 
 
 ################################################## Definition ########################################################
@@ -169,7 +191,7 @@ def search(roottemp,genome_output,orf_output):
                             " --db " + split_string_last(args.db, '.dmnd') + ".dmnd --out " + os.path.join(
                         args.r + '/usearch/' + str(folder_id),
                         genome_output + '.usearch.txt') + \
-                            " --outfmt 6 --max-target-seqs 1 --evalue " + str(args.e) + " --threads " + str(
+                            " --outfmt 6 --evalue " + str(args.e) + " --threads " + str(
                         int(i_max)) + " \n"
                     # genome file
                     cmds += 'python ' + workingdir + '/Extract.MG.py  -p 1 -i ' + roottemp + ' -f ' + \
@@ -190,7 +212,7 @@ def search(roottemp,genome_output,orf_output):
                     # Start search target genes by usearch
                     usearch_cmd = ".udb  -evalue 1e-2 -accel 0.5 -blast6out "
                     if args.dbf == 1:
-                        usearch_cmd += " -strand both "
+                        usearch_cmd = ".udb  -evalue 1e-2 -accel 0.5 -strand both -blast6out "
                     # genome file
                     cmds += args.u + " -ublast " + genome_file + \
                             " -db " + split_string_last(args.db, '.udb') + usearch_cmd \
@@ -224,7 +246,7 @@ def search(roottemp,genome_output,orf_output):
                     # Start search target genes by usearch
                     usearch_cmd = ".udb  -evalue 1e-2 -accel 0.5 -blast6out "
                     if args.dbf == 1:
-                        usearch_cmd += " -strand both "
+                        usearch_cmd = ".udb  -evalue 1e-2 -accel 0.5 -strand both -blast6out "
                     # AA file
                     cmds += args.u + " -ublast " + orf_file + \
                             " -db " + split_string_last(args.db, '.udb') + usearch_cmd \
@@ -360,13 +382,13 @@ def search(roottemp,genome_output,orf_output):
                         cmds += args.bwa + ' mem -ax intractg %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                             args.db, tempinput,
                             tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
-                        cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
+                        cmds += 'bcftools mpileup -Ou -A -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
                             args.db, tempbamoutput, tempbamoutput)
                     elif args.mini != 'None':
                         cmds += args.mini + ' -ax asm20 %s.mmi %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                             args.db, tempinput,
                             tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
-                        cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
+                        cmds += 'bcftools mpileup -Ou -A -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
                             args.db, tempbamoutput, tempbamoutput)
                     elif args.mf != 'None':
                         # mafft for multiple alignment
@@ -406,8 +428,14 @@ def search(roottemp,genome_output,orf_output):
                     cmds += args.bwa + ' mem -ax intractg %s %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                         args.db, tempinput,
                         tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
-                    cmds += 'bcftools mpileup -Ou -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
+                    cmds += 'bcftools mpileup -Ou -A -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
                         args.db, tempbamoutput, tempbamoutput)
+            elif args.mini != 'None':
+                cmds += args.mini + ' -ax asm20 %s.mmi %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
+                    args.db, tempinput,
+                    tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
+                cmds += 'bcftools mpileup -Ou -A -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
+                    args.db, tempbamoutput, tempbamoutput)
             elif args.mf != 'None':
                     # mafft for multiple alignment
                     cmds += args.bwa + ' --nuc --adjustdirection --quiet --retree 2 --maxiterate 100 --thread %s %s > %s.align \n' % (

@@ -335,9 +335,9 @@ def main():
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'sum_meta':
-        cmd = ('python ' + workingdir + '/scripts/Traits_summary_MG.py -db %s -dbf %s -t %s -s %s -fa %s -m %s --r %s --r16 %s --meta %s --bcf %s --sam %s --vcf %s --vcfstats %s --strainfinder %s --th %s\n'
+        cmd = ('python ' + workingdir + '/scripts/Traits_summary_MG.py -db %s -dbf %s -t %s -s %s -fa %s -m %s --r %s --r16 %s --meta %s --bcf %s --sam %s --vcf %s --vcfstats %s --strainfinder %s --th %s --taxa %s\n'
                     % (str(args.db), str(args.dbf),str(os.path.split(args.db)[1]), str(args.s), str(args.fa), str(args.m),
-                       str(args.r[0]),str(args.r16), str(args.meta),str(args.bcf),str(args.sam),str(args.vcf),str(args.vcfstats),str(args.strainfinder),str(args.t)))
+                       str(args.r[0]),str(args.r16), str(args.meta),str(args.bcf),str(args.sam),str(args.vcf),str(args.vcfstats),str(args.strainfinder),str(args.t),str(args.taxa)))
         f1.write(cmd)
         os.system(cmd)
     elif args.command == 'merge':

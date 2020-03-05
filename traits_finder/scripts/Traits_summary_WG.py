@@ -99,7 +99,7 @@ def check_16S(inputfile):
 
 def check_traits(inputfile,outputfile_aa,outputfile_aa_500,outputfile_blast,outputfile_summary,
 outputfile_summary_fun,file_subfix,i):
-    blastout = check_file(glob.glob(args.r + '/search_output/*/'+ inputfile + '.blast.txt.filter'))
+    blastout = check_file(glob.glob(args.r + '/search_output/*/' + inputfile + '.blast.txt.filter'))
     Hastraits = 0
     short_filename = inputfile.split(file_subfix)[0]
     if blastout != None:
@@ -170,28 +170,34 @@ outputfile_summary_fun,file_subfix,i):
         aaout = blastout + '.aa'
         aaout500 = blastout + '.extra*.aa'
         # merge traits fasta into functions
-        for record in SeqIO.parse(aaout, 'fasta'):
-                if short_filename not in str(record.id):
-                    record.id = short_filename + '_' + str(record.id)
-                if args.mge == 2:
-                    record.id = "mge_" + record.id
-                if str(record.id) in Functionset:
-                        # output according to its function
-                        outputfile_aa_file = open(outputfile_aa.replace('fasta',Functionset[str(record.id)]+'.fasta'),'a')
-                        outputfile_aa_file.write('>%s\n%s\n' % (
-                            str(record.id),
-                            str(record.seq)))
-                        outputfile_aa_file.close()
-                else:
-                    print('%s not found in blast output'%(str(record.id)))
+        try:
+            for record in SeqIO.parse(aaout, 'fasta'):
+                    if short_filename not in str(record.id):
+                        record.id = short_filename + '_' + str(record.id)
+                    if args.mge == 2:
+                        record.id = "mge_" + record.id
+                    if str(record.id) in Functionset:
+                            # output according to its function
+                            outputfile_aa_file = open(outputfile_aa.replace('fasta',Functionset[str(record.id)]+'.fasta'),'a')
+                            outputfile_aa_file.write('>%s\n%s\n' % (
+                                str(record.id),
+                                str(record.seq)))
+                            outputfile_aa_file.close()
+                    else:
+                        print('%s not found in blast output'%(str(record.id)))
+        except (IOError,FileNotFoundError):
+            pass
         # merge traits extend 500 fasta
         if outputfile_aa_500 != 'None':
-            for record in SeqIO.parse(glob.glob(aaout500)[0], 'fasta'):
-                if short_filename not in str(record.id):
-                    record.id = short_filename + '_' + str(record.id)
-                if  args.mge == 2:
-                    record.id = 'mge_' + record.id
-                outputfile_aa_500.write('>' + str(record.id) + '\n' + str(record.seq) + '\n')
+            try:
+                for record in SeqIO.parse(glob.glob(aaout500)[0], 'fasta'):
+                    if short_filename not in str(record.id):
+                        record.id = short_filename + '_' + str(record.id)
+                    if  args.mge == 2:
+                        record.id = 'mge_' + record.id
+                    outputfile_aa_500.write('>' + str(record.id) + '\n' + str(record.seq) + '\n')
+            except IndexError:
+                pass
     else:
         outputfile_summary.write(short_filename + '\tNo_hit\n')
         outputfile_summary_fun.write(short_filename + '\tNo_hit\n')
