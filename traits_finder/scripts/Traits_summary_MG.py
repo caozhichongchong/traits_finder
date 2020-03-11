@@ -145,6 +145,7 @@ class SNP_gene:
         self.mutposition.setdefault(gene, set())
         self.NSratio = [0,0]
         self.protein = ''
+        self.minor_freq = []
 
     def addmutposition(self, gene, position):
         self.mutposition.setdefault(gene, set())
@@ -194,10 +195,11 @@ class SNP_gene:
                         self.mutpositionsum1[abs(self.mutposition2[i+1] - self.mutposition2[i]) % 3] += 1
                         self.mutpositionsum2[(self.mutposition2[i]) % 3] += 1
 
-    def addSNP_pair(self, pair,position,count,depth):
-        self.SNP_pair[pair][position] += count
-        self.SNP_pair_freq[pair] += count/depth
-        self.NSratio[position] += count
+    def addSNP_pair(self, pair, position, count, unique_snp_count,depth = 1):
+        self.SNP_pair[pair][position] += unique_snp_count
+        self.SNP_pair_freq[pair] += unique_snp_count
+        self.NSratio[position] += unique_snp_count
+        self.minor_freq.append(count/depth)
 
     def deleteSNP_pair(self,SNP_gene):
         for position in [0,1]:
@@ -214,9 +216,10 @@ class SNP_gene:
                          'G-T': [0, 0],
                          'A-G': [0, 0],
                          'G-A': [0, 0]}
+        self.NSsum = self.NSratio[0] + self.NSratio[1]
         for pair in self.SNP_pair:
-            self.SNP_pair_sum[pair][0] += self.SNP_pair[pair][0] * self.SNP_pair_freq[pair]
-            self.SNP_pair_sum[pair][1] += self.SNP_pair[pair][1] * self.SNP_pair_freq[pair]
+            self.SNP_pair_sum[pair][0] += self.SNP_pair[pair][0]
+            self.SNP_pair_sum[pair][1] += self.SNP_pair[pair][1]
 
     def dN_dS(self,SNP_gene_all,normalize=0):
         self.expectNSratio = 'No_expect'
@@ -367,8 +370,8 @@ def expectNSsub(record_name,record_seq,position=0):
             codon_NSratio = codontable_NSratio[codon]
             temp_SNP_gene.addprotein(codontable[codon])
             for pair in codon_NSratio.SNP_pair:
-                temp_SNP_gene.addSNP_pair(pair, 0, codon_NSratio.SNP_pair[pair][0], Total)
-                temp_SNP_gene.addSNP_pair(pair, 1, codon_NSratio.SNP_pair[pair][1], Total)
+                temp_SNP_gene.addSNP_pair(pair, 0, codon_NSratio.SNP_pair[pair][0],codon_NSratio.SNP_pair[pair][0])
+                temp_SNP_gene.addSNP_pair(pair, 1, codon_NSratio.SNP_pair[pair][1],codon_NSratio.SNP_pair[pair][1])
         except KeyError:
             pass
     temp_SNP_gene.sum_SNP_pair()
@@ -554,14 +557,20 @@ def freq_call_sub(vcf_file,vcf_calculate=False):
                         SNP_count_genome_count.setdefault(Chr_position, [[0] * Total_alleles, ''])
                         for Subdepth_all in lines_set[9:]:
                             Subdepth = Subdepth_all.split(':')[-1].replace('\n', '')
+                            Subdepth_set = Subdepth.split(',')
+                            total_sub_depth = sum(int(Subdepth_sub) for Subdepth_sub in Subdepth_set)
                             if vcf_calculate:
                                 # for pan-genome only, replace missing with reference
-                                SNP_type[Chr][genome_ID] += Subdepth.replace('0,0','1,0').replace('0,0,0','1,0,0').replace('0,0,0,0','1,0,0,0')
-                            Subdepth = Subdepth.split(',')
-                            if sum(int(Subdepth_sub) for Subdepth_sub in Subdepth) > 0:
+                                if total_sub_depth != 1:
+                                    # don't count empty ones and multiple copy genes
+                                    temp_Subdepth = ','.join(['1']+['0']*(len(Subdepth_set)-1))
+                                    SNP_type[Chr][genome_ID] += temp_Subdepth
+                                else:
+                                    SNP_type[Chr][genome_ID] += Subdepth
+                            if total_sub_depth > 0:
                                 for num_allels in range(0, Total_alleles):
                                     allels = allels_set[num_allels]
-                                    Subdepth_alleles = int(Subdepth[num_allels])
+                                    Subdepth_alleles = int(Subdepth_set[num_allels])
                                     if vcf_calculate:
                                         # count with REF, count with ALT, genome ID with REF, genome ID with ALT, genotype
                                         if Subdepth_alleles >= 1:
@@ -662,11 +671,10 @@ def sum_snp(SNP_gene_temp, SNP_gene_all, Chr, sample_name, Total,SNP_type_chr_ca
                                                                    '%.3f' % (SNP_gene_temp.depth),
                                                                    '%.3f' % (SNP_gene_temp.cov), Gene_length)
     if N_S_sum > 0:
+        minor_feq = statistics.mean(SNP_gene_temp.minor_freq)
         new_line += '\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s' % (N_S_sum,
                                                              SNP_gene_temp.mutpositionsum,
-                                                             '%.5f' % (N_S_sum / int(
-                                                                 SNP_gene_temp.mutpositionsum) / float(
-                                                                 SNP_gene_temp.depth)),
+                                                             '%.5f' % (minor_feq),
                                                                   SNP_type_chr_cal,
                                                              SNP_gene_temp.mutpositionsum1[0],
                                                              SNP_gene_temp.mutpositionsum1[1],
@@ -680,7 +688,7 @@ def sum_snp(SNP_gene_temp, SNP_gene_all, Chr, sample_name, Total,SNP_type_chr_ca
         SNP_gene_temp.dN_dS(SNP_gene_all,0) # non-nomalized
         new_line += '\t%s\t%s' % (SNP_gene_temp.expectNSratio, SNP_gene_temp.dNdS)
         for pair in SNP_gene_temp.SNP_pair:
-            pair_freq = SNP_gene_temp.SNP_pair_freq[pair]/SNP_gene_temp.mutpositionsum
+            pair_freq = SNP_gene_temp.SNP_pair_freq[pair]#/SNP_gene_temp.mutpositionsum/SNP_gene_temp.depth
             pair_N = SNP_gene_temp.SNP_pair[pair][0]
             pair_S = SNP_gene_temp.SNP_pair[pair][1]
             new_line += ('\t%s\t%s:%s' % ('%.5f'%pair_freq, pair_N, pair_S))
@@ -760,15 +768,13 @@ def freq_call(vcf_file,cov_file,Not_pass=dict()):
                                     temp_NorS = dnORds(Ref_seq_aa, SNP_seq_aa)
                                     SNP_pair = transitions(REF, ALT)
                                     SNP_gene_temp.addSNP_pair(SNP_pair, N_S_set[temp_NorS],
-                                                              ALT_frq,
-                                                              Depth_position_snp)
+                                                              ALT_frq,1,Depth_position_snp)
                                     SNP_gene_temp.addmutposition(Chr, position)
                                     lines += '\t%s\t%s:%s:%s\t%s:%s:%s\t%s\t%s' % ('%s'%(Chr_position_genome_count[0]),
                                                                                REF, Ref_frq, Ref_seq_aa,
                                                                            ALT, ALT_frq, SNP_seq_aa, temp_NorS,Chr_position_genome_count[-1])
                                     SNP_gene_all.addSNP_pair(SNP_pair, N_S_set[temp_NorS],
-                                                             ALT_frq,
-                                                             Depth_position_snp)
+                                                             ALT_frq,1,Depth_position_snp)
                                     SNP_gene_all.addmutposition(Chr, position)
                     else:
                         for minor in Minor_ALT:
@@ -783,56 +789,57 @@ def freq_call(vcf_file,cov_file,Not_pass=dict()):
                                                          SNP[Chr_position][2],
                                                          SNP[Chr_position][3]))
         # global mutation frequency
-        all_output_list = []
-        all_output_list2 = []
-        all_output_filter_list = []
-        for Chr in all_SNP_gene_temp:
-            SNP_gene_temp = all_SNP_gene_temp[Chr]
-            filter_result = filtersnp(SNP_gene_temp, SNP_gene_all, Chr,all_output_filter_list,sample_name)
-            Not_pass.setdefault(filter_result[0],filter_result[1])
-        Not_pass.pop('', None)
-        for Chr in Not_pass:
-            all_SNP_gene_temp.pop(Chr, None)
-            Output2.pop(Chr, None)
-            Output3.pop(Chr, None)
-            if Not_pass[Chr]=='lowcoverage':
-                Output.pop(Chr, None)
-        print('%s deleting non-qualified genes %s'%(datetime.now(),' '.join(Not_pass)))
-        filtersnp(SNP_gene_all, SNP_gene_all, 'all',all_output_filter_list,sample_name)
-        new_line = sum_snp(SNP_gene_all, SNP_gene_all, 'all', sample_name, Total,SNP_type_sum.get('all',''))
-        all_output_list.append(new_line)
-        all_output_list2.append(new_line)
-        Output_list = []
-        Output2_list = []
-        Output3_list = []
-        for Chr in all_SNP_gene_temp:
-            SNP_gene_temp = all_SNP_gene_temp[Chr]
-            new_line = sum_snp(SNP_gene_temp,SNP_gene_all,Chr,sample_name,Total,SNP_type_sum.get(Chr,''))
+        if all_SNP_gene_temp!= dict():
+            all_output_list = []
+            all_output_list2 = []
+            all_output_filter_list = []
+            for Chr in all_SNP_gene_temp:
+                SNP_gene_temp = all_SNP_gene_temp[Chr]
+                filter_result = filtersnp(SNP_gene_temp, SNP_gene_all, Chr,all_output_filter_list,sample_name)
+                Not_pass.setdefault(filter_result[0],filter_result[1])
+            Not_pass.pop('', None)
+            for Chr in Not_pass:
+                all_SNP_gene_temp.pop(Chr, None)
+                Output2.pop(Chr, None)
+                Output3.pop(Chr, None)
+                if Not_pass[Chr]=='lowcoverage':
+                    Output.pop(Chr, None)
+            print('%s deleting non-qualified genes %s'%(datetime.now(),' '.join(Not_pass)))
+            filtersnp(SNP_gene_all, SNP_gene_all, 'all',all_output_filter_list,sample_name)
+            new_line = sum_snp(SNP_gene_all, SNP_gene_all, 'all', sample_name, Total,SNP_type_sum.get('all',''))
             all_output_list.append(new_line)
-            if SNP_gene_temp.mutpositionsum > 0:
-                all_output_list2.append(new_line)
-            Output_list+=Output[Chr]
-            Output2_list += Output2[Chr]
-            Output3_list += Output3[Chr]
-        all_output.write(''.join(all_output_list))
-        all_output2.write(''.join(all_output_list2))
-        all_output_filter.write(''.join(all_output_filter_list))
-        Output_list = sorted(Output_list, key=operator.itemgetter(1))
-        Output_list = sorted(Output_list, key=operator.itemgetter(0))
-        Output2_list = sorted(Output2_list, key=operator.itemgetter(1))
-        Output2_list = sorted(Output2_list, key=operator.itemgetter(0))
-        foutput = open(cov_file + '.frq', 'w')
-        foutput.write('#CHR\tPOS\tDEP\tA\tT\tG\tC\n')
-        foutput.write(''.join(Output_list))
-        foutput.close()
-        foutput = open(cov_file + '.frq.snp', 'w')
-        foutput.write('#CHR\tPOS\tDEP\tA\tT\tG\tC\tgenome_REF_ALT_count\tREF:count:REF_aa\tALT:count:ALT_aa\tN_or_S\tgenotype_allgenomes\n')
-        foutput.write(''.join(Output2_list))
-        foutput.close()
-        #foutput = open(cov_file + '.frq.snp.clean', 'w')
-        #foutput.write('#A\tT\tG\tC\n')
-        #foutput.write(''.join(Output3_list))
-        #foutput.close()
+            all_output_list2.append(new_line)
+            Output_list = []
+            Output2_list = []
+            Output3_list = []
+            for Chr in all_SNP_gene_temp:
+                SNP_gene_temp = all_SNP_gene_temp[Chr]
+                new_line = sum_snp(SNP_gene_temp,SNP_gene_all,Chr,sample_name,Total,SNP_type_sum.get(Chr,''))
+                all_output_list.append(new_line)
+                if SNP_gene_temp.mutpositionsum > 0:
+                    all_output_list2.append(new_line)
+                Output_list+=Output[Chr]
+                Output2_list += Output2[Chr]
+                Output3_list += Output3[Chr]
+            all_output.write(''.join(all_output_list))
+            all_output2.write(''.join(all_output_list2))
+            all_output_filter.write(''.join(all_output_filter_list))
+            Output_list = sorted(Output_list, key=operator.itemgetter(1))
+            Output_list = sorted(Output_list, key=operator.itemgetter(0))
+            Output2_list = sorted(Output2_list, key=operator.itemgetter(1))
+            Output2_list = sorted(Output2_list, key=operator.itemgetter(0))
+            foutput = open(cov_file + '.frq', 'w')
+            foutput.write('#CHR\tPOS\tDEP\tA\tT\tG\tC\n')
+            foutput.write(''.join(Output_list))
+            foutput.close()
+            foutput = open(cov_file + '.frq.snp', 'w')
+            foutput.write('#CHR\tPOS\tDEP\tA\tT\tG\tC\tgenome_REF_ALT_count\tREF:count:REF_aa\tALT:count:ALT_aa\tN_or_S\tgenotype_allgenomes\n')
+            foutput.write(''.join(Output2_list))
+            foutput.close()
+            #foutput = open(cov_file + '.frq.snp.clean', 'w')
+            #foutput.write('#A\tT\tG\tC\n')
+            #foutput.write(''.join(Output3_list))
+            #foutput.close()
     except (IOError, FileNotFoundError):
         pass
     if args.strainfinder!= 'None':
@@ -1045,7 +1052,7 @@ else:
                     new_codon = causeSNP(codon, position, ALT)
                     temp_NorS = dnORds(translate(codon)[0], translate(new_codon)[0])
                     SNP_pair = transitions(REF, ALT)
-                    SNP_gene_temp.addSNP_pair(SNP_pair, N_S_set[temp_NorS], 1,1)
+                    SNP_gene_temp.addSNP_pair(SNP_pair, N_S_set[temp_NorS], 1, 1)
     # load database seq
     Ref_seq = dict()
     Ref_NSratio = dict()
