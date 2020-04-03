@@ -1,4 +1,3 @@
-
 import os
 from Bio import SeqIO
 import argparse
@@ -384,12 +383,16 @@ def search(roottemp,genome_output,orf_output):
                             tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
                         cmds += 'bcftools mpileup -Ou -A -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
                             args.db, tempbamoutput, tempbamoutput)
+                        cmds += 'rm -rf %s.bam %s.sorted.bam.bai %s.flt.vcf\n' % (
+                        tempbamoutput, tempbamoutput, tempbamoutput)
                     elif args.mini != 'None':
                         cmds += args.mini + ' -ax asm20 %s.mmi %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                             args.db, tempinput,
                             tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
                         cmds += 'bcftools mpileup -Ou -A -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
                             args.db, tempbamoutput, tempbamoutput)
+                        cmds += 'rm -rf %s.bam %s.sorted.bam.bai %s.flt.vcf\n' % (
+                        tempbamoutput, tempbamoutput, tempbamoutput)
                     elif args.mf != 'None':
                         # mafft for multiple alignment
                         cmds += args.mf + ' --nuc --adjustdirection --quiet --retree 2 --maxiterate 100 --thread %s %s > %s.align \n' % (

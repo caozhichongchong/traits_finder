@@ -178,7 +178,7 @@ def bowtie(database, metagenomes, tempbamoutput):
         cmds += '%s depth %s.sorted.bam |  awk \'{sum[$1]+=$3; sumsq[$1]+=$3*$3; count[$1]++} END { for (id in sum) { print id,"\t",count[id],"\t",sum[id]/count[id],"\t",sqrt(sumsq[id]/count[id] - (sum[id]/count[id])**2)}}\' >> %s.sorted.bam.avgcov\n' % (
             args.sam, tempbamoutput, tempbamoutput)
     # optional cleanup
-    cmds += 'rm -rf %s.bam\n' % (tempbamoutput)
+    cmds += 'rm -rf %s.bam %s.sorted.bam.bai %s.flt.vcf\n' % (tempbamoutput,tempbamoutput,tempbamoutput)
     return cmds
 
 
