@@ -234,7 +234,7 @@ def main():
                               (db_file, db_file))
                     os.system('windowmasker -in %s.counts -sformat obinary -out %s.counts.obinary -convert' %
                               (db_file, db_file))
-                    os.system('%s index %s' % (os.path.join(os.path.split(search_method)[0], 'makeblastdb'), db_file))
+                    os.system('%s index %s' % (os.path.join(os.path.split(search_method)[0], 'hs-blastn'), db_file))
             if 'hmm' in search_method:
                 if '.hmm' not in db_file:
                     try:

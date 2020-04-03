@@ -113,6 +113,7 @@ pyrimidines=['C','T']
 complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
 # Set up cutoff
 Diff_gene_cutoff = 0.05 #50 SNP per 1kb
+Gene_coverage_cutoff = 0.7
 
 ################################################### new class #########################################################
 __metaclass__ = type
@@ -534,14 +535,14 @@ def freq_call_sub(vcf_file,all_wrong_gene,vcf_calculate=False,SNP_gene_list=set(
         SNP_noref = dict()
         Map_length = dict()
         Total = 0
-        SNP_gene_list_fixed_position = set()
+        SNP_gene_list_fixed_position = dict()
         for lines in open(vcf_file, 'r'):
             if not lines.startswith("#"):
                 lines_set = lines.split('\t')
                 if Total == 0:
                     Total = len(lines_set)-9
                 Depth = int(lines_set[7].split('DP=')[1].split(';')[0])
-                if Depth >= 1:
+                if Depth >= 10:
                     Chr = lines_set[0]
                     if (Chr in SNP_gene_list or vcf_calculate) \
                             and "INDEL" not in lines_set[7] \
@@ -593,11 +594,10 @@ def freq_call_sub(vcf_file,all_wrong_gene,vcf_calculate=False,SNP_gene_list=set(
                             # check any minor ALT, vcf snp
                             Depth_position_snp = sum(Allels_frq)
                             SNP.setdefault(Chr_position, Allels_frq)
-                            if not any(Depth_position_snp == allels for allels in Allels_frq):
-                                # not fixed SNPs
-                                SNP_gene_list.add(Chr)
-                            else:
-                                SNP_gene_list_fixed_position.add(Chr_position)
+                            SNP_gene_list.add(Chr)
+                            if any(Depth_position_snp == allels for allels in Allels_frq):
+                                # fixed SNPs
+                                SNP_gene_list_fixed_position.setdefault(Chr_position,allels_set[0]) # setup REF
                         else:
                             # vcf coverage
                             SNP.setdefault(Chr_position, Allels_frq)
@@ -642,7 +642,7 @@ def filtersnp(SNP_gene_temp,SNP_gene_all,Chr,all_output_filter_list,sample_name)
             Gene_length += Mapping[allchr]
     SNP_gene_temp.cov = float(SNP_gene_temp.cov) / float(Gene_length)
     SNP_gene_temp.mutpositioncal()
-    if SNP_gene_temp.cov >= 0.8 or Chr == 'all':
+    if SNP_gene_temp.cov >= Gene_coverage_cutoff or Chr == 'all':
         temp_depth = SNP_gene_temp.depth
         temp_depth.sort()
         temp_std = statistics.stdev(temp_depth)
@@ -657,7 +657,7 @@ def filtersnp(SNP_gene_temp,SNP_gene_all,Chr,all_output_filter_list,sample_name)
                 pass
         SNP_gene_temp.depth = statistics.mean(temp_depth_filter)
     if Chr != 'all':
-        if SNP_gene_temp.cov < 0.8:
+        if SNP_gene_temp.cov < Gene_coverage_cutoff:
             # not enough coverage
             SNP_gene_all.deleteposition(Chr,0)
             SNP_gene_all.deletemutposition(Chr, 0)
@@ -768,8 +768,6 @@ def freq_call(vcf_file,cov_file,Not_pass=dict()):
                 if Chr_position in SNP:
                     mutation = 'non_fixed'
                     position = int(position)
-                    if Chr_position in SNP_gene_list_fixed_position_all:
-                        mutation = 'fixed'
                     # count how many genomes have a SNP
                     Chr_position_genome_count = SNP_count_genome_count.get(Chr_position, [[0], ''])
                     # a SNP
@@ -785,6 +783,10 @@ def freq_call(vcf_file,cov_file,Not_pass=dict()):
                     lines += '\t%s' % (AllALT_frq)
                     SNP_gene_temp.addalt(AllALT_frq)
                     SNP_gene_all.addalt(AllALT_frq)
+                    if Chr_position in SNP_gene_list_fixed_position_all:
+                        mutation = 'fixed'
+                        REF = SNP_gene_list_fixed_position_all[Chr_position]
+                        Ref_frq = 0
                     if refSNP_pair_sum_all != 'None':
                         #  observed NS ratio calculated
                         refSNP_condon_start = refSNP_pair_sum_all[-1]
@@ -796,6 +798,28 @@ def freq_call(vcf_file,cov_file,Not_pass=dict()):
                             Ref_seq_codon = Ref_seq_chr[codon_start:(codon_start + 3)]
                             if len(Ref_seq_codon) == 3:
                                 Ref_seq_aa = translate(Ref_seq_codon)[0]
+                                if REF != Major_ALT[0]:
+                                    ALT = Major_ALT[0]
+                                    ALT_frq = Major_ALT[1]
+                                    SNP_seq_chr = causeSNP(SNP_seq_chr, position, ALT)
+                                    SNP_seq_codon = SNP_seq_chr[codon_start:(codon_start + 3)]
+                                    SNP_seq_aa = translate(SNP_seq_codon)[0]
+                                    temp_NorS = NorS(Ref_seq_aa, SNP_seq_aa)
+                                    SNP_pair = transitions(REF, ALT)
+                                    SNP_gene_temp.addSNP_pair(SNP_pair, N_S_set[temp_NorS],
+                                                              ALT_frq, 1, Depth_position)
+                                    SNP_gene_temp.addmutposition(Chr, position, mutation)
+                                    lines += '\t%s\t%s\t%s:%s:%s\t%s:%s:%s\t%s\t%s' % (mutation,
+                                                                                       '%s' % (
+                                                                                           Chr_position_genome_count[
+                                                                                               0]),
+                                                                                       REF, Ref_frq, Ref_seq_aa,
+                                                                                       ALT, ALT_frq, SNP_seq_aa,
+                                                                                       temp_NorS,
+                                                                                       Chr_position_genome_count[-1])
+                                    SNP_gene_all.addSNP_pair(SNP_pair, N_S_set[temp_NorS],
+                                                             ALT_frq, 1, Depth_position)
+                                    SNP_gene_all.addmutposition(Chr, position, mutation)
                                 for minor in Minor_ALT:
                                     ALT = minor[0]
                                     ALT_frq = minor[1]
@@ -826,6 +850,28 @@ def freq_call(vcf_file,cov_file,Not_pass=dict()):
                             Ref_seq_codon = Ref_seq_chr[codon_start:(codon_start + 3)]
                             if len(Ref_seq_codon) == 3:
                                 Ref_seq_aa = translate(Ref_seq_codon)[0]
+                                if REF != Major_ALT[0]:
+                                    ALT = Major_ALT[0]
+                                    ALT_frq = Major_ALT[1]
+                                    SNP_seq_chr = causeSNP(SNP_seq_chr, position, ALT)
+                                    SNP_seq_codon = SNP_seq_chr[codon_start:(codon_start + 3)]
+                                    SNP_seq_aa = translate(SNP_seq_codon)[0]
+                                    temp_NorS = NorS(Ref_seq_aa, SNP_seq_aa)
+                                    SNP_pair = transitions(REF, ALT)
+                                    SNP_gene_temp.addSNP_pair(SNP_pair, N_S_set[temp_NorS],
+                                                              ALT_frq, 1, Depth_position)
+                                    SNP_gene_temp.addmutposition(Chr, position, mutation)
+                                    lines += '\t%s\t%s\t%s:%s:%s\t%s:%s:%s\t%s\t%s' % (mutation,
+                                                                                       '%s' % (
+                                                                                           Chr_position_genome_count[
+                                                                                               0]),
+                                                                                       REF, Ref_frq, Ref_seq_aa,
+                                                                                       ALT, ALT_frq, SNP_seq_aa,
+                                                                                       temp_NorS,
+                                                                                       Chr_position_genome_count[-1])
+                                    SNP_gene_all.addSNP_pair(SNP_pair, N_S_set[temp_NorS],
+                                                             ALT_frq, 1, Depth_position)
+                                    SNP_gene_all.addmutposition(Chr, position, mutation)
                                 for minor in Minor_ALT:
                                     ALT = minor[0]
                                     ALT_frq = minor[1]
