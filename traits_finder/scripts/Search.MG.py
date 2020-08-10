@@ -343,7 +343,7 @@ def search(roottemp,filename):
             cmds += "%s align -db %s -window_masker_db %s.counts.obinary -query %s -out %s -outfmt 6 -evalue %s -num_threads %s\n" \
                     % (args.hs, workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta",
                     workingdir + "/../database/85_otus.fasta.all.V4_V5.fasta",
-                       os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt'),
+                       os.path.join(roottemp, filename),
                        os.path.join(args.r16+'/' + str(int(i/10000)), filename+ '.16S.txt'),
                        str(args.e), str(min(int(i_max),40)))
             cmds += 'python '+ workingdir +'/Extract.16S.MG.py -i ' + roottemp + ' -f ' + \

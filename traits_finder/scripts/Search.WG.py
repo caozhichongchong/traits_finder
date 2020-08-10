@@ -386,7 +386,7 @@ def search(roottemp,genome_output,orf_output):
                         cmds += 'rm -rf %s.bam %s.sorted.bam.bai %s.flt.vcf\n' % (
                         tempbamoutput, tempbamoutput, tempbamoutput)
                     elif args.mini != 'None':
-                        cmds += args.mini + ' -ax asm20 %s.mmi %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
+                        cmds += args.mini + ' -ax asm5 %s.mmi %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                             args.db, tempinput,
                             tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
                         cmds += 'bcftools mpileup -Ou -A -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
@@ -434,7 +434,7 @@ def search(roottemp,genome_output,orf_output):
                     cmds += 'bcftools mpileup -Ou -A -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (
                         args.db, tempbamoutput, tempbamoutput)
             elif args.mini != 'None':
-                cmds += args.mini + ' -ax asm20 %s.mmi %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
+                cmds += args.mini + ' -ax asm5 %s.mmi %s |samtools view -S -b >%s.bam \nsamtools sort %s.bam -o %s.sorted.bam\n samtools index %s.sorted.bam\n' % (
                     args.db, tempinput,
                     tempbamoutput, tempbamoutput, tempbamoutput, tempbamoutput)
                 cmds += 'bcftools mpileup -Ou -A -f %s %s.sorted.bam  | bcftools call -mv > %s.vcf\n' % (

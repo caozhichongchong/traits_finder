@@ -78,7 +78,7 @@ except (IOError,FileNotFoundError):
 if Cell_out == 0 or Cell16S_out == 0:
     # load all files
     # should load 16S
-    inputfiles=glob.glob(os.path.join(args.r16,'*.uscmg.blastx.txt'))
+    inputfiles=glob.glob(os.path.join(args.r16,'*/*.uscmg.blastx.txt'))
     # load cell number mapping file
     # gene ID: genotype ID, length
     Mapping = dict()

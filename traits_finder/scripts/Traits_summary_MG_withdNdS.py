@@ -1195,14 +1195,14 @@ else:
             all_output.close()
             all_output2.close()
             all_output_filter.close()
-        print('%s start calculate SNP dynamics into %s' % (datetime.now(),
-                                                           os.path.join(args.r, 'summary/%s.all.snp.dynamics.txt'%(reference_database))))
-        try:
-            foutput = open(os.path.join(args.r, 'summary/%s.all.snp.dynamics.txt'%(reference_database)), 'r')
-        except (IOError,FileNotFoundError):
-            foutput = open(os.path.join(args.r, 'summary/%s.all.snp.dynamics.txt')%(reference_database), 'w')
-            foutput.write('habitat\treference\tsample_number\ttotal_snps\n')
-            output_files = glob.glob(os.path.join(args.r, 'summary/vcf/*%s*.flt.snp.vcf*'%(args.fa)))
-            SNP_dynamics(output_files, foutput)
-            foutput.close()
+        #print('%s start calculate SNP dynamics into %s' % (datetime.now(),
+        #                                                   os.path.join(args.r, 'summary/%s.all.snp.dynamics.txt'%(reference_database))))
+        #try:
+        #    foutput = open(os.path.join(args.r, 'summary/%s.all.snp.dynamics.txt'%(reference_database)), 'r')
+        #except (IOError,FileNotFoundError):
+        #    foutput = open(os.path.join(args.r, 'summary/%s.all.snp.dynamics.txt')%(reference_database), 'w')
+        #    foutput.write('habitat\treference\tsample_number\ttotal_snps\n')
+        #    output_files = glob.glob(os.path.join(args.r, 'summary/vcf/*%s*.flt.snp.vcf*'%(args.fa)))
+        #    SNP_dynamics(output_files, foutput)
+        #    foutput.close()
 
